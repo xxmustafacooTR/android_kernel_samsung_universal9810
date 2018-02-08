@@ -3440,6 +3440,8 @@ static void fsg_free_inst(struct usb_function_instance *fi)
 	kfree(opts);
 }
 
+extern struct device *create_function_device(char *name);
+
 static struct usb_function_instance *fsg_alloc_inst(void)
 {
 	struct fsg_opts *opts;
@@ -3479,6 +3481,9 @@ static struct usb_function_instance *fsg_alloc_inst(void)
 	config_group_init_type_name(&opts->lun0.group, "lun.0", &fsg_lun_type);
 	configfs_add_default_group(&opts->lun0.group, &opts->func_inst.group);
 
+	//create dummy device
+	create_function_device("f_mass_storage");
+
 	return &opts->func_inst;
 
 release_buffers:
@@ -3517,7 +3522,7 @@ static struct usb_function *fsg_alloc(struct usb_function_instance *fi)
 	opts->refcnt++;
 	mutex_unlock(&opts->lock);
 
-	fsg->function.name	= FSG_DRIVER_DESC;
+	fsg->function.name	= "mass_storage";
 	fsg->function.bind	= fsg_bind;
 	fsg->function.unbind	= fsg_unbind;
 	fsg->function.setup	= fsg_setup;
