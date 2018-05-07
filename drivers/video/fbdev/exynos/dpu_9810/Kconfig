@@ -59,7 +59,7 @@ config DECON_BLOCKING_MODE
 
 config DECON_EVENT_LOG
 	bool "Display sub-system event logger (DECON/DSIM/DPP)"
-        depends on DEBUG_INFO && EXYNOS_DECON_9810
+        depends on EXYNOS_DECON_9810
         default y
 
 config DECON_HIBER
