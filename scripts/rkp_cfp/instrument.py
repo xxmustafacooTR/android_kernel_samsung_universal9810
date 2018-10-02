@@ -70,7 +70,7 @@ Here comes the ugly part
 For SLSI kernel, CROSS_COMPILE contains the whole path
 For QC kernel, CROSS_COMPILE only have aarch64-linux-android-
 '''
-CROSS_COMPILE = os.environ.get('CROSS_COMPILE')
+CROSS_COMPILE = re.sub('^.*ccache\s+', '', os.environ.get('CROSS_COMPILE'))
 assert CROSS_COMPILE is not None
 
 OBJDUMP = CROSS_COMPILE+"objdump"
