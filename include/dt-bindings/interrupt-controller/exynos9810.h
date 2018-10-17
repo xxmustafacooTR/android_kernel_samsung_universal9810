@@ -357,7 +357,7 @@
 #define INTREQ__PDP0_STAT_DMA					346
 #define INTREQ__PDP1_STAT_DMA					347
 
-#ifdef CONFIG_SOC_EXYNOS9810_EVT1
+#if 1
 #define INTREQ__BLK_IVA_IVA_iva_ap_irq_aq_0			348
 #define INTREQ__BLK_IVA_IVA_iva_ap_irq_aq_1			349
 #define INTREQ__BLK_IVA_PPMU_IVA_O_interrupt_lower		350
