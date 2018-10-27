@@ -107,9 +107,9 @@ static inline void s3c24xx_serial_fifo_wait(void) { }
 #endif
 
 #ifdef CONFIG_PINCTRL_EXYNOS
-extern u64 exynos_get_eint_wake_mask(void);
+extern u32 exynos_get_eint_wake_mask(void);
 #else
-static inline u64 exynos_get_eint_wake_mask(void) { return 0xffffffffL; }
+static inline u32 exynos_get_eint_wake_mask(void) { return 0xffffffffL; }
 #endif
 
 /* SUPPORT HOTPLUG */
