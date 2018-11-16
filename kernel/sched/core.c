@@ -6279,7 +6279,9 @@ cpu_attach_domain(struct sched_domain *sd, struct root_domain *rd, int cpu)
 	rq_attach_root(rq, rd);
 	tmp = rq->sd;
 	rcu_assign_pointer(rq->sd, sd);
+#if defined(CONFIG_SCHED_DEBUG)
 	dirty_sched_domain_sysctl(cpu);
+#endif
 	destroy_sched_domains(tmp);
 
 	update_top_cache_domain(cpu);
