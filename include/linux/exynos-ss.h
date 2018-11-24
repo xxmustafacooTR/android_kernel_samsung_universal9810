@@ -164,7 +164,7 @@ extern void exynos_ss_irq_exit(unsigned int irq, unsigned long long start_time);
 #endif
 
 
-#ifdef CONFIG_S3C2410_WATCHDOG
+#if defined(CONFIG_S3C2410_WATCHDOG) && defined(CONFIG_EXYNOS_SNAPSHOT_WATCHDOG_RESET)
 extern int s3c2410wdt_set_emergency_stop(int index);
 extern int s3c2410wdt_set_emergency_reset(unsigned int timeout, int index);
 extern int s3c2410wdt_keepalive_emergency(bool reset, int index);

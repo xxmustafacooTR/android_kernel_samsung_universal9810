@@ -1420,7 +1420,9 @@ void exynos_ss_print_panic_report(void)
 	pr_info("Panic Report\n");
 	pr_info("============================================================\n");
 	exynos_ss_print_lastinfo();
+#ifdef CONFIG_EXYNOS_SNAPSHOT_FREQ
 	exynos_ss_print_freqinfo();
+#endif
 	exynos_ss_print_calltrace();
 	exynos_ss_print_irq();
 	pr_info("============================================================\n");

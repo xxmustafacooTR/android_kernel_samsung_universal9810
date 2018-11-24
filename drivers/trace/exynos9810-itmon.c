@@ -663,7 +663,7 @@ MODULE_DEVICE_TABLE(of, itmon_dt_match);
 
 #define EXYNOS_PMU_BURNIN_CTRL 		0x0A08
 #define BIT_ENABLE_DBGSEL_WDTRESET 	BIT(25)
-#ifdef CONFIG_S3C2410_WATCHDOG
+#if defined(CONFIG_S3C2410_WATCHDOG) && defined(CONFIG_EXYNOS_SNAPSHOT_WATCHDOG_RESET)
 extern int s3c2410wdt_set_emergency_reset(unsigned int timeout, int index);
 #else
 #define s3c2410wdt_set_emergency_reset(a, b)	do { } while (0)
