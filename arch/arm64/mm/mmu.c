@@ -582,8 +582,9 @@ static void __init map_kernel_text_segment(pgd_t *pgd, void *va_start, void *va_
 static int __init map_entry_trampoline(void)
 {
 	extern char __entry_tramp_text_start[];
-
-	pgprot_t prot = rodata_enabled ? PAGE_KERNEL_ROX : PAGE_KERNEL_EXEC;
+	/* 'DEBUG_RODATA' rodata is not enabled by default from SAMSUNG */
+	//pgprot_t prot = rodata_enabled ? PAGE_KERNEL_ROX : PAGE_KERNEL_EXEC;
+	pgprot_t prot = PAGE_KERNEL_EXEC;
 	phys_addr_t pa_start = __pa_symbol(__entry_tramp_text_start);
 
 	/* The trampoline is always mapped and can therefore be global */
