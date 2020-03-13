@@ -704,6 +704,7 @@ KBUILD_CFLAGS	+= $(call cc-disable-warning, switch-bool)
 KBUILD_CFLAGS	+= $(call cc-disable-warning, bool-operation)
 KBUILD_CFLAGS	+= $(call cc-disable-warning, sizeof-pointer-div)
 KBUILD_CFLAGS	+= $(call cc-disable-warning, psabi)
+KBUILD_CFLAGS   += $(call cc-disable-warning, incompatible-pointer-types)
 
 ifdef CONFIG_LD_DEAD_CODE_DATA_ELIMINATION
 KBUILD_CFLAGS	+= $(call cc-option,-ffunction-sections,)
