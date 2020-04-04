@@ -69,11 +69,11 @@ struct workqueue_struct *sensor_pwr_ctrl_wq = 0;
 #define CAMERA_WORKQUEUE_MAX_WAITING	1000
 #endif
 
+static int factory_aperture_value;
 #ifdef USE_CAMERA_HW_BIG_DATA
 static struct cam_hw_param_collector cam_hwparam_collector;
 static bool mipi_err_check;
 static bool need_update_to_file;
-static int factory_aperture_value;
 
 void fimc_is_sec_init_err_cnt(struct cam_hw_param *hw_param)
 {
