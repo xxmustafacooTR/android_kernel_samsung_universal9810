@@ -192,7 +192,7 @@ struct fb_vendor {
 #define LINK_RATE_2_7Gbps 0x0A
 #define LINK_RATE_5_4Gbps 0x14
 
-#define UHD_60HZ_PIXEL_CLOCK 500000000
+#define UHD_60HZ_PIXEL_CLOCK 533000000
 
 #define DPCD_ADD_MAX_LANE_COUNT 0x00002
 #define MAX_LANE_COUNT (0x1F << 0)

@@ -19,7 +19,7 @@
 
 u32 phy_tune_parameters[4][4][3] = {
 	/* Swing Level_0 */ { {4, 0, 0}, {0, 7, 0}, {2,  9, 1}, {0, 13, 1} },
-	/* Swing Level_1 */ { {2, 0, 0}, {2, 6, 1}, {0, 10, 1}, {0, 10, 1} },
+	/* Swing Level_1 */ { {1, 0, 0}, {2, 6, 1}, {0, 10, 1}, {0, 10, 1} },
 	/* Swing Level_2 */ { {2, 0, 1}, {0, 6, 1}, {0,  6, 1}, {0,  6, 1} },
 	/* Swing Level_3 */ { {0, 0, 1}, {0, 0, 1}, {0,  0, 1}, {0,  0, 1} },
 };
@@ -235,7 +235,7 @@ void displayport_reg_phy_ssc_enable(u32 en)
 
 void displayport_reg_wait_phy_pll_lock(void)
 {
-	u32 cnt = 300;	/* wait for 150us + 10% margin */
+	u32 cnt = 165;	/* wait for 150us + 10% margin */
 	u32 state;
 
 	do {
@@ -245,7 +245,7 @@ void displayport_reg_wait_phy_pll_lock(void)
 	} while (!state && cnt);
 
 	if (!cnt)
-		displayport_err("%s is timeout 300us\n", __func__);
+		displayport_err("%s is timeout 165us\n", __func__);
 }
 
 void displayport_reg_set_link_bw(u8 link_rate)

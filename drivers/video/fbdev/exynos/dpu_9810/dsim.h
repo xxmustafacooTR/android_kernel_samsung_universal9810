@@ -257,6 +257,9 @@ struct dsim_device {
 };
 
 struct dsim_lcd_driver {
+#if defined(CONFIG_SUPPORT_MASK_LAYER)
+	int (*mask_brightness)(struct dsim_device *dsim);
+#endif
 	int (*init)(struct dsim_device *dsim);
 	int (*probe)(struct dsim_device *dsim);
 	int (*suspend)(struct dsim_device *dsim);

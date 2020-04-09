@@ -573,6 +573,8 @@ struct decon_win_config {
 		DECON_WIN_STATE_BUFFER,
 		DECON_WIN_STATE_UPDATE,
 		DECON_WIN_STATE_CURSOR,
+		DECON_WIN_STATE_MRESOL = 0x10000,
+		DECON_WIN_STATE_FINGERPRINT = 0x20000,
 	} state;
 
 	/* Reusability:This struct is used for IDMA and ODMA */
@@ -639,6 +641,10 @@ struct decon_reg_data {
 	int cursor_win;
 #ifdef CONFIG_SUPPORT_DSU
 	struct dsu_info dsu;
+#endif
+
+#if defined(CONFIG_SUPPORT_MASK_LAYER)
+	bool mask_layer;
 #endif
 };
 
@@ -1088,6 +1094,11 @@ struct decon_systrace_data {
 struct decon_device {
 	int id;
 	enum decon_state state;
+
+#if defined(CONFIG_SUPPORT_MASK_LAYER)
+	bool current_mask_layer;
+	struct decon_reg_data *mask_regs;
+#endif
 
 	unsigned long prev_used_dpp;
 	unsigned long cur_using_dpp;

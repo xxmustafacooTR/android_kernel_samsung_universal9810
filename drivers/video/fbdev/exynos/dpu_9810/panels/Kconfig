@@ -32,3 +32,7 @@ config EXYNOS_DECON_LCD_EMUL_DISP
 	depends on EXYNOS_DECON_LCD && EXYNOS_MIPI_DSIM
 	depends on EXYNOS_ZEBU_EMUL_DISP
 	tristate "EMUL_DISP COMMAND/VIDEO MODE AMOLED FHD LCD driver(800 x 1280)"
+
+config SUPPORT_MASK_LAYER
+	bool "Support mask layer"
+	default y

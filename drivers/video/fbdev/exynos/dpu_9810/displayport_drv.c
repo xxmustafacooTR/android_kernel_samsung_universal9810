@@ -329,9 +329,9 @@ Voltage_Swing_Retry:
 	displayport_reg_dpcd_write_burst(DPCD_ADD_TRANING_LANE0_SET, 4, val);
 
 	if (training_aux_rd_interval != 0)
-		usleep_range(training_aux_rd_interval * 4000, training_aux_rd_interval * 4000);
+		mdelay(training_aux_rd_interval * 4);
 	else
-		usleep_range(100, 101);
+		udelay(100);
 
 	lane_cr_done = 0;
 
@@ -504,9 +504,9 @@ EQ_Training_Retry:
 	interlane_align_done = 0;
 
 	if (training_aux_rd_interval != 0)
-		usleep_range(training_aux_rd_interval * 4000, training_aux_rd_interval * 4000);
+		mdelay(training_aux_rd_interval * 4);
 	else
-		usleep_range(400, 401);
+		udelay(100);
 
 	displayport_reg_dpcd_read_burst(DPCD_ADD_LANE0_1_STATUS, 3, val);
 	lane_cr_done |= ((val[0] & LANE0_CR_DONE) >> 0);
@@ -1125,7 +1125,7 @@ void displayport_hpd_changed(int state)
 		 */
 		displayport_set_switch_state(displayport, 1);
 		timeout = wait_event_interruptible_timeout(displayport->dp_wait,
-			(displayport->state == DISPLAYPORT_STATE_ON), msecs_to_jiffies(3000));
+			(displayport->state == DISPLAYPORT_STATE_ON), msecs_to_jiffies(1000));
 		dp_ado_switch_set_state(edid_audio_informs());
 		if (!timeout)
 			displayport_err("enable timeout\n");
@@ -1165,7 +1165,7 @@ void displayport_hpd_changed(int state)
 
 		displayport_set_switch_state(displayport, 0);
 		timeout = wait_event_interruptible_timeout(displayport->dp_wait,
-			(displayport->state == DISPLAYPORT_STATE_OFF), msecs_to_jiffies(7000));
+			(displayport->state == DISPLAYPORT_STATE_OFF), msecs_to_jiffies(1000));
 		if (!timeout) {
 			struct decon_device *decon = get_decon_drvdata(2);
 
@@ -1390,10 +1390,7 @@ static int displayport_Automated_Test_Request(void)
 		u8 dyn_range = (u8)displayport->dyn_range;
 
 		displayport_set_switch_state(displayport, 0);
-		timeout = wait_event_interruptible_timeout(displayport->dp_wait,
-			(displayport->state == DISPLAYPORT_STATE_OFF), msecs_to_jiffies(1000));
-		if (!timeout)
-			displayport_err("disable timeout in %s\n", __func__);
+		msleep(300);
 
 		/* PHY power on */
 		displayport_reg_init();
@@ -2877,10 +2874,9 @@ static int displayport_aux_onoff(struct displayport_device *displayport, int
 
 	displayport_info("aux vdd onoff = %d\n", onoff);
 
-	if (onoff == 1) {
+	if (onoff == 1)
 		gpio_direction_output(displayport->gpio_sw_oe, 0);
-		msleep(100);
-	} else
+	else
 		gpio_direction_output(displayport->gpio_sw_oe, 1);
 
 	return rc;
