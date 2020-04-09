@@ -1805,10 +1805,8 @@ static int decon_set_mask_layer(struct decon_device *decon, struct decon_reg_dat
 	}
 
 	decon_systrace(decon, 'C', "set_mask_layer", 1);
-	decon_abd_save_str(&decon->abd, "mask_te_0");
 	decon_wait_for_vsync(decon, VSYNC_TIMEOUT_MSEC);
 	decon_info("%s: MASK_LAYER TE 1\n", __func__);
-	decon_abd_save_str(&decon->abd, "mask_te_1");
 
 	decon->mask_regs = regs;
 	ret = call_panel_ops(dsim, mask_brightness, dsim);

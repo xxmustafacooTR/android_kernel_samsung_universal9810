@@ -3615,7 +3615,6 @@ static ssize_t secdp_unit_test_show(struct class *class,
 
 	switch (cmd) {
 	case SECDP_UTCMD_EDID_PARSE:
-		res = secdp_unit_test_edid_parse();
 		break;
 	default:
 		displayport_info("invalid test_cmd: %d\n", cmd);
