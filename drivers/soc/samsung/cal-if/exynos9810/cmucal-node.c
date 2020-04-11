@@ -31,7 +31,7 @@ struct cmucal_pll_table pll_shared0_rate_table[] = {
 };
 
 struct cmucal_pll_table pll_mmc_rate_table[] = {
-	PLL_RATE_MPSK(825999878, 31, 1, 0, 50412),
+	PLL_RATE_MPSK(825999878, 31, 1, 0, (short)50412),
 	PLL_RATE_MPSK(26000000, 0, 0, 0, 0),
 };
 
