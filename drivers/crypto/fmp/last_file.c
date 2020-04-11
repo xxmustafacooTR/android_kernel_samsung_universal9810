@@ -17,5 +17,5 @@ const unsigned char last_fmp_rodata = 0x20;
 __attribute__ ((section(".text"), unused))
 void last_fmp_text(void){}
 
-__attribute__ ((section(".init.text"), optimize("-O0"), unused))
-static void last_fmp_init(void){};
+__attribute__ ((section(".init.text"), unused))
+void last_fmp_init(void){};
