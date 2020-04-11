@@ -160,6 +160,7 @@ typedef struct pkt_cnt_log {
 #define PKT_CNT_RSN_VALID(rsn)	\
 	(((rsn) > (PKT_CNT_RSN_INVALID)) && ((rsn) < (PKT_CNT_RSN_MAX)))
 
+#ifdef DHD_PKTDUMP_ROAM
 static const char pkt_cnt_msg[][20] = {
 	"INVALID",
 	"ROAM_SUCCESS",
@@ -167,6 +168,7 @@ static const char pkt_cnt_msg[][20] = {
 	"CONNECT_SUCCESS",
 	"INVALID"
 };
+#endif
 
 static const char tx_pktfate[][30] = {
 	"TX_PKT_FATE_ACKED",		/* 0: WLFC_CTL_PKTFLAG_DISCARD */
@@ -925,11 +927,13 @@ static char dhcp_types[][10] = {
 	"NA", "DISCOVER", "OFFER", "REQUEST", "DECLINE", "ACK", "NAK", "RELEASE", "INFORM"
 };
 
+#ifdef DHD_STATUS_LOGGING
 static const int dhcp_types_stat[9] = {
 	ST(INVALID), ST(DHCP_DISCOVER), ST(DHCP_OFFER), ST(DHCP_REQUEST),
 	ST(DHCP_DECLINE), ST(DHCP_ACK), ST(DHCP_NAK), ST(DHCP_RELEASE),
 	ST(DHCP_INFORM)
 };
+#endif
 
 void
 dhd_dhcp_dump(dhd_pub_t *dhdp, int ifidx, uint8 *pktdata, bool tx,
