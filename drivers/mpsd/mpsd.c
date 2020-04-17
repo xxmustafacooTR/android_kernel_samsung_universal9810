@@ -27,7 +27,6 @@ static atomic_t is_mpsd_enabled = ATOMIC_INIT(0);
 static atomic_t wakeup_user = ATOMIC_INIT(0);
 static atomic_t suspend = ATOMIC_INIT(0);
 
-static struct mpsd_device mpsd_dev;
 static DECLARE_WAIT_QUEUE_HEAD(queue_wait);
 
 /**
@@ -55,6 +54,8 @@ struct mpsd_device {
 	unsigned long long dev_field_mask;
 	unsigned int behavior;
 };
+
+static struct mpsd_device mpsd_dev;
 
 bool get_mpsd_flag(void)
 {

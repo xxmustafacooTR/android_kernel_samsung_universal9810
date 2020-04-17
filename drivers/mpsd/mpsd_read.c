@@ -3085,7 +3085,7 @@ static void get_dev_mem_avail(struct dev_params_struct *data)
 	si_meminfo(&meminfo);
 
 	for (lru = LRU_BASE; lru < NR_LRU_LISTS; lru++)
-		pages[lru] = global_page_state(NR_LRU_BASE + lru);
+		pages[lru] = global_node_page_state(NR_LRU_BASE + lru);
 
 	for_each_zone(zone)
 		wmark_low += zone->watermark[WMARK_LOW];
@@ -3149,7 +3149,7 @@ static void get_dev_mem_cached(struct dev_params_struct *data)
 
 	si_meminfo(&meminfo);
 
-	cached = global_page_state(NR_FILE_PAGES) - total_swapcache_pages()
+	cached = global_node_page_state(NR_FILE_PAGES) - total_swapcache_pages()
 		- meminfo.bufferram;
 	if (cached < 0)
 		cached = 0;
@@ -3242,7 +3242,7 @@ static void get_dev_mem_dirty(struct dev_params_struct *data)
 	}
 
 	data->mem_dirty =
-		(long long)global_page_state(NR_FILE_DIRTY);
+		(long long)global_node_page_state(NR_FILE_DIRTY);
 }
 
 /**
@@ -3263,7 +3263,7 @@ static void get_dev_mem_anon_pages(struct dev_params_struct *data)
 	}
 
 	data->mem_anon_pages =
-		(long long)global_page_state(NR_ANON_MAPPED);
+		(long long)global_node_page_state(NR_ANON_MAPPED);
 }
 
 /**
@@ -3284,7 +3284,7 @@ static void get_dev_mem_mapped(struct dev_params_struct *data)
 	}
 
 	data->mem_mapped =
-		(long long)global_page_state(NR_FILE_MAPPED);
+		(long long)global_node_page_state(NR_FILE_MAPPED);
 }
 
 /**
@@ -3513,7 +3513,7 @@ static void get_dev_mem_params(struct dev_params_struct *dev_params)
 	dev_params->mem_swap_free = (long long)meminfo.freeswap;
 
 	for (lru = LRU_BASE; lru < NR_LRU_LISTS; lru++)
-		pages[lru] = global_page_state(NR_LRU_BASE + lru);
+		pages[lru] = global_node_page_state(NR_LRU_BASE + lru);
 
 	for_each_zone(zone)
 		wmark_low += zone->watermark[WMARK_LOW];
@@ -3529,7 +3529,7 @@ static void get_dev_mem_params(struct dev_params_struct *dev_params)
 
 	dev_params->mem_avail = (long long)available;
 
-	cached = global_page_state(NR_FILE_PAGES) - total_swapcache_pages()
+	cached = global_node_page_state(NR_FILE_PAGES) - total_swapcache_pages()
 		- meminfo.bufferram;
 	if (cached < 0)
 		cached = 0;
@@ -3537,10 +3537,10 @@ static void get_dev_mem_params(struct dev_params_struct *dev_params)
 	dev_params->mem_cached = (long long)cached;
 
 	dev_params->mem_swap_cached = (long long)total_swapcache_pages();
-	dev_params->mem_dirty = (long long)global_page_state(NR_FILE_DIRTY);
+	dev_params->mem_dirty = (long long)global_node_page_state(NR_FILE_DIRTY);
 	dev_params->mem_anon_pages =
-		(long long)global_page_state(NR_ANON_MAPPED);
-	dev_params->mem_mapped = (long long)global_page_state(NR_FILE_MAPPED);
+		(long long)global_node_page_state(NR_ANON_MAPPED);
+	dev_params->mem_mapped = (long long)global_node_page_state(NR_FILE_MAPPED);
 	dev_params->mem_sysheap = -1;
 	dev_params->mem_sysheap_pool = -1;
 	dev_params->mem_vmalloc_api = DEFAULT_PARAM_VAL_INT;
