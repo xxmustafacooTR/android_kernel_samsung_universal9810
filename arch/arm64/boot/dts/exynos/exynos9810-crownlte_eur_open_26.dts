@@ -9215,7 +9215,7 @@
 		devfreq_type = "disp";
 		devfreq_domain_name = "dvfs_disp";
 		use_delay_time = "false";
-		freq_info = <0x9c400 0x30d40 0x9c400 0x30d40 0x9c400 0x9c400>;
+		freq_info = <0x9c400 0x20b70 0x9c400 0x20b70 0x9c400 0x9c400>;
 		boot_info = <0x28 0x9c400>;
 		use_get_dev = "false";
 		polling_ms = <0x0>;
