@@ -47,6 +47,7 @@
 		};
 
 		tima_region@0xB8000000 {
+			status = "disabled";
 			compatible = "removed-dma-pool";
 			reg = <0x0 0xb8000000 0x200000>;
 			linux,phandle = <0x1a2>;
@@ -156,6 +157,7 @@
 		};
 
 		rkp_region@0xAF600000 {
+			status = "disabled";
 			compatible = "removed-dma-pool";
 			reg = <0x0 0xaf600000 0x2400000>;
 			linux,phandle = <0x1a3>;
