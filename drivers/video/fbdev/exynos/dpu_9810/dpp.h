@@ -370,7 +370,7 @@ u32 dma_reg_get_irq_status(u32 id);
 void dma_reg_clear_irq(u32 id, u32 irq);
 
 /* BIST mode */
-void dma_reg_set_test_pattern(u32 id, u32 pat_id, u32 pat_dat[4]);
+void dma_reg_set_test_pattern(u32 id, u32 pat_id, u32 pat_dat[]);
 void dma_reg_set_ch_map(u32 id, u32 dpp_id, u32 to_pat);
 void dma_reg_set_test_en(u32 id,u32 en);
 
