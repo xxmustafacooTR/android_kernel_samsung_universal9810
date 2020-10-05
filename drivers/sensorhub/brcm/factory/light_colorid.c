@@ -62,7 +62,7 @@ int light_corloid_read_colorid(void)
 	mm_segment_t old_fs;
 	struct file *colorid_filp = NULL;
 	int color_id;
-	char buf[8] = {0, };
+	char buf[9] = {0, };
 	char temp;
 	char *token, *str;
 
