@@ -2,6 +2,7 @@
 # Makefile for trace.
 #
 
+CC := $(CLANG_TRIPLE)gcc
 obj-$(CONFIG_EXYNOS_SNAPSHOT) += exynos-ss.o exynos-ss-log.o exynos-ss-utils.o
 obj-$(CONFIG_EXYNOS_CORESIGHT) += exynos-coresight.o
 ifeq ($(CONFIG_SOC_EXYNOS9810),y)

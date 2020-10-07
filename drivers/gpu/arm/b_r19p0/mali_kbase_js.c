@@ -1873,7 +1873,7 @@ void kbasep_js_schedule_privileged_ctx(struct kbase_device *kbdev,
 		kbase_js_sched_all(kbdev);
 
 		/* Wait for the context to be scheduled in */
-		wait_event(kctx->jctx.sched_info.ctx.is_scheduled_wait,
+		wait_event_interruptible(kctx->jctx.sched_info.ctx.is_scheduled_wait,
 			   kbase_ctx_flag(kctx, KCTX_SCHEDULED));
 	} else {
 		/* Already scheduled in - We need to retain it to keep the

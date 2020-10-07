@@ -232,3 +232,7 @@ obj-$(CONFIG_UH)		+= uh/
 obj-$(CONFIG_MPSD)	+= mpsd/
 
 obj-y				+= kperfmon/
+
+# optimise for size
+subdir-ccflags-y += $(call cc-option, -g0)
+subdir-ccflags-y += $(call cc-option, -Os)

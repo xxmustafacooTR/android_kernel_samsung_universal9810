@@ -363,7 +363,7 @@ void dpu_bts_acquire_bw(struct decon_device *decon)
 
 	if (pixelclock >= UHD_60HZ_PIXEL_CLOCK) {
 		if (pm_qos_request_active(&decon->bts.mif_qos))
-			pm_qos_update_request(&decon->bts.mif_qos, 1794 * 1000);
+			pm_qos_update_request(&decon->bts.mif_qos, 2002 * 1000);
 		else
 			DPU_ERR_BTS("%s mif qos setting error\n", __func__);
 

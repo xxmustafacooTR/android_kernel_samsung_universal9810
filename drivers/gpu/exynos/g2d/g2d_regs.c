@@ -60,7 +60,6 @@ void g2d_hw_push_task(struct g2d_device *g2d_dev, struct g2d_task *task)
 			__func__, sec_task.cmd_count, sec_task.priority,
 			sec_task.job_id, sec_task.secure_layer);
 
-		g2d_dump_info(g2d_dev, task);
 		BUG();
 	}
 }

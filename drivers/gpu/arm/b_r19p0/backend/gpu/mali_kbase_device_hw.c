@@ -1,6 +1,6 @@
 /*
  *
- * (C) COPYRIGHT 2014-2016, 2018-2019 ARM Limited. All rights reserved.
+ * (C) COPYRIGHT 2014-2016, 2018-2020 ARM Limited. All rights reserved.
  *
  * This program is free software and is provided to you under the terms of the
  * GNU General Public License version 2 as published by the Free Software
@@ -143,7 +143,7 @@ void kbase_io_history_dump(struct kbase_device *kbdev)
 			&h->buf[(h->count - iters + i) % h->size];
 		char const access = (io->addr & 1) ? 'w' : 'r';
 
-		dev_err(kbdev->dev, "%6i: %c: reg 0x%p val %08x\n", i, access,
+		dev_err(kbdev->dev, "%6i: %c: reg 0x%p val %08x\n", i, access,	
 				(void *)(io->addr & ~0x1), io->value);
 	}
 
@@ -190,6 +190,13 @@ u32 kbase_reg_read(struct kbase_device *kbdev, u32 offset)
 }
 
 KBASE_EXPORT_TEST_API(kbase_reg_read);
+
+bool kbase_is_gpu_lost(struct kbase_device *kbdev)
+{
+	u32 val;
+	val = kbase_reg_read(kbdev, GPU_CONTROL_REG(GPU_ID));
+	return val == 0;
+}
 #endif /* !defined(CONFIG_MALI_NO_MALI) */
 
 /**
@@ -203,11 +210,8 @@ KBASE_EXPORT_TEST_API(kbase_reg_read);
  */
 static void kbase_report_gpu_fault(struct kbase_device *kbdev, int multiple)
 {
-	u32 status;
-	u64 address;
-
-	status = kbase_reg_read(kbdev, GPU_CONTROL_REG(GPU_FAULTSTATUS));
-	address = (u64) kbase_reg_read(kbdev,
+	u32 status = kbase_reg_read(kbdev, GPU_CONTROL_REG(GPU_FAULTSTATUS));
+	u64 address = (u64) kbase_reg_read(kbdev,
 			GPU_CONTROL_REG(GPU_FAULTADDRESS_HI)) << 32;
 	address |= kbase_reg_read(kbdev,
 			GPU_CONTROL_REG(GPU_FAULTADDRESS_LO));
@@ -222,6 +226,12 @@ static void kbase_report_gpu_fault(struct kbase_device *kbdev, int multiple)
 			address);
 	if (multiple)
 		dev_warn(kbdev->dev, "There were multiple GPU faults - some have not been reported\n");
+}
+
+static bool kbase_gpu_fault_interrupt(struct kbase_device *kbdev, int multiple)
+{
+	kbase_report_gpu_fault(kbdev, multiple);
+	return false;
 }
 
 void kbase_gpu_start_cache_clean_nolock(struct kbase_device *kbdev)
@@ -261,6 +271,15 @@ void kbase_gpu_start_cache_clean(struct kbase_device *kbdev)
 	spin_unlock_irqrestore(&kbdev->hwaccess_lock, flags);
 }
 
+	
+void kbase_gpu_cache_clean_wait_complete(struct kbase_device *kbdev)
+{
+	lockdep_assert_held(&kbdev->hwaccess_lock);
+	kbdev->cache_clean_queued = false;
+	kbdev->cache_clean_in_progress = false;
+	wake_up(&kbdev->cache_clean_wait);
+}
+
 static void kbase_clean_caches_done(struct kbase_device *kbdev)
 {
 	u32 irq_mask;
@@ -280,33 +299,48 @@ static void kbase_clean_caches_done(struct kbase_device *kbdev)
 		kbase_reg_write(kbdev, GPU_CONTROL_REG(GPU_IRQ_MASK),
 				irq_mask & ~CLEAN_CACHES_COMPLETED);
 
-		kbdev->cache_clean_in_progress = false;
-
-		wake_up(&kbdev->cache_clean_wait);
+		kbase_gpu_cache_clean_wait_complete(kbdev);
 	}
 
 	spin_unlock_irqrestore(&kbdev->hwaccess_lock, flags);
 }
 
+	static inline bool get_cache_clean_flag(struct kbase_device *kbdev)
+{
+	bool cache_clean_in_progress;
+	unsigned long flags;
+	spin_lock_irqsave(&kbdev->hwaccess_lock, flags);
+	cache_clean_in_progress = kbdev->cache_clean_in_progress;
+	spin_unlock_irqrestore(&kbdev->hwaccess_lock, flags);
+	return cache_clean_in_progress;
+}
 void kbase_gpu_wait_cache_clean(struct kbase_device *kbdev)
 {
-	unsigned long flags;
-
-	spin_lock_irqsave(&kbdev->hwaccess_lock, flags);
-	while (kbdev->cache_clean_in_progress) {
-		spin_unlock_irqrestore(&kbdev->hwaccess_lock, flags);
+	while (get_cache_clean_flag(kbdev)) {
 		wait_event_interruptible(kbdev->cache_clean_wait,
 				!kbdev->cache_clean_in_progress);
-		spin_lock_irqsave(&kbdev->hwaccess_lock, flags);
 	}
-	spin_unlock_irqrestore(&kbdev->hwaccess_lock, flags);
+}
+int kbase_gpu_wait_cache_clean_timeout(struct kbase_device *kbdev,
+				unsigned int wait_timeout_ms)
+{
+	long remaining = msecs_to_jiffies(wait_timeout_ms);
+	while (remaining && get_cache_clean_flag(kbdev)) {
+		remaining = wait_event_timeout(kbdev->cache_clean_wait,
+					!kbdev->cache_clean_in_progress,
+					remaining);
+	}
+	return (remaining ? 0 : -ETIMEDOUT);
 }
 
 void kbase_gpu_interrupt(struct kbase_device *kbdev, u32 val)
 {
+	bool clear_gpu_fault = false;
+
 	KBASE_TRACE_ADD(kbdev, CORE_GPU_IRQ, NULL, NULL, 0u, val);
 	if (val & GPU_FAULT)
-		kbase_report_gpu_fault(kbdev, val & MULTIPLE_GPU_FAULTS);
+		clear_gpu_fault = kbase_gpu_fault_interrupt(kbdev,
+					val & MULTIPLE_GPU_FAULTS);
 
 	if (val & RESET_COMPLETED)
 		kbase_pm_reset_done(kbdev);

@@ -702,8 +702,6 @@ static int g2d_get_target(struct g2d_device *g2d_dev, struct g2d_context *ctx,
 			ptask = ptask->next;
 		}
 
-		g2d_stamp_task(task, G2D_STAMP_STATE_HWFCBUF, task->bufidx);
-
 		task->job_id = task->bufidx;
 
 		spin_unlock_irqrestore(&task->g2d_dev->lock_task, flags);

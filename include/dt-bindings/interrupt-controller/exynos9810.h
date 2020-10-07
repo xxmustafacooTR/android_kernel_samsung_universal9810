@@ -243,12 +243,12 @@
 #define INTREQ__BLK_DSPM_PPMU_DSPM0_O_interrupt_upper_or_normal	229
 #define INTREQ__BLK_DSPM_PPMU_DSPM1_O_interrupt_lower		230
 #define INTREQ__BLK_DSPM_PPMU_DSPM1_O_interrupt_upper_or_normal	231
-#define INTREQ__TREX_D_CORE_ppcInterrupt_CORE_DP		232
+#define INTREQ__TREX_D_CORE_ppcInterrupt_CORE_DP			232
 #define INTREQ__TREX_P1_CORE_ppcInterrupt_CORE_P0P1		233
 #define INTREQ__BLK_DSPM_SYSMMU_DSPM0_O_INTERRUPT_NONSECURE	234
-#define INTREQ__BLK_DSPM_SYSMMU_DSPM0_O_INTERRUPT_SECURE	235
+#define INTREQ__BLK_DSPM_SYSMMU_DSPM0_O_INTERRUPT_SECURE		235
 #define INTREQ__BLK_DSPM_SYSMMU_DSPM1_O_INTERRUPT_NONSECURE	236
-#define INTREQ__BLK_DSPM_SYSMMU_DSPM1_O_INTERRUPT_SECURE	237
+#define INTREQ__BLK_DSPM_SYSMMU_DSPM1_O_INTERRUPT_SECURE		237
 #define INTREQ__PPMU_FSYS0_LOWER				240
 #define INTREQ__PPMU_FSYS0_UPPER				241
 #define INTREQ__UFS_EMBD					242
@@ -277,18 +277,18 @@
 #define INTREQ__G2D						265
 #define INTREQ__JPEG						266
 #define INTREQ__MSCL						267
-#define INTREQ__ASTC						268
+#define INTREQ__JSQZ						268
 #define INTREQ__PPMU_G2DD0_interrupt_upper_or_normal		269
 #define INTREQ__PPMU_G2DD0_interrupt_lower			270
 #define INTREQ__PPMU_G2DD1_interrupt_upper_or_normal		271
 #define INTREQ__PPMU_G2DD1_interrupt_lower			272
 #define INTREQ__PPMU_G2DD2_interrupt_upper_or_normal		273
 #define INTREQ__PPMU_G2DD2_interrupt_lower			274
-#define INTREQ__SYSMMU_G2DD0_interrupt_nonsecure		275
+#define INTREQ__SYSMMU_G2DD0_interrupt_nonsecure			275
 #define INTREQ__SYSMMU_G2DD0_interrupt_secure			276
-#define INTREQ__SYSMMU_G2DD1_interrupt_nonsecure		277
+#define INTREQ__SYSMMU_G2DD1_interrupt_nonsecure			277
 #define INTREQ__SYSMMU_G2DD1_interrupt_secure			278
-#define INTREQ__SYSMMU_G2DD2_interrupt_nonsecure		279
+#define INTREQ__SYSMMU_G2DD2_interrupt_nonsecure			279
 #define INTREQ__SYSMMU_G2DD2_interrupt_secure			280
 #define INTREQ__G3D_IRQMMU					281
 #define INTREQ__G3D_IRQJOB					282
@@ -362,7 +362,7 @@
 #define INTREQ__BLK_IVA_IVA_iva_ap_irq_aq_1			349
 #define INTREQ__BLK_IVA_PPMU_IVA_O_interrupt_lower		350
 #define INTREQ__BLK_IVA_PPMU_IVA_O_interrupt_upper_or_normal	351
-#define INTREQ__BLK_IVA_SYSMMU_IVA_O_INTERRUPT_NONSECURE	352
+#define INTREQ__BLK_IVA_SYSMMU_IVA_O_INTERRUPT_NONSECURE		352
 #define INTREQ__BLK_IVA_SYSMMU_IVA_O_INTERRUPT_SECURE		353
 #define INTREQ__BLK_IVA_TREX_RB_IVA_o_debugInterrupt		354
 #else
@@ -370,7 +370,7 @@
 #define INTREQ__BLK_IVA_IVA_iva_ap_irq_aq_1			347
 #define INTREQ__BLK_IVA_PPMU_IVA_O_interrupt_lower		348
 #define INTREQ__BLK_IVA_PPMU_IVA_O_interrupt_upper_or_normal	349
-#define INTREQ__BLK_IVA_SYSMMU_IVA_O_INTERRUPT_NONSECURE	350
+#define INTREQ__BLK_IVA_SYSMMU_IVA_O_INTERRUPT_NONSECURE		350
 #define INTREQ__BLK_IVA_SYSMMU_IVA_O_INTERRUPT_SECURE		351
 #define INTREQ__BLK_IVA_TREX_RB_IVA_o_debugInterrupt		352
 #endif
@@ -383,9 +383,9 @@
 #define INTREQ__PPMU_MFCD1_interrupt_lower			361
 #define INTREQ__PPMU_MFCD2_interrupt_upper_or_normal		362
 #define INTREQ__PPMU_MFCD2_interrupt_lower			363
-#define INTREQ__SYSMMU_MFCD0_interrupt_nonsecure		364
+#define INTREQ__SYSMMU_MFCD0_interrupt_nonsecure			364
 #define INTREQ__SYSMMU_MFCD0_interrupt_secure			365
-#define INTREQ__SYSMMU_MFCD1_interrupt_nonsecure		366
+#define INTREQ__SYSMMU_MFCD1_interrupt_nonsecure			366
 #define INTREQ__SYSMMU_MFCD1_interrupt_secure			367
 #define INTREQ__DMC_TZCINT_MIF0					368
 #define INTREQ__DMC_TEMPERR_MIF0				369

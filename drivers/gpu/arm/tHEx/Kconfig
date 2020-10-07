@@ -28,9 +28,14 @@ choice
 	default MALI_THEX_R9P0 if ANDROID_VERSION = "80000"
 	default MALI_THEX_R12P0 if ANDROID_VERSION = "80100"
 	default MALI_THEX_R16P0 if ANDROID_VERSION = "90000"
-	default MALI_BIFROST_R19P0_Q if ANDROID_VERSION >= "100000"
+# 	default MALI_BIFROST_R19P0_Q if ANDROID_VERSION >= "100000"
+	default MALI_BIFROST_R26P0 if ANDROID_VERSION >= "100000"
 	help
 	  Select the gpu support version.
+
+config MALI_THEX_R26P0
+	depends on MALI_THEX
+	bool "Bifrost r26p0 driver"
 
 config MALI_THEX_R5P0
 	depends on MALI_THEX
@@ -66,6 +71,9 @@ config MALI_BIFROST_R19P0_Q
 
 endchoice
 
+if MALI_THEX_R26P0
+source "drivers/gpu/arm/midgard/Kconfig"
+endif
 if MALI_THEX_R5P0
 source "drivers/gpu/arm/tHEx/r5p0/Kconfig"
 endif

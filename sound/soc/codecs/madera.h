@@ -386,6 +386,9 @@ extern const struct snd_kcontrol_new madera_adsp_rate_controls[];
 
 const char *madera_sample_rate_val_to_name(unsigned int rate_val);
 
+int madera_sample_rate_val_to_rate(struct madera *madera,
+				   unsigned int rate_val);
+
 int madera_dfc_put(struct snd_kcontrol *kcontrol,
 		   struct snd_ctl_elem_value *ucontrol);
 
@@ -395,6 +398,8 @@ int madera_in_rate_put(struct snd_kcontrol *kcontrol,
 		       struct snd_ctl_elem_value *ucontrol);
 
 int madera_out1_demux_put(struct snd_kcontrol *kcontrol,
+			  struct snd_ctl_elem_value *ucontrol);
+int madera_out1_demux_get(struct snd_kcontrol *kcontrol,
 			  struct snd_ctl_elem_value *ucontrol);
 
 int madera_dre_put(struct snd_kcontrol *kcontrol,

@@ -200,7 +200,7 @@ static void kbase_job_fault_resume_worker(struct work_struct *data)
 	 * should never happen that the job_fault_event_list has the two
 	 * atoms belong to the same context.
 	 */
-	wait_event(kctx->kbdev->job_fault_resume_wq,
+	wait_event_interruptible(kctx->kbdev->job_fault_resume_wq,
 			 kbase_ctx_has_no_event_pending(kctx));
 
 	atomic_set(&kctx->job_fault_count, 0);

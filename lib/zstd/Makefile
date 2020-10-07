@@ -1,7 +1,8 @@
+ccflags-y += -O3 -pipe
+
 obj-$(CONFIG_ZSTD_COMPRESS) += zstd_compress.o
 obj-$(CONFIG_ZSTD_DECOMPRESS) += zstd_decompress.o
 
-ccflags-y += -O3
 
 # Object files unique to zstd_compress and zstd_decompress
 zstd_compress-y := fse_compress.o huf_compress.o compress.o

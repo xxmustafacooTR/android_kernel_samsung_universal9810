@@ -1784,12 +1784,48 @@ static void decon_dump_afbc_handle(struct decon_device *decon,
 	decon_info("%s -\n", __func__);
 }
 
+#if defined(CONFIG_SUPPORT_MASK_LAYER)
+static int decon_set_mask_layer(struct decon_device *decon, struct decon_reg_data *regs)
+{
+	int ret = 0;
+	struct dsim_device *dsim = NULL;
+
+	if (decon->dt.out_type != DECON_OUT_DSI)
+		return 0;
+
+	if (regs->mask_layer == decon->current_mask_layer)
+		return 0;
+
+	decon_info("%s: current_mask: %s, request_mask: %s\n", __func__,
+		decon->current_mask_layer ? "on" : "off", regs->mask_layer ? "on" : "off");
+
+	dsim = container_of(decon->out_sd[0], struct dsim_device, sd);
+	if (!dsim) {
+		decon_info("%s: invalid dsim\n", __func__);
+		return 0;
+	}
+
+	decon_systrace(decon, 'C', "set_mask_layer", 1);
+	decon_wait_for_vsync(decon, VSYNC_TIMEOUT_MSEC);
+	decon_info("%s: MASK_LAYER TE 1\n", __func__);
+
+	decon->mask_regs = regs;
+	ret = call_panel_ops(dsim, mask_brightness, dsim);
+	decon_systrace(decon, 'C', "set_mask_layer", 0);
+
+	return 1; /* return 1 for checking trigger done */
+}
+#endif
+
 static int __decon_update_regs(struct decon_device *decon, struct decon_reg_data *regs)
 {
 	int err_cnt = 0;
 	unsigned short i, j;
 	struct decon_mode_info psr;
 	bool has_cursor_win = false;
+#if defined(CONFIG_SUPPORT_MASK_LAYER)
+	int trigger_check = 0;
+#endif
 
 	decon_to_psr_info(decon, &psr);
 	/*
@@ -1846,6 +1882,13 @@ static int __decon_update_regs(struct decon_device *decon, struct decon_reg_data
 
 	decon_reg_all_win_shadow_update_req(decon->id);
 	decon_to_psr_info(decon, &psr);
+
+#if defined(CONFIG_SUPPORT_MASK_LAYER)
+	trigger_check = decon_set_mask_layer(decon, regs);
+	if (trigger_check)
+		goto trigger_done;
+#endif
+
 	if (decon_reg_start(decon->id, &psr) < 0) {
 		decon_up_list_saved();
 		decon_dump(decon, REQ_DSI_DUMP);
@@ -1854,6 +1897,10 @@ static int __decon_update_regs(struct decon_device *decon, struct decon_reg_data
 #endif
 		BUG();
 	}
+
+#if defined(CONFIG_SUPPORT_MASK_LAYER)
+trigger_done:
+#endif
 
 	decon_set_cursor_unmask(decon, has_cursor_win);
 
@@ -2092,7 +2139,7 @@ static void decon_update_vgf_info(struct decon_device *decon,
 				afbc_info->size[0] =
 					regs->dma_buf_data[i][0].dma_buf->size;
 
-#if defined(CONFIG_ION_EXYNOS)
+#if 0//defined(CONFIG_ION_EXYNOS)
 			afbc_info->v_addr[0] = ion_map_kernel(
 				decon->ion_client,
 				regs->dma_buf_data[i][0].ion_handle);
@@ -2109,7 +2156,7 @@ static void decon_update_vgf_info(struct decon_device *decon,
 				afbc_info->size[1] =
 					regs->dma_buf_data[i][0].dma_buf->size;
 
-#if defined(CONFIG_ION_EXYNOS)
+#if 0//defined(CONFIG_ION_EXYNOS)
 			afbc_info->v_addr[1] = ion_map_kernel(
 				decon->ion_client,
 				regs->dma_buf_data[i][0].ion_handle);
@@ -2513,6 +2560,28 @@ static int decon_prepare_win_config(struct decon_device *decon,
 	return ret;
 }
 
+#if defined(CONFIG_SUPPORT_MASK_LAYER)
+static bool decon_get_mask_layer(struct decon_device *decon,
+	struct decon_win_config_data *win_data)
+{
+	int i;
+	bool mask = false;
+	struct decon_win_config *config;
+	struct decon_win_config *win_config = win_data->config;
+
+	for (i = 0; i < decon->dt.max_win; i++) {
+		config = &win_config[i];
+		if (config && (config->state == DECON_WIN_STATE_FINGERPRINT)) {
+			decon_dbg("%s: mask layer enable: %d\n", __func__, i);
+			config->state = DECON_WIN_STATE_BUFFER;
+			mask = true;
+		}
+	}
+
+	return mask;
+}
+#endif
+
 static int decon_set_win_config(struct decon_device *decon,
 		struct decon_win_config_data *win_data)
 {
@@ -2553,6 +2622,12 @@ static int decon_set_win_config(struct decon_device *decon,
 		ret = -ENOMEM;
 		goto err;
 	}
+
+#if defined(CONFIG_SUPPORT_MASK_LAYER)
+	if (decon->dt.out_type == DECON_OUT_DSI)
+		regs->mask_layer = decon_get_mask_layer(decon, win_data);
+#endif
+
 #ifdef CONFIG_SUPPORT_DSU
 	if (decon->dt.out_type == DECON_OUT_DSI) {
 		ret = set_dsu_win_config(decon, win_data->config, regs);

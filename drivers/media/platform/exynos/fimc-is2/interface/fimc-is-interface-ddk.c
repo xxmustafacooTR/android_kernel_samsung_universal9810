@@ -101,6 +101,12 @@ flush_wait_done_frame:
 					framemgr_x_barrier_common(framemgr, 0, flags);
 					fimc_is_hardware_frame_ndone(hw_ip, frame, frame->instance, IS_SHOT_INVALID_FRAMENUMBER);
 					goto flush_wait_done_frame;
+				} else if (unlikely(frame->fcount > expected_fcount)) {
+					mswarn_hw("%s:[F%d] Too early frame. Skip it.",
+							instance_id, hw_ip,
+							__func__, frame->fcount);
+					framemgr_x_barrier_common(framemgr, 0, flags);
+					return true;
 				}
 			} else {
 				framemgr_x_barrier_common(framemgr, 0, flags);

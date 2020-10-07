@@ -2,6 +2,7 @@ obj-$(CONFIG_FIMC_IS_V6_0_0) += setup-fimc-is.o
 obj-$(CONFIG_FIMC_IS_V6_0_0) += setup-fimc-is-sensor.o
 obj-$(CONFIG_FIMC_IS_V6_0_0) += fimc-is-hw-pwr.o
 obj-$(CONFIG_FIMC_IS_V6_0_0) += fimc-is-hw-chain.o
+CFLAGS_fimc-is-hw-chain.o := $(SIMD_CFLAGS)
 obj-$(CONFIG_FIMC_IS_V6_0_0) += fimc-is-hw-virtual-otf.o
 ifeq ($(CONFIG_PM_DEVFREQ),y)
 obj-$(CONFIG_FIMC_IS_V6_0_0) += fimc-is-hw-dvfs.o

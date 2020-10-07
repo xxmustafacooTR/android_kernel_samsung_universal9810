@@ -46,6 +46,7 @@ static int mfc_info_show(struct seq_file *s, void *unused)
 	seq_printf(s, "[HWLOCK] bits: %#lx, dev: %#lx, owned_by_irq = %d, wl_count = %d\n",
 			dev->hwlock.bits, dev->hwlock.dev,
 			dev->hwlock.owned_by_irq, dev->hwlock.wl_count);
+	seq_printf(s, "[LOWMEM] is_low_mem: %d\n", IS_LOW_MEM);
 	if (dev->nal_q_handle)
 		seq_printf(s, "[NAL-Q] state: %d\n", dev->nal_q_handle->nal_q_state);
 

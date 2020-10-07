@@ -52,7 +52,7 @@ static int gpio_irq;
 static struct etspi_data *g_data;
 static DECLARE_WAIT_QUEUE_HEAD(interrupt_waitq);
 static unsigned int bufsiz = 1024;
-module_param(bufsiz, uint, 0444);
+module_param(bufsiz, uint, 0644);
 MODULE_PARM_DESC(bufsiz, "data bytes in biggest supported SPI message");
 
 static irqreturn_t etspi_fingerprint_interrupt(int irq, void *dev_id)

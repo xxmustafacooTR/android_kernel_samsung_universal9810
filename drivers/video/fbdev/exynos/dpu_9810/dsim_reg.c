@@ -2217,7 +2217,7 @@ void dsim_reg_stop(u32 id, u32 lanes)
 	dsim_reg_set_link_clock(id, 0);
 	dsim_reg_set_lanes(id, lanes, 0);
 	dsim_reg_set_esc_clk_on_lane(id, 0, lanes);
-	dsim_reg_enable_word_clock(id, 0);
+//	dsim_reg_enable_word_clock(id, 0);
 	dsim_reg_set_clocks(id, NULL, NULL, 0);
 	dsim_reg_sw_reset(id);
 }

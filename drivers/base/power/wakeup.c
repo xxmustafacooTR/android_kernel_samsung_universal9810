@@ -26,11 +26,43 @@
 
 #include "power.h"
 
+#include <linux/moduleparam.h>
+
+static bool enable_sensorhub_wl = true;
+module_param(enable_sensorhub_wl, bool, 0644);
+
+static bool enable_ssp_wl = true;
+module_param(enable_ssp_wl, bool, 0644);
+
+static bool enable_bcm4773_wl = true;
+module_param(enable_bcm4773_wl, bool, 0644);
+
+static bool enable_mmc0_detect_wl = true;
+module_param(enable_mmc0_detect_wl, bool, 0644);
+
+static bool enable_wlan_rx_wake_wl = true;
+module_param(enable_wlan_rx_wake_wl, bool, 0644);
+
+static bool enable_wlan_ctrl_wake_wl = true;
+module_param(enable_wlan_ctrl_wake_wl, bool, 0644);
+
+static bool enable_wlan_wake_wl = true;
+module_param(enable_wlan_wake_wl, bool, 0644);
+
+static bool enable_wlan_wd_wake_wl = true;
+module_param(enable_wlan_wd_wake_wl, bool, 0644);
+
+static bool enable_bcmdhd4359_wl = true;
+module_param(enable_bcmdhd4359_wl, bool, 0644);
+
+static bool enable_bluedroid_timer_wl = true;
+module_param(enable_bluedroid_timer_wl, bool, 0644);
+
 
 #ifdef CONFIG_BOEFFLA_WL_BLOCKER
 #include "boeffla_wl_blocker.h"
 
-char list_wl_search[LENGTH_LIST_WL_SEARCH] = {0};
+char list_wl_search[LENGTH_LIST_WL_SEARCH];
 bool wl_blocker_active = false;
 bool wl_blocker_debug = false;
 
@@ -548,6 +580,48 @@ static void wakeup_source_activate(struct wakeup_source *ws)
 {
 	unsigned int cec;
 
+	if (!enable_sensorhub_wl && !strcmp(ws->name, "ssp_sensorhub_wake_lock")) {
+		pr_info("wakeup source sensorhub activation skipped\n");
+		return;
+	}
+
+        if (!enable_ssp_wl && !strcmp(ws->name, "ssp_wake_lock")) {
+                pr_info("wakeup source SSP activation skipped\n");
+                return;
+        }
+
+        if (!enable_bcm4773_wl && !strcmp(ws->name, "bcm4773_wake_lock")) {
+                pr_info("wakeup source bcm4773_wake_lock activation skipped\n");
+                return;
+        }
+
+	if (!enable_sensorhub_wl && !strcmp(ws->name, "ssp_sensorhub_wake_lock"))
+		return;
+
+	if (!enable_ssp_wl && !strcmp(ws->name, "ssp_wake_lock"))
+		return;
+
+	if (!enable_mmc0_detect_wl && !strcmp(ws->name, "mmc0_detect"))
+		return;
+
+	if (!enable_wlan_wake_wl && !strcmp(ws->name, "wlan_wake"))
+		return;
+
+	if (!enable_wlan_ctrl_wake_wl && !strcmp(ws->name, "wlan_ctrl_wake"))
+		return;
+
+	if (!enable_wlan_rx_wake_wl && !strcmp(ws->name, "wlan_rx_wake"))
+		return;
+
+	if (!enable_wlan_wd_wake_wl && !strcmp(ws->name, "wlan_wd_wake"))
+		return;
+
+	if (!enable_bcmdhd4359_wl && !strcmp(ws->name, "bcmdhd4359_wl"))
+		return;
+
+	if (!enable_bluedroid_timer_wl && !strcmp(ws->name, "bluedroid_timer"))
+		return;
+
 	if (WARN_ONCE(wakeup_source_not_registered(ws),
 			"unregistered wakeup source\n"))
 		return;
@@ -1004,7 +1078,7 @@ void pm_print_active_wakeup_sources(void)
 	srcuidx = srcu_read_lock(&wakeup_srcu);
 	list_for_each_entry_rcu(ws, &wakeup_sources, entry) {
 		if (ws->active) {
-			pr_info("active wakeup source: %s\n", ws->name);
+			pr_debug("active wakeup source: %s\n", ws->name);
 #ifdef CONFIG_BOEFFLA_WL_BLOCKER
 			if (!check_for_block(ws))	// AP: check if wakelock is on wakelock blocker list
 #endif
@@ -1018,7 +1092,7 @@ void pm_print_active_wakeup_sources(void)
 	}
 
 	if (!active && last_activity_ws)
-		pr_info("last active wakeup source: %s\n",
+		pr_debug("last active wakeup source: %s\n",
 			last_activity_ws->name);
 	srcu_read_unlock(&wakeup_srcu, srcuidx);
 }
@@ -1048,7 +1122,7 @@ bool pm_wakeup_pending(void)
 	spin_unlock_irqrestore(&events_lock, flags);
 
 	if (ret) {
-		pr_info("PM: Wakeup pending, aborting suspend\n");
+		pr_debug("PM: Wakeup pending, aborting suspend\n");
 		pm_print_active_wakeup_sources();
 	}
 

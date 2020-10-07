@@ -10,7 +10,7 @@
 /*
  * Mbcache is a simple key-value store. Keys need not be unique, however
  * key-value pairs are expected to be unique (we use this fact in
- * mb_cache_entry_delete_block()).
+ * mb_cache_entry_delete()).
  *
  * Ext2 and ext4 use this cache for deduplication of extended attribute blocks.
  * They use hash of a block contents as a key and block number as a value.
@@ -25,7 +25,7 @@
 
 struct mb_cache {
 	/* Hash table of entries */
-	struct hlist_bl_head	*c_hash;
+	struct mb_bucket	*c_bucket;
 	/* log2 of hash table size */
 	int			c_bucket_bits;
 	/* Maximum entries in cache to avoid degrading hash too much */
@@ -40,6 +40,17 @@ struct mb_cache {
 	struct work_struct	c_shrink_work;
 };
 
+struct mb_bucket {
+	struct hlist_bl_head hash;
+	struct list_head req_list;
+};
+
+struct mb_cache_req {
+	struct list_head lnode;
+	u32 e_key;
+	u64 e_value;
+};
+
 static struct kmem_cache *mb_entry_cache;
 
 static unsigned long mb_cache_shrink(struct mb_cache *cache,
@@ -48,7 +59,7 @@ static unsigned long mb_cache_shrink(struct mb_cache *cache,
 static inline struct hlist_bl_head *mb_cache_entry_head(struct mb_cache *cache,
 							u32 key)
 {
-	return &cache->c_hash[hash_32(key, cache->c_bucket_bits)];
+	return &cache->c_bucket[hash_32(key, cache->c_bucket_bits)].hash;
 }
 
 /*
@@ -62,19 +73,24 @@ static inline struct hlist_bl_head *mb_cache_entry_head(struct mb_cache *cache,
  * @cache - cache where the entry should be created
  * @mask - gfp mask with which the entry should be allocated
  * @key - key of the entry
- * @block - block that contains data
- * @reusable - is the block reusable by other inodes?
+ * @value - value of the entry
+ * @reusable - is the entry reusable by others?
  *
- * Creates entry in @cache with key @key and records that data is stored in
- * block @block. The function returns -EBUSY if entry with the same key
- * and for the same block already exists in cache. Otherwise 0 is returned.
+ * Creates entry in @cache with key @key and value @value. The function returns
+ * -EBUSY if entry with the same key and value already exists in cache.
+ * Otherwise 0 is returned.
  */
 int mb_cache_entry_create(struct mb_cache *cache, gfp_t mask, u32 key,
-			  sector_t block, bool reusable)
+			   u64 value, bool reusable)
 {
 	struct mb_cache_entry *entry, *dup;
 	struct hlist_bl_node *dup_node;
 	struct hlist_bl_head *head;
+	struct mb_cache_req *tmp_req, req = {
+		.e_key = key,
+		.e_value = value
+	};
+	struct mb_bucket *bucket;
 
 	/* Schedule background reclaim if there are too many entries */
 	if (cache->c_entry_count >= cache->c_max_entries)
@@ -83,33 +99,48 @@ int mb_cache_entry_create(struct mb_cache *cache, gfp_t mask, u32 key,
 	if (cache->c_entry_count >= 2*cache->c_max_entries)
 		mb_cache_shrink(cache, SYNC_SHRINK_BATCH);
 
-	entry = kmem_cache_alloc(mb_entry_cache, mask);
-	if (!entry)
-		return -ENOMEM;
-
-	INIT_LIST_HEAD(&entry->e_list);
-	/* One ref for hash, one ref returned */
-	atomic_set(&entry->e_refcnt, 1);
-	entry->e_key = key;
-	entry->e_block = block;
-	entry->e_reusable = reusable;
-	entry->e_referenced = 0;
-	head = mb_cache_entry_head(cache, key);
+	bucket = &cache->c_bucket[hash_32(key, cache->c_bucket_bits)];
+	head = &bucket->hash;
 	hlist_bl_lock(head);
-	hlist_bl_for_each_entry(dup, dup_node, head, e_hash_list) {
-		if (dup->e_key == key && dup->e_block == block) {
+	list_for_each_entry(tmp_req, &bucket->req_list, lnode) {
+		if (tmp_req->e_key == key && tmp_req->e_value == value) {
 			hlist_bl_unlock(head);
-			kmem_cache_free(mb_entry_cache, entry);
 			return -EBUSY;
 		}
 	}
+	hlist_bl_for_each_entry(dup, dup_node, head, e_hash_list) {
+		if (dup->e_key == key && dup->e_value == value) {
+			hlist_bl_unlock(head);
+			return -EBUSY;
+		}
+	}
+	list_add(&req.lnode, &bucket->req_list);
+	hlist_bl_unlock(head);
+
+	entry = kmem_cache_alloc(mb_entry_cache, mask);
+	if (!entry) {
+		hlist_bl_lock(head);
+		list_del(&req.lnode);
+		hlist_bl_unlock(head);
+		return -ENOMEM;
+	}
+
+	*entry = (typeof(*entry)){
+		.e_list = LIST_HEAD_INIT(entry->e_list),
+		/* One ref for hash, one ref returned */
+		.e_refcnt = ATOMIC_INIT(2),
+		.e_key = key,
+		.e_value = value,
+		.e_reusable = reusable
+	};
+
+	hlist_bl_lock(head);
+	list_del(&req.lnode);
 	hlist_bl_add_head(&entry->e_hash_list, head);
 	hlist_bl_unlock(head);
 
 	spin_lock(&cache->c_list_lock);
 	list_add_tail(&entry->e_list, &cache->c_list);
-	/* Grab ref for LRU list */
-	atomic_inc(&entry->e_refcnt);
 	cache->c_entry_count++;
 	spin_unlock(&cache->c_list_lock);
 
@@ -188,13 +219,13 @@ struct mb_cache_entry *mb_cache_entry_find_next(struct mb_cache *cache,
 EXPORT_SYMBOL(mb_cache_entry_find_next);
 
 /*
- * mb_cache_entry_get - get a cache entry by block number (and key)
+ * mb_cache_entry_get - get a cache entry by value (and key)
  * @cache - cache we work with
- * @key - key of block number @block
- * @block - block number
+ * @key - key
+ * @value - value
  */
 struct mb_cache_entry *mb_cache_entry_get(struct mb_cache *cache, u32 key,
-					  sector_t block)
+					   u64 value)
 {
 	struct hlist_bl_node *node;
 	struct hlist_bl_head *head;
@@ -203,7 +234,7 @@ struct mb_cache_entry *mb_cache_entry_get(struct mb_cache *cache, u32 key,
 	head = mb_cache_entry_head(cache, key);
 	hlist_bl_lock(head);
 	hlist_bl_for_each_entry(entry, node, head, e_hash_list) {
-		if (entry->e_key == key && entry->e_block == block) {
+		if (entry->e_key == key && entry->e_value == value) {
 			atomic_inc(&entry->e_refcnt);
 			goto out;
 		}
@@ -215,15 +246,14 @@ out:
 }
 EXPORT_SYMBOL(mb_cache_entry_get);
 
-/* mb_cache_entry_delete_block - remove information about block from cache
+/* mb_cache_entry_delete - remove a cache entry
  * @cache - cache we work with
- * @key - key of block @block
- * @block - block number
+ * @key - key
+ * @value - value
  *
- * Remove entry from cache @cache with key @key with data stored in @block.
+ * Remove entry from cache @cache with key @key and value @value.
  */
-void mb_cache_entry_delete_block(struct mb_cache *cache, u32 key,
-				 sector_t block)
+void mb_cache_entry_delete(struct mb_cache *cache, u32 key, u64 value)
 {
 	struct hlist_bl_node *node;
 	struct hlist_bl_head *head;
@@ -232,7 +262,7 @@ void mb_cache_entry_delete_block(struct mb_cache *cache, u32 key,
 	head = mb_cache_entry_head(cache, key);
 	hlist_bl_lock(head);
 	hlist_bl_for_each_entry(entry, node, head, e_hash_list) {
-		if (entry->e_key == key && entry->e_block == block) {
+		if (entry->e_key == key && entry->e_value == value) {
 			/* We keep hash list reference to keep entry alive */
 			hlist_bl_del_init(&entry->e_hash_list);
 			hlist_bl_unlock(head);
@@ -249,7 +279,7 @@ void mb_cache_entry_delete_block(struct mb_cache *cache, u32 key,
 	}
 	hlist_bl_unlock(head);
 }
-EXPORT_SYMBOL(mb_cache_entry_delete_block);
+EXPORT_SYMBOL(mb_cache_entry_delete);
 
 /* mb_cache_entry_touch - cache entry got used
  * @cache - cache the entry belongs to
@@ -355,20 +385,22 @@ struct mb_cache *mb_cache_create(int bucket_bits)
 	cache->c_max_entries = bucket_count << 4;
 	INIT_LIST_HEAD(&cache->c_list);
 	spin_lock_init(&cache->c_list_lock);
-	cache->c_hash = kmalloc(bucket_count * sizeof(struct hlist_bl_head),
-				GFP_KERNEL);
-	if (!cache->c_hash) {
+	cache->c_bucket = kmalloc(bucket_count * sizeof(*cache->c_bucket),
+				  GFP_KERNEL);
+	if (!cache->c_bucket) {
 		kfree(cache);
 		goto err_out;
 	}
-	for (i = 0; i < bucket_count; i++)
-		INIT_HLIST_BL_HEAD(&cache->c_hash[i]);
+	for (i = 0; i < bucket_count; i++) {
+		INIT_HLIST_BL_HEAD(&cache->c_bucket[i].hash);
+		INIT_LIST_HEAD(&cache->c_bucket[i].req_list);
+	}
 
 	cache->c_shrink.count_objects = mb_cache_count;
 	cache->c_shrink.scan_objects = mb_cache_scan;
 	cache->c_shrink.seeks = DEFAULT_SEEKS;
 	if (register_shrinker(&cache->c_shrink)) {
-		kfree(cache->c_hash);
+		kfree(cache->c_bucket);
 		kfree(cache);
 		goto err_out;
 	}
@@ -410,7 +442,7 @@ void mb_cache_destroy(struct mb_cache *cache)
 		WARN_ON(atomic_read(&entry->e_refcnt) != 1);
 		mb_cache_entry_put(cache, entry);
 	}
-	kfree(cache->c_hash);
+	kfree(cache->c_bucket);
 	kfree(cache);
 	module_put(THIS_MODULE);
 }

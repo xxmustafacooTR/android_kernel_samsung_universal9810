@@ -8,6 +8,8 @@ ifeq ($(SEC_BUILD_CONF_DMV_ALTA),true)
 endif
 endif
 
+CC := $(CLANG_TRIPLE)gcc
+
 dm-mod-y	+= dm.o dm-table.o dm-target.o dm-linear.o dm-stripe.o \
 		   dm-ioctl.o dm-io.o dm-kcopyd.o dm-sysfs.o dm-stats.o \
 		   dm-rq.o

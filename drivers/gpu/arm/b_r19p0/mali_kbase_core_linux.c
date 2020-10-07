@@ -2469,11 +2469,16 @@ struct kbasep_debug_command {
 	kbasep_debug_command_func *func;
 };
 
+void kbasep_ktrace_dump_wrapper(struct kbase_device *kbdev)
+{
+	KBASE_KTRACE_DUMP(kbdev);
+}
+
 /* Debug commands supported by the driver */
 static const struct kbasep_debug_command debug_commands[] = {
 	{
 	 .str = "dumptrace",
-	 .func = &kbasep_trace_dump,
+	 .func = &kbasep_ktrace_dump_wrapper,
 	 }
 };
 
@@ -3140,8 +3145,42 @@ static struct
 };
 
 /**
- * kbasep_serialize_jobs_seq_show - Show callback for the serialize_jobs debugfs
- *                                  file
+ * update_serialize_jobs_setting - Update the serialization setting for the
+ *                                 submission of GPU jobs.
+ *
+ * This function is called when the serialize_jobs sysfs/debugfs file is
+ * written to. It matches the requested setting against the available settings
+ * and if a matching setting is found updates kbdev->serialize_jobs.
+ *
+ * @kbdev:  An instance of the GPU platform device, allocated from the probe
+ *          method of the driver.
+ * @buf:    Buffer containing the value written to the sysfs/debugfs file.
+ * @count:  The number of bytes to write to the sysfs/debugfs file.
+ *
+ * Return: @count if the function succeeded. An error code on failure.
+ */
+static ssize_t update_serialize_jobs_setting(struct kbase_device *kbdev,
+					     const char *buf, size_t count)
+{
+	int i;
+	bool valid = false;
+	for (i = 0; i < NR_SERIALIZE_JOBS_SETTINGS; i++) {
+		if (sysfs_streq(serialize_jobs_settings[i].name, buf)) {
+			kbdev->serialize_jobs =
+				serialize_jobs_settings[i].setting;
+			valid = true;
+			break;
+		}
+	}
+	if (!valid) {
+		dev_err(kbdev->dev, "serialize_jobs: invalid setting");
+		return -EINVAL;
+	}
+	return count;
+}
+/**
+ * kbasep_serialize_jobs_seq_debugfs_show - Show callback for the serialize_jobs
+ *					    debugfs file
  * @sfile: seq_file pointer
  * @data:  Private callback data
  *
@@ -3151,7 +3190,8 @@ static struct
  *
  * Return: 0 on success, or an error code on error
  */
-static int kbasep_serialize_jobs_seq_show(struct seq_file *sfile, void *data)
+static int kbasep_serialize_jobs_seq_debugfs_show(struct seq_file *sfile,
+						  void *data)
 {
 	struct kbase_device *kbdev = sfile->private;
 	int i;
@@ -3192,8 +3232,6 @@ static ssize_t kbasep_serialize_jobs_debugfs_write(struct file *file,
 	struct seq_file *s = file->private_data;
 	struct kbase_device *kbdev = s->private;
 	char buf[MAX_SERIALIZE_JOBS_NAME_LEN];
-	int i;
-	bool valid = false;
 
 	CSTD_UNUSED(ppos);
 
@@ -3203,21 +3241,7 @@ static ssize_t kbasep_serialize_jobs_debugfs_write(struct file *file,
 
 	buf[count] = 0;
 
-	for (i = 0; i < NR_SERIALIZE_JOBS_SETTINGS; i++) {
-		if (sysfs_streq(serialize_jobs_settings[i].name, buf)) {
-			kbdev->serialize_jobs =
-					serialize_jobs_settings[i].setting;
-			valid = true;
-			break;
-		}
-	}
-
-	if (!valid) {
-		dev_err(kbdev->dev, "serialize_jobs: invalid setting\n");
-		return -EINVAL;
-	}
-
-	return count;
+	return update_serialize_jobs_setting(kbdev, buf, count);
 }
 
 /**
@@ -3231,7 +3255,8 @@ static ssize_t kbasep_serialize_jobs_debugfs_write(struct file *file,
 static int kbasep_serialize_jobs_debugfs_open(struct inode *in,
 		struct file *file)
 {
-	return single_open(file, kbasep_serialize_jobs_seq_show, in->i_private);
+	return single_open(file, kbasep_serialize_jobs_seq_debugfs_show,
+			   in->i_private);
 }
 
 static const struct file_operations kbasep_serialize_jobs_debugfs_fops = {
@@ -3774,9 +3799,11 @@ static int kbase_device_debugfs_init(struct kbase_device *kbdev)
 	kbdev->debugfs_ctx_directory = debugfs_create_dir("ctx",
 			kbdev->mali_debugfs_directory);
 #else
+#ifdef MALI_EXYNOS_TRACE
 	kbdev->trace_dentry = debugfs_create_file("mali_trace", S_IRUGO,
 			kbdev->mali_debugfs_directory, kbdev,
 			&kbasep_trace_debugfs_fops);
+#endif
 
 	kbdev->debugfs_ctx_directory = debugfs_create_dir("mem",
 			kbdev->mali_debugfs_directory);

@@ -49,3 +49,7 @@ subdir-$(CONFIG_EXYNOS_DTBTOOL) += dtbtool_exynos
 
 # Let clean descend into subdirs
 subdir-	+= basic kconfig package gcc-plugins
+
+# optimise for size
+subdir-ccflags-y += $(call cc-option, -g0)
+subdir-ccflags-y += $(call cc-option, -Os)

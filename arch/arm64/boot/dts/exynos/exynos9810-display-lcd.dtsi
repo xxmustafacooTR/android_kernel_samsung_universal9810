@@ -15,7 +15,7 @@
 		resolution = <320 240>;
 	/*	resolution = <1080 1920>; */
 		size = <80 120>;
-		timing,refresh = <60>;
+		timing,refresh = <64>;
 		timing,h-porch = <20 20 20>;
 		timing,v-porch = <20 20 20>;
 		timing,dsi-hs-clk = <600>;
@@ -44,7 +44,7 @@
 		mode = <2>;		/* 0: video mode, 1: DP command mode, 2: MIPI command mode */
 		resolution = <1440 2560>;
 		size = <68 122>;
-		timing,refresh = <60>;
+		timing,refresh = <64>;
 		timing,h-porch = <2 2 2>;
 		timing,v-porch = <15 3 1>;
 		timing,dsi-hs-clk = <1100>;
@@ -78,7 +78,7 @@
 		mode = <2>;		/* 0: video mode, 1: DP command mode, 2: MIPI command mode */
 		resolution = <1440 2560>;
 		size = <80 120>;
-		timing,refresh = <60>;
+		timing,refresh = <64>;
 		timing,h-porch = <2 2 2>;
 		timing,v-porch = <19 3 1>;
 		timing,dsi-hs-clk = <1100>;
@@ -112,7 +112,7 @@
 		mode = <2>;		/* 0: video mode, 1: DP command mode, 2: MIPI command mode */
 		resolution = <1440 2560>;
 		size = <70 121>;
-		timing,refresh = <60>;
+		timing,refresh = <64>;
 		timing,h-porch = <2 2 2>;
 		timing,v-porch = <19 3 1>;
 		timing,dsi-hs-clk = <1100>;
@@ -146,7 +146,7 @@
 		mode = <2>;
 		resolution = <1440 2960>;
 		size = <69 142>;
-		timing,refresh = <60>;
+		timing,refresh = <64>;
 		timing,h-porch = <2 2 2>;
 		timing,v-porch = <15 3 1>;
 		timing,dsi-hs-clk = <898>;
@@ -185,7 +185,7 @@
 		mode = <2>;
 		resolution = <1440 2960>;
 		size = <69 142>;
-		timing,refresh = <60>;
+		timing,refresh = <64>;
 		timing,h-porch = <2 2 2>;
 		timing,v-porch = <15 3 1>;
 		timing,dsi-hs-clk = <898>;
@@ -224,7 +224,7 @@
 		mode = <2>;
 		resolution = <1440 2960>;
 		size = <69 142>;
-		timing,refresh = <60>;
+		timing,refresh = <64>;
 		timing,h-porch = <2 2 2>;
 		timing,v-porch = <15 3 1>;
 		timing,dsi-hs-clk = <898>;
@@ -263,7 +263,7 @@
 		mode = <2>;
 		resolution = <1440 2960>;
 		size = <69 142>;
-		timing,refresh = <60>;
+		timing,refresh = <64>;
 		timing,h-porch = <2 2 2>;
 		timing,v-porch = <15 3 1>;
 		timing,dsi-hs-clk = <898>;
@@ -302,7 +302,7 @@
 		mode = <2>;
 		resolution = <1440 2960>;
 		size = <64 132>;
-		timing,refresh = <60>;
+		timing,refresh = <64>;
 		timing,h-porch = <2 2 2>;
 		timing,v-porch = <15 3 1>;
 		timing,dsi-hs-clk = <898>;
@@ -341,7 +341,7 @@
 		mode = <2>;
 		resolution = <1440 2960>;
 		size = <69 142>;
-		timing,refresh = <60>;
+		timing,refresh = <64>;
 		timing,h-porch = <2 2 2>;
 		timing,v-porch = <15 3 1>;
 		timing,dsi-hs-clk = <898>;
@@ -380,7 +380,7 @@
 		mode = <2>;
 		resolution = <1440 2960>;
 		size = <70 145>;
-		timing,refresh = <60>;
+		timing,refresh = <64>;
 		timing,h-porch = <2 2 2>;
 		timing,v-porch = <15 3 1>;
 		timing,dsi-hs-clk = <898>;
@@ -419,7 +419,7 @@
 		mode = <2>;
 		resolution = <1440 2560>;
 		size = <63 113>;
-		timing,refresh = <60>;
+		timing,refresh = <64>;
 		timing,h-porch = <2 2 2>;
 		timing,v-porch = <15 3 1>;
 		timing,dsi-hs-clk = <898>;

@@ -29,10 +29,12 @@
 
 #define DEFAULT_BOOT_ENABLE_MS (40000)		/* 40 s */
 #define NUM_OF_GROUP	2
-#define ATTR_COUNT	14
+#define ATTR_COUNT	18
 
 #define LIT	0
 #define BIG	1
+
+extern unsigned long arg_cpu_max_c2;
 
 enum hpgov_event {
 	HPGOV_SLACK_TIMER_EXPIRED = 1,	/* slack timer expired */
@@ -52,6 +54,10 @@ struct hpgov_attrib {
 	struct kobj_attribute	ldsum_heavy_thr;
 	struct kobj_attribute	cl_busy_ratio;
 	struct kobj_attribute	user_mode;
+	struct kobj_attribute	single_freq;
+	struct kobj_attribute	dual_freq;
+	struct kobj_attribute	triple_freq;
+	struct kobj_attribute	quad_freq;
 
 	struct attribute_group	attrib_group;
 };
@@ -423,13 +429,15 @@ static void __exynos_hpgov_set_disable(void)
 
 static void __exynos_hpgov_set_enable(void)
 {
+	struct sched_param param;
+
 	exynos_hpgov.mode = QUAD;
 	exynos_hpgov.user_mode = DISABLE;
 	exynos_hpgov.req_cpu_min = PM_QOS_CPU_ONLINE_MAX_DEFAULT_VALUE;
 	exynos_hpgov.cur_cpu_min = PM_QOS_CPU_ONLINE_MAX_DEFAULT_VALUE;
 
 	/* create hp task */
-	exynos_hpgov.task = kthread_create(exynos_hpgov_do_update_governor,
+	exynos_hpgov.task = kthread_run_perf_critical(exynos_hpgov_do_update_governor,
 			&exynos_hpgov.data, "exynos_hpgov");
 	if (IS_ERR(exynos_hpgov.task)) {
 		spin_lock(&hpgov_lock);
@@ -439,7 +447,8 @@ static void __exynos_hpgov_set_enable(void)
 		return;
 	}
 
-	set_user_nice(exynos_hpgov.task, MIN_NICE);
+	param.sched_priority = 20;
+	sched_setscheduler_nocheck(exynos_hpgov.task, SCHED_FIFO, &param);
 	set_cpus_allowed_ptr(exynos_hpgov.task, cpu_coregroup_mask(0));
 
 	if (exynos_hpgov.task)
@@ -447,6 +456,7 @@ static void __exynos_hpgov_set_enable(void)
 
 	pr_info("HP_GOV: Start hotplug governor\n");
 }
+
 
 static int exynos_hpgov_set_enable(bool enable)
 {
@@ -935,6 +945,46 @@ static int exynos_hpgov_set_single_change_ms(int val)
 	return 0;
 }
 
+static int exynos_hpgov_set_single_freq(int val)
+{
+	if (!(val >= 0))
+		return -EINVAL;
+
+	exynos_hpgov.maxfreq_table[SINGLE] = val;
+
+	return 0;
+}
+
+static int exynos_hpgov_set_dual_freq(int val)
+{
+	if (!(val >= 0))
+		return -EINVAL;
+
+	exynos_hpgov.maxfreq_table[DUAL] = val;
+
+	return 0;
+}
+
+static int exynos_hpgov_set_triple_freq(int val)
+{
+	if (!(val >= 0))
+		return -EINVAL;
+
+	exynos_hpgov.maxfreq_table[TRIPLE] = val;
+
+	return 0;
+}
+
+static int exynos_hpgov_set_quad_freq(int val)
+{
+	if (!(val >= 0))
+		return -EINVAL;
+
+	exynos_hpgov.maxfreq_table[QUAD] = val;
+
+	return 0;
+}
+
 
 #define HPGOV_PARAM(_name, _param) \
 static ssize_t exynos_hpgov_attr_##_name##_show(struct kobject *kobj, \
@@ -968,7 +1018,7 @@ static ssize_t exynos_hpgov_attr_##_name##_store(struct kobject *kobj, \
 
 #define HPGOV_RW_ATTRIB(i, _name) \
 	exynos_hpgov.attrib._name.attr.name = __stringify(_name); \
-	exynos_hpgov.attrib._name.attr.mode = S_IRUGO | S_IWUSR; \
+	exynos_hpgov.attrib._name.attr.mode = 0644; \
 	exynos_hpgov.attrib._name.show = exynos_hpgov_attr_##_name##_show; \
 	exynos_hpgov.attrib._name.store = exynos_hpgov_attr_##_name##_store; \
 	exynos_hpgov.attrib.attrib_group.attrs[i] = &exynos_hpgov.attrib._name.attr;
@@ -986,6 +1036,10 @@ HPGOV_PARAM(cl_busy_ratio, exynos_hpgov.cl_busy_ratio);
 HPGOV_PARAM(single_change_ms, exynos_hpgov.single_change_ms);
 HPGOV_PARAM(dual_change_ms, exynos_hpgov.dual_change_ms);
 HPGOV_PARAM(quad_change_ms, exynos_hpgov.quad_change_ms);
+HPGOV_PARAM(single_freq, exynos_hpgov.maxfreq_table[SINGLE]);
+HPGOV_PARAM(dual_freq, exynos_hpgov.maxfreq_table[DUAL]);
+HPGOV_PARAM(triple_freq, exynos_hpgov.maxfreq_table[TRIPLE]);
+HPGOV_PARAM(quad_freq, exynos_hpgov.maxfreq_table[QUAD]);
 
 static void hpgov_boot_enable(struct work_struct *work);
 static DECLARE_DELAYED_WORK(hpgov_boot_work, hpgov_boot_enable);
@@ -1058,6 +1112,9 @@ static int __init exynos_hpgov_parse_dt(void)
 	if (of_property_read_u32(np, "dual_change_ms", &exynos_hpgov.dual_change_ms))
 		goto exit;
 
+	/* if (of_property_read_u32(np, "triple_change_ms", &exynos_hpgov.triple_change_ms))
+		goto exit; */
+
 	if (of_property_read_u32(np, "quad_change_ms", &exynos_hpgov.quad_change_ms))
 		goto exit;
 
@@ -1085,11 +1142,15 @@ static int __init exynos_hpgov_parse_dt(void)
 	if (of_property_read_u32(np, "cl_busy_ratio", &exynos_hpgov.cl_busy_ratio))
 		goto exit;
 
-	if (of_property_read_u32(np, "cal-id", &exynos_hpgov.cal_id))
-		goto exit;
-	max_freq = (int)cal_dfs_get_max_freq(exynos_hpgov.cal_id);
-	if (!max_freq)
-		goto exit;
+	max_freq = arg_cpu_max_c2;
+	if (!max_freq) {
+		if (of_property_read_u32(np, "cal-id", &exynos_hpgov.cal_id))
+			goto exit;
+		max_freq = (int)cal_dfs_get_max_freq(exynos_hpgov.cal_id);
+
+		if (!max_freq)
+			goto exit;
+	}
 	exynos_hpgov.maxfreq_table[SINGLE] = max_freq;
 
 	if (of_property_read_u32(np, "dual_freq", &freq))
@@ -1103,6 +1164,12 @@ static int __init exynos_hpgov_parse_dt(void)
 	if (of_property_read_u32(np, "quad_freq", &freq))
 		goto exit;
 	exynos_hpgov.maxfreq_table[QUAD] = min(freq, max_freq);
+
+#ifdef CONFIG_PCIEASPM_POWERSAVE
+	exynos_hpgov.maxfreq_table[DUAL] = 2106000;
+	exynos_hpgov.maxfreq_table[TRIPLE] = 1924000;
+	exynos_hpgov.maxfreq_table[QUAD] = 1794000;
+#endif
 
 	exynos_hpgov.maxfreq_table[DISABLE] = exynos_hpgov.maxfreq_table[SINGLE];
 
@@ -1180,6 +1247,10 @@ static int __init exynos_hpgov_init(void)
 	HPGOV_RW_ATTRIB(attr_count - (i_attr--), single_change_ms);
 	HPGOV_RW_ATTRIB(attr_count - (i_attr--), dual_change_ms);
 	HPGOV_RW_ATTRIB(attr_count - (i_attr--), quad_change_ms);
+	HPGOV_RW_ATTRIB(attr_count - (i_attr--), single_freq);
+	HPGOV_RW_ATTRIB(attr_count - (i_attr--), dual_freq);
+	HPGOV_RW_ATTRIB(attr_count - (i_attr--), triple_freq);
+	HPGOV_RW_ATTRIB(attr_count - (i_attr--), quad_freq);
 
 	exynos_hpgov.attrib.attrib_group.name = "governor";
 	ret = sysfs_create_group(exynos_cpu_hotplug_kobj(),

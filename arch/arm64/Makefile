@@ -18,12 +18,15 @@ ifeq ($(CONFIG_RELOCATABLE), y)
 # Pass --no-apply-dynamic-relocs to restore pre-binutils-2.27 behaviour
 # for relative relocs, since this leads to better Image compression
 # with the relocation offsets always being zero.
-LDFLAGS_vmlinux		+= -pie -shared -Bsymbolic \
+LDFLAGS_vmlinux		+= -Bsymbolic -z notext -z norelro \
 			$(call ld-option, --no-apply-dynamic-relocs)
-endif
 
-ifneq ($(CONFIG_RELOCATABLE_KERNEL),)
-LDFLAGS_vmlinux		+= -pie -Bsymbolic
+# Pass -pie for lld to minimize image size
+ifeq ($(ld-name),lld)
+LDFLAGS_vmlinux		+= -pie
+else
+LDFLAGS_vmlinux		+= -shared
+endif
 endif
 
 ifeq ($(CONFIG_ARM64_ERRATUM_843419),y)
@@ -98,6 +101,11 @@ KBUILD_CFLAGS	+= -fno-asynchronous-unwind-tables
 KBUILD_CFLAGS	+= $(call cc-option, -mpc-relative-literal-loads)
 KBUILD_CFLAGS	+= -fno-pic
 KBUILD_AFLAGS	+= $(lseinstr) $(vdso32)
+KBUILD_CFLAGS	+= $(call cc-option, -march=armv8-a+crypto+crc,)
+ifeq ($(CONFIG_SOC_EXYNOS9810), y)
+KBUILD_CFLAGS	+= $(call cc-option, -mcpu=cortex-a55+crypto+crc,)
+KBUILD_CFLAGS	+= $(call cc-option, -mtune=exynos-m3+crypto+crc,)
+endif
 
 ifeq ($(CONFIG_CPU_BIG_ENDIAN), y)
 KBUILD_CPPFLAGS	+= -mbig-endian

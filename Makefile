@@ -1,7 +1,7 @@
 VERSION = 4
 PATCHLEVEL = 9
 SUBLEVEL = 218
-EXTRAVERSION =
+EXTRAVERSION = -xxmustafacooTR-35-OC
 NAME = Roaring Lionus
 
 # *DOCUMENTATION*
@@ -343,7 +343,7 @@ include scripts/Kbuild.include
 # Make variables (CC, etc...)
 AS		= $(CROSS_COMPILE)as
 LD		= $(CROSS_COMPILE)ld
-LDGOLD		= $(CROSS_COMPILE)ld.gold
+LDGOLD		= $(CLANG_TRIPLE)ld.gold
 CC		= $(CROSS_COMPILE)gcc
 CPP		= $(CC) -E
 AR		= $(CROSS_COMPILE)ar
@@ -692,6 +692,24 @@ KBUILD_CFLAGS	+= $(call cc-disable-warning, format-overflow)
 KBUILD_CFLAGS	+= $(call cc-disable-warning, int-in-bool-context)
 KBUILD_CFLAGS	+= $(call cc-disable-warning, address-of-packed-member)
 KBUILD_CFLAGS	+= $(call cc-disable-warning, attribute-alias)
+# Disable noisy GCC 9.1 / Clang warnings
+KBUILD_CFLAGS	+= $(call cc-disable-warning, tautological-compare)
+KBUILD_CFLAGS	+= $(call cc-disable-warning, stringop-overflow)
+KBUILD_CFLAGS	+= $(call cc-disable-warning, misleading-indentation)
+KBUILD_CFLAGS	+= $(call cc-disable-warning, array-bounds)
+KBUILD_CFLAGS	+= $(call cc-disable-warning, sizeof-pointer-memaccess)
+KBUILD_CFLAGS	+= $(call cc-disable-warning, switch-unreachable)
+KBUILD_CFLAGS	+= $(call cc-disable-warning, duplicate-decl-specifier)
+KBUILD_CFLAGS	+= $(call cc-disable-warning, logical-not-parentheses)
+KBUILD_CFLAGS	+= $(call cc-disable-warning, memset-elt-size)
+KBUILD_CFLAGS	+= $(call cc-disable-warning, pointer-compare)
+KBUILD_CFLAGS	+= $(call cc-disable-warning, switch-bool)
+KBUILD_CFLAGS	+= $(call cc-disable-warning, bool-operation)
+KBUILD_CFLAGS	+= $(call cc-disable-warning, sizeof-pointer-div)
+KBUILD_CFLAGS	+= $(call cc-disable-warning, psabi)
+KBUILD_CFLAGS   += $(call cc-disable-warning, incompatible-pointer-types)
+KBUILD_CFLAGS	+= $(call cc-disable-warning, restrict)
+KBUILD_CFLAGS	+= $(call cc-disable-warning, zero-length-bounds)
 
 ifdef CONFIG_LD_DEAD_CODE_DATA_ELIMINATION
 KBUILD_CFLAGS	+= $(call cc-option,-ffunction-sections,)
@@ -747,12 +765,12 @@ endif
 
 ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
 KBUILD_CFLAGS	+= -Os $(call cc-disable-warning,maybe-uninitialized,)
+# Squeeze a little bit more juice
+ccflags-y := -O3 -pipe
+ccflags-y += $(call cc-option, -g0)
+ccflags-y += $(call cc-option, -Os)
 else
-ifdef CONFIG_PROFILE_ALL_BRANCHES
-KBUILD_CFLAGS	+= -O2 $(call cc-disable-warning,maybe-uninitialized,)
-else
-KBUILD_CFLAGS   += -O2
-endif
+KBUILD_CFLAGS   += -O3 -pipe $(call cc-disable-warning,maybe-uninitialized,)
 endif
 
 KBUILD_CFLAGS += $(call cc-ifversion, -lt, 0409, \
@@ -1211,14 +1229,6 @@ prepare-objtool: $(objtool_target)
 PHONY += prepare-compiler-check
 prepare-compiler-check: FORCE
 # Make sure we're using a supported toolchain with LTO_CLANG
-ifdef CONFIG_LTO_CLANG
-  ifneq ($(call clang-ifversion, -ge, 0500, y), y)
-	@echo Cannot use CONFIG_LTO_CLANG: requires clang 5.0 or later >&2 && exit 1
-  endif
-  ifneq ($(call gold-ifversion, -ge, 112000000, y), y)
-	@echo Cannot use CONFIG_LTO_CLANG: requires GNU gold 1.12 or later >&2 && exit 1
-  endif
-endif
 # Make sure compiler supports LTO flags
 ifdef lto-flags
   ifeq ($(call cc-option, $(lto-flags)),)

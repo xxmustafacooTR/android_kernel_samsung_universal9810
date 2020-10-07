@@ -543,13 +543,13 @@ struct ion_heap *ion_rbin_heap_create(struct ion_platform_heap *data)
 	heap->heap.debug_show = ion_rbin_heap_debug_show;
 
 	init_waitqueue_head(&heap->waitqueue);
-	heap->task = kthread_run(ion_rbin_heap_prereclaim, heap,
+	heap->task = kthread_run_perf_critical(ion_rbin_heap_prereclaim, heap,
 				 "%s", "rbin");
-	heap->task_shrink = kthread_run(ion_rbin_heap_shrink_all, heap,
+	heap->task_shrink = kthread_run_perf_critical(ion_rbin_heap_shrink_all, heap,
 					"%s", "rbin_shrink");
 	rbin_heap = heap;
 
-	sched_setscheduler(heap->task, SCHED_NORMAL, &param);
+	sched_setscheduler_nocheck(heap->task, SCHED_FIFO, &param);
 	ion_rbin_heap_cpu_callback(NULL, CPU_UP_PREPARE, NULL);
 	hotcpu_notifier(ion_rbin_heap_cpu_callback, 0);
 

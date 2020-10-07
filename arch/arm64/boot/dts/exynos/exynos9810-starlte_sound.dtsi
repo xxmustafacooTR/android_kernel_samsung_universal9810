@@ -194,7 +194,7 @@
 						TRACE {
 							cirrus,wmfw-file = "trace";
 							cirrus,bin-file = "None";
-							cirrus,compr-caps = <1 8 0x4 1 8000 16000 24000 32000 48000>;
+							cirrus,compr-caps = <1 8 0x4 1 8000 16000 24000 32000 48000 96000>;
 						};
 					};
 				};

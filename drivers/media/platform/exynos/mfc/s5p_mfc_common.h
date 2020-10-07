@@ -128,6 +128,7 @@
 				IS_VP9_DEC(ctx) || IS_VP9_ENC(ctx) ||		\
 				IS_BPG_DEC(ctx) || IS_BPG_ENC(ctx))
 #define CODEC_422FORMAT(ctx)	(IS_HEVC_DEC(ctx) || IS_HEVC_ENC(ctx) ||	\
+				IS_VP9_DEC(ctx) || IS_VP9_ENC(ctx) ||		\
 				IS_BPG_DEC(ctx) || IS_BPG_ENC(ctx))
 #define ON_RES_CHANGE(ctx)	(((ctx)->state >= MFCINST_RES_CHANGE_INIT) &&	\
 				 ((ctx)->state <= MFCINST_RES_CHANGE_END))
@@ -171,9 +172,10 @@
 				(s5p_mfc_version(dev) == 0xA01))
 #define IS_MFCV11X(dev)		(s5p_mfc_version(dev) == 0x1100)
 #define IS_MFCV12X(dev)		(s5p_mfc_version(dev) == 0x1200)
-#define FROM_MFCV11X(dev)	(IS_MFCV11X(dev) || IS_MFCV12X(dev))
-#define FROM_MFCV10X(dev)	(IS_MFCV10X(dev) || IS_MFCV11X(dev) || \
-				IS_MFCV12X(dev))
+#define IS_MFCV13X(dev)		(s5p_mfc_version(dev) == 0x1300)
+#define FROM_MFCV11X(dev)	(IS_MFCV11X(dev) || IS_MFCV12X(dev) || \
+					IS_MFCV13X(dev))
+#define FROM_MFCV10X(dev)	(IS_MFCV10X(dev) || FROM_MFCV11X(dev))
 
 /* supported feature macros by F/W version */
 #define FW_HAS_CONCEAL_CONTROL(dev)	(FROM_MFCV10X(dev))
@@ -246,9 +248,22 @@ static inline unsigned int s5p_mfc_version(struct s5p_mfc_dev *dev)
 	case IP_VER_MFC_9L_0:
 		version = 0x1200;
 		break;
+	case IP_VER_MFC_9R_0:
+		version = 0x1202;
+		break;
+	case IP_VER_MFC_9M_0:
+		version = 0x1021;
+		break;
+	case IP_VER_MFC_9M_1:
+		version = 0x1300;
+		break;
 	}
 
 	return version;
 }
+
+/* Low memory check */
+#define IS_LOW_MEM			(totalram_pages <= ((SZ_1G + SZ_512M) >> PAGE_SHIFT))
+#define SZ_600M				(6 * 1024 * 1024)
 
 #endif /* __S5P_MFC_COMMON_H */

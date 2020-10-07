@@ -43,6 +43,11 @@
 #include "bbd.h"
 #include "bcm_gps_spi.h"
 
+#include <linux/moduleparam.h>
+
+static int wl_divide_gps = 2;
+module_param(wl_divide_gps, int, 0644);
+
 
 #ifdef CONFIG_SENSORS_SSP_BBD
 extern void bbd_parse_asic_data(unsigned char *pucData, unsigned short usLen,

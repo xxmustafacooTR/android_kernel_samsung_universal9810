@@ -15,6 +15,9 @@ ifeq ($(CONFIG_MALI_TMIX),y)
 	endif
 endif
 ifeq ($(CONFIG_MALI_THEX),y)
+	ifeq ($(CONFIG_MALI_THEX_R26P0),y)
+		obj-y += midgard/
+	endif
 	ifeq ($(CONFIG_MALI_THEX_R5P0),y)
 		obj-y += tHEx/r5p0/
 	endif

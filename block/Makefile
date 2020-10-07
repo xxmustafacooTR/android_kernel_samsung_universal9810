@@ -28,3 +28,8 @@ obj-$(CONFIG_BLOCK_COMPAT)	+= compat_ioctl.o
 obj-$(CONFIG_BLK_CMDLINE_PARSER)	+= cmdline-parser.o
 obj-$(CONFIG_BLK_DEV_INTEGRITY) += bio-integrity.o blk-integrity.o t10-pi.o
 obj-$(CONFIG_BLK_MQ_PCI)	+= blk-mq-pci.o
+
+# Squeeze a little bit more juice
+ccflags-y := -O3
+ccflags-y += $(call cc-option, -g0)
+ccflags-y += $(call cc-option, -Os)

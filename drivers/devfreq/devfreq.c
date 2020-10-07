@@ -29,6 +29,14 @@
 #include <linux/of.h>
 #include "governor.h"
 
+/* #ifdef CONFIG_SOC_EXYNOS9810
+#define DF_MAX_VOLT		1300000
+#define DF_MIN_VOLT		400000
+#define DF_VOLT_STEP		6250
+#else
+#error "Please define core voltage ranges for current SoC."
+#endif */
+
 #include <soc/samsung/exynos-devfreq.h>
 #include <soc/samsung/exynos-dm.h>
 

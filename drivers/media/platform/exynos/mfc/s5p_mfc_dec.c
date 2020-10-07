@@ -298,6 +298,26 @@ static int vidioc_g_fmt_vid_cap_mplane(struct file *file, void *priv,
 		   rectangle. */
 		s5p_mfc_dec_calc_dpb_size(ctx);
 
+		if (IS_LOW_MEM) {
+			unsigned int dpb_size;
+			/*
+			 * If total memory requirement is too big for this device,
+			 * then it returns error.
+			 * DPB size : Total plane size * the number of DPBs
+			 * 5: the number of extra DPBs
+			 * 3: the number of DPBs for Android framework
+			 * 600MB: being used to return an error,
+			 * when 8K resolution video clip is being tried to be decoded
+			 */
+			dpb_size = (ctx->raw_buf.total_plane_size * (ctx->dpb_count + 5 + 3));
+			if (dpb_size > SZ_600M) {
+				mfc_info_ctx("required memory size is too big (%dx%d, dpb: %d)\n",
+						ctx->img_width, ctx->img_height, ctx->dpb_count);
+				return -EINVAL;
+			}
+		}
+
+
 		pix_mp->width = ctx->img_width;
 		pix_mp->height = ctx->img_height;
 		pix_mp->num_planes = ctx->dst_fmt->mem_planes;

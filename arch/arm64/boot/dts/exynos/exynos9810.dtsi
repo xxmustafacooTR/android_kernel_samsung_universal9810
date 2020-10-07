@@ -640,7 +640,7 @@
 		sibling-cpus = "4-7";
 		down-step = <1>;
 
-		max-freq-wo-ocp = <1794000>;
+		max-freq-wo-ocp = <2002000>;
 
 		release-mode = <1>;		/* 0 : current meter, 1 : cpu utilization */
 		release-threshold = <50>;	/* @current meter : current(A), @cpu load : capacity ratio(%) */
@@ -775,32 +775,35 @@
 		#cooling-cells = <2>; /* min followed by max */
 		governor = "interactive";
 		interactive_info = <338000 94 0>;
-		gpu_dvfs_table_size = <6 7>; /*<row col>*/
-		gpu_dvfs_table = <  572000    78  100   5  1794000        0      1469000
-		                    546000    78   99   1  1794000        0      1469000
-		                    455000    78   85   1  1539000        0      1469000
-		                    338000    78   85   1  1352000        0      1469000
-		                    299000    78   85   1  1014000        0      1586000
-		                    260000    78   85   1   421000        0      1586000 >;
+		gpu_dvfs_table_size = <8 7>; /*<row col>*/
+		gpu_dvfs_table = <  598000    78  100   5  2002000        0      0
+				    572000    78  99   5  2002000        0      0
+		                    546000    78   90   1  2002000        0      0
+		                    455000    78   85   1  1794000        0      0
+		                    385000    78   85   1  1539000        0      0
+				    338000    78   85   1  1352000        0      0
+		                    299000    78   85   1  1014000        0      0
+		                    260000    78   85   1   421000        0      0 >;
 		gpu_sustainable_info = <0 0 0 0 0>; /* Not used */
 		gpu_pmqos_cpu_cluster_num = <2>;
 		gpu_pmu_status_reg_offset = <0x4044>;
 		gpu_pmu_status_local_pwr_mask = <0xF>; /*0xF << 0*/
-		gpu_max_clock = <572000>;
-		gpu_max_clock_limit = <572000>;
+		gpu_max_clock = <598000>;
+		gpu_max_clock_limit = <598000>;
 		gpu_min_clock = <260000>;
+		gpu_min_clock_limit = <260000>;
 		gpu_dvfs_start_clock = <260000>;
 		gpu_dvfs_bl_config_clock = <260000>;
 		gpu_default_voltage = <800000>;
 		gpu_cold_minimum_vol = <0>;
 		gpu_voltage_offset_margin = <37500>;
 		gpu_tmu_control = <1>;
-		gpu_temp_throttling_level_num = <6>;
-		gpu_temp_throttling = <572000 546000 455000 338000 260000 260000>;
+		gpu_temp_throttling_level_num = <5>;
+		gpu_temp_throttling = <572000 455000 338000 299000 260000>;
 		gpu_power_coeff = <625>;
 		gpu_dvfs_time_interval = <5>; /*1 tick : 10ms*/
 		gpu_default_wakeup_lock = <1>;
-		gpu_dynamic_abb = <0>;
+		gpu_dynamic_abb = <1>;
 		gpu_early_clk_gating = <0>;
 		gpu_dvs = <0>;
 		gpu_inter_frame_pm = <1>;
@@ -808,16 +811,16 @@
 		gpu_runtime_pm_delay_time = <50>;
 		gpu_dvfs_polling_time = <30>;
 		gpu_pmqos_int_disable = <1>;
-		gpu_pmqos_mif_max_clock = <1794000>;
-		gpu_pmqos_mif_max_clock_base = <572000>;
+		gpu_pmqos_mif_max_clock = <2002000>;
+		gpu_pmqos_mif_max_clock_base = <598000>;
 		gpu_cl_dvfs_start_base = <455000>;
-		gpu_debug_level = <3>; /*DEBUG(1) INFO(2) WARNING(3) ERROR(4)*/
-		gpu_trace_level = <8>; /*TRACE_ALL*/
+		gpu_debug_level = <4>; /*DEBUG(1) INFO(2) WARNING(3) ERROR(4)*/
+		gpu_trace_level = <1>; /*TRACE_NONE*/
 		gpu_mo_min_clock = <455000>;
 		gpu_boost_gpu_min_lock = <0>;
 		gpu_boost_egl_min_lock = <1872000>;
 		gpu_vk_boost_max_lock = <338000>;
-		gpu_vk_boost_mif_min_lock = <1794000>;
+		gpu_vk_boost_mif_min_lock = <2002000>;
 		gpu_bts_support = <1>;
 		gpu_asv_cali_lock_val = <0>; /*Should check this value when MALI_ASV_CALIBRATION_SUPPORT is enabled*/
 		gpu_set_pmu_duration_reg = <0>; /* only for KC for now*/
@@ -3367,7 +3370,7 @@
 		#size-cells = <1>;
 		ranges;
 
-		domain-clients = <&astc>, <&smfc>, <&scaler_0>;
+		domain-clients = <&jsqz>, <&smfc>, <&scaler_0>;
 	};
 
 	smfc: smfc@17700000 {
@@ -3382,16 +3385,16 @@
 		samsung,power-domain = <&pd_g2d>;
 	};
 
-	astc: astc@17720000 {
-		compatible = "samsung,exynos-astc";
+	jsqz: jsqz@17720000 {
+		compatible = "samsung,exynos-jsqz";
 		dma-coherent;
 		reg = <0x0 0x17720000 0x1000>;
-		interrupts = <0 INTREQ__ASTC 0>;
-		clocks = <&clock GATE_ASTC>;
+		interrupts = <0 INTREQ__JSQZ 0>;
+		clocks = <&clock GATE_JSQZ>;
 		clock-names = "gate";
 		iommus = <&sysmmu_g2d2>;
-		/* ASTC IP uses 533000, not 534000 */
-		astc,int_qos_minlock = <533000>;
+		/* JSQZ IP uses 534000, not 533000 */
+		jsqz,int_qos_minlock = <534000>;
 		samsung,power-domain = <&pd_g2d>;
 	};
 
@@ -3406,11 +3409,13 @@
 
 		/* MIF / INT */
 		mscl_qos_table = <
+				2002000 534000 2143260
 				1794000 534000 2143260
 				1352000 400000 1610280
 				1014000 400000 1458000
 				 845000 336000  648000
 				 676000 267000  367200
+				 546000 178000  367200
 				>;
 
 		/* power domain */
@@ -3526,7 +3531,7 @@
 				thrd_mb = <1694860>;
 				freq_mfc = <672000>;
 				freq_int = <534000>;
-				freq_mif = <1794000>;
+				freq_mif = <2002000>;
 				freq_cpu = <0>;
 				freq_kfc = <0>;
 				mo_value = <0>;
@@ -3550,7 +3555,7 @@
 				thrd_mb = <3122858>;
 				freq_mfc = <672000>;
 				freq_int = <534000>;
-				freq_mif = <1794000>;
+				freq_mif = <2002000>;
 				freq_cpu = <0>;
 				freq_kfc = <0>;
 				mo_value = <1>;
@@ -3562,7 +3567,7 @@
 				thrd_mb = <4230819>;
 				freq_mfc = <672000>;
 				freq_int = <534000>;
-				freq_mif = <1794000>;
+				freq_mif = <2002000>;
 				freq_cpu = <0>;
 				freq_kfc = <0>;
 				mo_value = <0>;
@@ -3575,7 +3580,7 @@
 				thrd_mb = <1694860>;
 				freq_mfc = <672000>;
 				freq_int = <534000>;
-				freq_mif = <1794000>;
+				freq_mif = <2002000>;
 				freq_cpu = <0>;
 				freq_kfc = <0>;
 				mo_value = <0>;
@@ -3887,11 +3892,11 @@
 		use_delay_time = "true";
 		delay_time_list = "20";
 
-		freq_info = <2093000 208000 1014000 208000 2093000 2093000>;
+		freq_info = <2002000 208000 1014000 208000 2094000 2093000>;
 		/* initial_freq, default_qos, suspend_freq, min_freq, max_freq reboot_freq */
 
 		/* Booting value */
-		boot_info = <40 1794000>;
+		boot_info = <40 2002000>;
 		/* boot_qos_timeout, boot_freq */
 
 		use_get_dev = "false";
@@ -3980,7 +3985,7 @@
 		/* Delay time */
 		use_delay_time = "false";
 
-		freq_info = <640000 200000 640000 200000 640000 640000>;
+		freq_info = <640000 134000 640000 134000 640000 640000>;
 		/* <initial_freq, default_qos, suspend_freq, min, max, reboot_freq> */
 
 		/* Booting value */
@@ -5006,7 +5011,8 @@
 		compatible = "exynos, hotplug_governor";
 
 		single_change_ms = <30>;
-		dual_change_ms = <30>;
+		dual_change_ms = <25>;
+		triple_change_ms = <20>;
 		quad_change_ms = <15>;
 		big_heavy_thr = <640>;
 		lit_heavy_thr = <200>;
@@ -5017,9 +5023,9 @@
 		skip_lit_enabled = <0>;
 		cl_busy_ratio = <65>;
 		/* single_freq is parsed from ECT */
-		dual_freq = <2314000>;
-		triple_freq = <1794000>;
-		quad_freq = <1794000>;
+		dual_freq = <2652000>;
+		triple_freq = <2496000>;
+		quad_freq = <2314000>;
 		cal-id = <ACPM_DVFS_CPUCL1>;
 	};
 
@@ -5069,12 +5075,12 @@
 				execution-mode = <AARCH64_MODE>;
 					/* mngs	    ank */
 				table = < 2964000 1794000
-					  2860000 1794000
+					  2886000 1794000
 					  2704000 1794000
 					  2652000 1794000
 					  2496000 1794000
 					  2314000 1794000
-					  2158000 1794000
+					  2106000 1794000
 					  2002000 1794000
 					  1924000 1794000
 					  1794000 1794000
@@ -5087,24 +5093,24 @@
 					   962000  715000
 					   858000  715000
 					   741000  715000
-					   650000  715000
-					   598000  715000 >;
+					   650000  0
+					   598000  0 >;
 			};
 
 			max-limit {
 				ctrl-type = <PM_QOS_MAX_LIMIT>;
 				execution-mode = <AARCH64_MODE>;
 					/* mngs	    ank */
-				table = < 2964000 1794000
-					  2860000 1794000
-					  2704000 1794000
-					  2652000 1794000
-					  2496000 1794000
-					  2314000 1794000
-					  2158000 1794000
-					  2002000 1794000
-					  1924000 1794000
-					  1794000 1794000
+				table = < 2964000 2002000
+					  2886000 2002000
+					  2704000 2002000
+					  2652000 2002000
+					  2496000 2002000
+					  2314000 2002000
+					  2106000 2002000
+					  2002000 2002000
+					  1924000 2002000
+					  1794000 2002000
 					  1690000 1794000
 					  1586000 1794000
 					  1469000 1794000
@@ -5129,7 +5135,7 @@
 			cal-id = <ACPM_DVFS_CPUCL0>;
 			dm-type = <DM_CPU_CL0>;
 
-			min-freq = <455000>;
+			min-freq = <208000>;
 
 			/* PM QoS Class ID*/
 			pm_qos-min-class = <3>;
@@ -5142,7 +5148,7 @@
 					const-type = <CONSTRAINT_MIN>;
 					dm-type = <DM_MIF>;
 						/*  cpu     mif  */
-					table = < 1950000  845000
+					table = < 2002000  845000
 						  1794000  845000
 						  1690000  845000
 						  1456000  676000
@@ -5153,6 +5159,8 @@
 						   715000  546000
 						   598000  421000
 						   455000       0
+						   299000       0
+						   208000       0
 						   >;
 				};
 				mif-skew {
@@ -5169,15 +5177,15 @@
 			cal-id = <ACPM_DVFS_CPUCL1>;
 			dm-type = <DM_CPU_CL1>;
 
-			min-freq = <650000>;
-			max-freq = <1794000>;
-			policy-max = <2704000>;
+			min-freq = <598000>;
+			max-freq = <2964000>;
+			policy-max = <2314000>;
 
 			/* PM QoS Class ID*/
 			pm_qos-min-class = <5>;
 			pm_qos-max-class = <6>;
 
-			pm_qos-booting = <1794000>;
+			pm_qos-booting = <2002000>;
 
 			#cooling-cells = <2>; /* min followed by max */
 
@@ -5186,14 +5194,14 @@
 					const-type = <CONSTRAINT_MIN>;
 					dm-type = <DM_MIF>;
 						/*  cpu     mif  */
-					table = < 2886000 1794000
-						  2860000 1794000
-						  2704000 1794000
-						  2652000 1794000
-						  2496000 1794000
-						  2314000 1794000
-						  2106000 1794000
-						  2002000 1794000
+					table = < 2964000 1794000
+						  2886000 2002000
+						  2704000 2002000
+						  2652000 2002000
+						  2496000 2002000
+						  2314000 2002000
+						  2106000 2002000
+						  2002000 2002000
 						  1924000 1794000
 						  1794000 1794000
 						  1690000 1539000
@@ -5290,7 +5298,7 @@
 					type = "active";
 				};
 				big_switch_on: big-switch-on {
-					temperature = <55000>; /* millicelsius */
+					temperature = <60000>; /* millicelsius */
 					hysteresis = <2000>; /* millicelsius */
 					type = "active";
 				};
@@ -5300,7 +5308,7 @@
 					type = "passive";
 				};
 				big_alert0: big-alert0 {
-					temperature = <95000>; /* millicelsius */
+					temperature = <90000>; /* millicelsius */
 					hysteresis = <5000>; /* millicelsius */
 					type = "active";
 				};
@@ -5447,7 +5455,7 @@
 					type = "active";
 				};
 				gpu_switch_on: gpu-switch-on {
-					temperature = <78000>; /* millicelsius */
+					temperature = <80000>; /* millicelsius */
 					hysteresis = <2000>; /* millicelsius */
 					type = "active";
 				};
@@ -5457,22 +5465,22 @@
 					type = "passive";
 				};
 				gpu_alert0: gpu-alert0 {
-					temperature = <105000>; /* millicelsius */
+					temperature = <95000>; /* millicelsius */
 					hysteresis = <5000>; /* millicelsius */
 					type = "active";
 				};
 				gpu_alert1: gpu-alert1 {
-					temperature = <110000>; /* millicelsius */
+					temperature = <100000>; /* millicelsius */
 					hysteresis = <5000>; /* millicelsius */
 					type = "active";
 				};
 				gpu_alert2: gpu-alert2 {
-					temperature = <115000>; /* millicelsius */
+					temperature = <105000>; /* millicelsius */
 					hysteresis = <5000>; /* millicelsius */
 					type = "active";
 				};
 				gpu_alert3: gpu-alert3 {
-					temperature = <115000>; /* millicelsius */
+					temperature = <110000>; /* millicelsius */
 					hysteresis = <5000>; /* millicelsius */
 					type = "active";
 				};

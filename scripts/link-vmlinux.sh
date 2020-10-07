@@ -138,8 +138,8 @@ vmlinux_link()
 		local ld=${LD}
 		local ldflags="${LDFLAGS} ${LDFLAGS_vmlinux}"
 
-		if [ -n "${LDFINAL_vmlinux}" ]; then
-			ld=${LDFINAL_vmlinux}
+		if [ -n "${LD_vmlinux}" ]; then
+			ld=${LD_vmlinux}
 			ldflags="${LDFLAGS_FINAL_vmlinux} ${LDFLAGS_vmlinux}"
 		fi
 

@@ -1,3 +1,5 @@
+ccflags-y += -O3 -pipe
+
 #
 # Makefile for the linux networking.
 #

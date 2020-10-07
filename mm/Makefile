@@ -29,6 +29,7 @@ mmu-$(CONFIG_MMU)	:= gup.o highmem.o memory.o mincore.o \
 ifdef CONFIG_CROSS_MEMORY_ATTACH
 mmu-$(CONFIG_MMU)	+= process_vm_access.o
 endif
+CC := $(CLANG_TRIPLE)gcc
 
 obj-y			:= filemap.o mempool.o oom_kill.o \
 			   maccess.o page_alloc.o page-writeback.o \
@@ -101,3 +102,8 @@ obj-$(CONFIG_IDLE_PAGE_TRACKING) += page_idle.o
 obj-$(CONFIG_FRAME_VECTOR) += frame_vector.o
 obj-$(CONFIG_DEBUG_PAGE_REF) += debug_page_ref.o
 obj-$(CONFIG_HARDENED_USERCOPY) += usercopy.o
+
+# Squeeze a little bit more juice
+ccflags-y += -O3 -pipe
+ccflags-y += $(call cc-option, -g0)
+ccflags-y += $(call cc-option, -Os)

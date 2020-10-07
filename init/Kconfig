@@ -1480,6 +1480,23 @@ config SCHED_EMS
 	  and prefer_perf and enhanced prefer_idle that work in conjunction with
 	  SCHEDTUNE.
 
+config STUNE_ASSIST
+	bool "SchedTune configuration helper"
+	depends on SCHED_TUNE
+	depends on ANDROID
+	help
+	  This option enables the configuration of default SchedTune
+	  parameters from kernel.
+
+	  If unsure, say N.
+
+config DYNAMIC_STUNE_BOOST
+	bool "Dynamic SchedTune boosting support"
+	depends on SCHED_TUNE
+	help
+	  This option extends the SchedTune framework and provides APIs to
+	  activate and reset SchedTune boosting from anywhere in the kernel.
+
 	  If unsure, say N.
 
 config DEFAULT_USE_ENERGY_AWARE
@@ -1606,6 +1623,11 @@ config CC_OPTIMIZE_FOR_SIZE
 	  If unsure, say N.
 
 endchoice
+
+config LTO
+	bool "Enable Link Time Optimization"
+	default y
+	select THIN_ARCHIVES
 
 config SYSCTL
 	bool

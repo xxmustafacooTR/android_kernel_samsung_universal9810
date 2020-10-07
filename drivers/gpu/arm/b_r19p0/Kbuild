@@ -34,7 +34,7 @@ MALI_USE_CSF ?= 0
 MALI_UNIT_TEST ?= 0
 MALI_KERNEL_TEST_API ?= 0
 MALI_COVERAGE ?= 0
-CONFIG_MALI_PLATFORM_NAME ?= "devicetree"
+CONFIG_MALI_PLATFORM_NAME ?= "exynos"
 
 # Set up our defines, which will be passed to gcc
 DEFINES = \

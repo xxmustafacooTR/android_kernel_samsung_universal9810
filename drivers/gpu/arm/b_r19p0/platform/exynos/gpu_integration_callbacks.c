@@ -49,6 +49,8 @@ extern int set_hmp_boost(int enable);
 #define KBASE_REG_CUSTOM_PMEM       (1ul << 20)
 
 #define ENTRY_TYPE_MASK     3ULL
+#define ENTRY_IS_ATE_L3     3ULL
+#define ENTRY_IS_ATE_L02    1ULL
 #define ENTRY_IS_ATE        1ULL
 #define ENTRY_IS_INVAL      2ULL
 #define ENTRY_IS_PTE        3ULL
@@ -406,16 +408,32 @@ static void gpu_page_table_info_dp_level(struct kbase_context *kctx, u64 vaddr, 
 			dev_err(kctx->kbdev->dev, "[%03d]: 0x%016llX\n", i, pgd_page[i]);
 		}
 	}
-
-	/* parse next level (if any) */
-
-	if ((pgd_page[index] & 3) == ENTRY_IS_PTE) {
-		phys_addr_t target_pgd = mmu_pte_to_phy_addr(pgd_page[index]);
-		gpu_page_table_info_dp_level(kctx, vaddr, target_pgd, level + 1);
-	} else if ((pgd_page[index] & 3) == ENTRY_IS_ATE) {
-		dev_err(kctx->kbdev->dev, "Final physical address: 0x%016llX\n", pgd_page[index] & ~(0xFFF | ENTRY_FLAGS_MASK));
+	if (kbase_hw_has_feature(kctx->kbdev, BASE_HW_FEATURE_AARCH64_MMU)) {
+		if (level == MIDGARD_MMU_BOTTOMLEVEL) {
+			if ((pgd_page[index] & 3) == ENTRY_IS_ATE_L3) {
+				dev_err(kctx->kbdev->dev, "L3_Final physical address: 0x%016llX\n", pgd_page[index] & ~(0xFFF | ENTRY_FLAGS_MASK));
+			} else {
+				dev_err(kctx->kbdev->dev, "L3_Final physical address: INVALID!\n");
+			}
+		} else {
+			if ((pgd_page[index] & 3) == ENTRY_IS_PTE) {		/* 3 means ENTRY_TYPE_MASK */
+				phys_addr_t target_pgd = mmu_pte_to_phy_addr(pgd_page[index]);
+				gpu_page_table_info_dp_level(kctx, vaddr, target_pgd, level + 1);
+			} else if ((pgd_page[index] & 3) == ENTRY_IS_ATE_L02) {
+				dev_err(kctx->kbdev->dev, "L02_Final physical address: 0x%016llX\n", pgd_page[index] & ~(0xFFF | ENTRY_FLAGS_MASK));
+			} else {
+				dev_err(kctx->kbdev->dev, "L02_Final physical address: INVALID!\n");
+			}
+		}
 	} else {
-		dev_err(kctx->kbdev->dev, "Final physical address: INVALID!\n");
+		if ((pgd_page[index] & 3) == ENTRY_IS_PTE) {
+			phys_addr_t target_pgd = mmu_pte_to_phy_addr(pgd_page[index]);
+			gpu_page_table_info_dp_level(kctx, vaddr, target_pgd, level + 1);
+		} else if ((pgd_page[index] & 3) == ENTRY_IS_ATE) {
+			dev_err(kctx->kbdev->dev, "Final physical address: 0x%016llX\n", pgd_page[index] & ~(0xFFF | ENTRY_FLAGS_MASK));
+		} else {
+			dev_err(kctx->kbdev->dev, "Final physical address: INVALID!\n");
+		}
 	}
 
 	kunmap(pfn_to_page(PFN_DOWN(pgd)));

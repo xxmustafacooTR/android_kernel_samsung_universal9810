@@ -94,8 +94,9 @@ struct sync_timeline *sync_timeline_create(const char *name)
 
 	kref_init(&obj->kref);
 	obj->context = fence_context_alloc(1);
+#if 0
 	strlcpy(obj->name, name, sizeof(obj->name));
-
+#endif
 	INIT_LIST_HEAD(&obj->child_list_head);
 	INIT_LIST_HEAD(&obj->active_list_head);
 	spin_lock_init(&obj->child_list_lock);

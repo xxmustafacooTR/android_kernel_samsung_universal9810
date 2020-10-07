@@ -120,4 +120,3 @@ config SUPPORT_DSU
 endif
 
 source "drivers/video/fbdev/exynos/dpu_9810/panels/Kconfig"
-source "drivers/video/fbdev/exynos/dpu_9810/dp_logger/Kconfig"

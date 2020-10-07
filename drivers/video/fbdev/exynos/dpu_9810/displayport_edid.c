@@ -844,14 +844,6 @@ int edid_update(struct displayport_device *hdev)
 	for (i = 1; i < supported_videos_pre_cnt; i++)
 		supported_videos[i].edid_support_match = false;
 
-	if (hdev->do_unit_test)
-		block_cnt = edid_read_unit(&edid);
-	else if (hdev->edid_test_buf[0] == 1 || hdev->edid_test_buf[0] == 2) {
-		edid_test = 1;
-		edid = &hdev->edid_test_buf[1];
-		block_cnt = hdev->edid_test_buf[0];
-		displayport_info("using test edid %d\n", block_cnt);
-	} else
 		block_cnt = edid_read(hdev, &edid);
 	if (block_cnt < 0) {
 		hdev->bpc = BPC_6;

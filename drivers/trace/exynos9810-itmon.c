@@ -431,7 +431,7 @@ const static struct itmon_masterinfo masterinfo[] = {
 
 	{"G2D2", 0,			/* 0XX000 */ "JPEG",		BIT(5) | GENMASK(2, 0)},
 	{"G2D2", BIT(1),		/* 0XX010 */ "MSCL",		BIT(5) | GENMASK(2, 0)},
-	{"G2D2", BIT(2),		/* 0XX100 */ "ASTC",		BIT(5) | GENMASK(2, 0)},
+	{"G2D2", BIT(2),		/* 0XX100 */ "JSQZ",		BIT(5) | GENMASK(2, 0)},
 	{"G2D2", BIT(0),		/* 0XXXX1 */ "SYSMMU_G2D2",	BIT(5) | BIT(0)},
 
 	{"AUD", 0,			/* 0XX000 */ "SPUS/SPUM",	BIT(5) | GENMASK(2, 0)},

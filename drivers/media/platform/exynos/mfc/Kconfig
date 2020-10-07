@@ -3,16 +3,16 @@ config VIDEO_EXYNOS_MFC
 	default n
 	depends on VIDEO_EXYNOS
 	select VIDEOBUF2_CORE
-	select EXYNOS_MFC_V12
+	select EXYNOS_MFC_V13
 	---help---
 	  MFC driver for V4L2.
 
 choice
 depends on VIDEO_EXYNOS_MFC
 prompt "MFC version"
-default EXYNOS_MFC_V12
-config EXYNOS_MFC_V12
-prompt "MFC version 12"
+default EXYNOS_MFC_V13
+config EXYNOS_MFC_V13
+prompt "MFC version 13"
 	bool
 	depends on ARCH_EXYNOS9
 endchoice

@@ -138,6 +138,24 @@ config CPU_FREQ_DEFAULT_GOV_SCHEDUTIL
 	  have a look at the help section of that governor. The fallback
 	  governor will be 'performance'.
 
+config CPU_FREQ_DEFAULT_GOV_SCHEDUTILX
+	bool "schedutilX"
+	depends on SMP
+	select CPU_FREQ_GOV_SCHEDUTILX
+	help
+	  Use the 'schedutilX' CPUFreq governor by default. If unsure,
+	  have a look at the help section of that governor. The fallback
+	  governor will be 'performance'.
+
+config CPU_FREQ_DEFAULT_GOV_BLU_SCHEDUTIL
+	bool "blu_schedutil"
+	select CPU_FREQ_GOV_BLU_SCHEDUTIL
+	select CPU_FREQ_GOV_PERFORMANCE
+	help
+	  Use the 'blu_schedutil' CPUFreq governor by default. If unsure,
+	  have a look at the help section of that governor. The fallback
+	  governor will be 'performance'.
+
 endchoice
 
 config CPU_FREQ_GOV_PERFORMANCE
@@ -269,6 +287,43 @@ config CPU_FREQ_GOV_SCHEDUTIL
 
 	  If in doubt, say N.
 
+config CPU_FREQ_GOV_SCHEDUTILX
+	bool "'schedutilX' cpufreq policy governor"
+	depends on CPU_FREQ && SMP
+	select CPU_FREQ_GOV_ATTR_SET
+	select IRQ_WORK
+	help
+	  This governor makes decisions based on the utilization data provided
+	  by the scheduler.  It sets the CPU frequency to be proportional to
+	  the utilization/capacity ratio coming from the scheduler.  If the
+	  utilization is frequency-invariant, the new frequency is also
+	  proportional to the maximum available frequency.  If that is not the
+	  case, it is proportional to the current frequency of the CPU.  The
+	  frequency tipping point is at utilization/capacity equal to 80% in
+	  both cases.
+
+	  If in doubt, say N.
+
+config CPU_FREQ_GOV_BLU_SCHEDUTIL
+	tristate "'blu_schedutil' cpufreq policy governor"
+	depends on CPU_FREQ
+	select CPU_FREQ_GOV_ATTR_SET
+	select IRQ_WORK
+	help
+	  This governor makes decisions based on the utilization data provided
+	  by the scheduler.  It sets the CPU frequency to be proportional to
+	  the utilization/capacity ratio coming from the scheduler.  If the
+	  utilization is frequency-invariant, the new frequency is also
+	  proportional to the maximum available frequency.  If that is not the
+	  case, it is proportional to the current frequency of the CPU.  The
+	  frequency tipping point is at utilization/capacity equal to 80% in
+	  both cases.
+
+	  To compile this driver as a module, choose M here: the module will
+	  be called cpufreq_blu_schedutil.
+
+	  If in doubt, say N.
+
 config FREQVAR_TUNE
 	bool "CPU frequency variant tuner"
 	depends on SCHED_EMS && CPU_FREQ_GOV_SCHEDUTIL
@@ -277,6 +332,100 @@ config FREQVAR_TUNE
 	  as frequency variant.
 
 	  Say N if unsure.
+
+config CPU_INPUT_BOOST
+	bool "CPU Input Boost"
+	help
+	  Boosts the CPU on touchscreen and touchpad input, and allows for
+	  boosting on other custom events, mainly which is intended to be for
+	  boosting when there is a new frame ready to be rendered to the
+	  display. The boost frequencies for this driver should be set so that
+	  frame drops are near-zero at the boosted frequencies and power
+	  consumption is minimized at said frequency combination.
+
+if CPU_INPUT_BOOST
+
+config INPUT_BOOST_DURATION_MS
+	int "Input boost duration"
+	default "100"
+	help
+	  Input boost duration in milliseconds.
+
+config WAKE_BOOST_DURATION_MS
+	int "Wake boost duration"
+	default "1000"
+	help
+	  Wake boost duration in milliseconds.
+
+config TA_STUNE_BOOST
+	int "Foreground app SchedTune boost value"
+	depends on DYNAMIC_STUNE_BOOST
+	default "15"
+	help
+	  SchedTune boost value for the foreground app. This alters the
+	  perceived load in order to bias CPU and frequency selection.
+
+config INPUT_BOOST_FREQ_LP
+	int "Low-power cluster boost freq"
+	default "0"
+	help
+	  Input boost frequency for the low-power CPU cluster.
+
+config INPUT_BOOST_FREQ_PERF
+	int "Performance cluster boost freq"
+	default "0"
+	help
+	  Input boost frequency for the performance CPU cluster.
+
+config REMOVE_INPUT_BOOST_FREQ_LP
+	int "Low-power cluster return frequency"
+	default "0"
+	help
+	  This is the frequency the low-power cluster will fallback to
+	  once the boost is over. The default 0 will make the policy
+	  use cpuinfo.min_freq. In case the device has some kind of quirk
+	  of using a higher than cpuinfo.min_freq (e.g. OnePlus 5/5T/6)
+	  this frequency will be used.
+
+config REMOVE_INPUT_BOOST_FREQ_PERF
+	int "Performance cluster return frequency"
+	default "0"
+	help
+	  This is the frequency the performance cluster will fallback to
+	  once the boost is over. The default 0 will make the policy
+	  use cpuinfo.min_freq. In case the device has some kind of quirk
+	  of using a higher than cpuinfo.min_freq (e.g. OnePlus 5/5T/6)
+	  this frequency will be used.
+
+config MAX_BOOST_FREQ_LP
+	int "Low-power cluster max-boost freq"
+	default "0"
+	help
+	  Max-boost frequency for the low-power CPU cluster.
+
+config MAX_BOOST_FREQ_PERF
+	int "Performance cluster max-boost freq"
+	default "0"
+	help
+	  Max-boost frequency for the performance CPU cluster.
+
+config IDLE_MIN_FREQ_LP
+	int "Low-power cluster idle frequency"
+	default "0"
+	help
+	  Minimum frequency for the low-power CPU cluster during idle.
+	  The cluster will revert to this frequency when the display is
+	  turned off.
+
+config IDLE_MIN_FREQ_HP
+	int "Performance-power cluster idle frequency"
+	default "0"
+	help
+	  Minimum frequency for the performance-power CPU cluster during idle.
+	  The cluster will revert to this frequency when the display is
+	  turned off.
+
+endif
 
 comment "CPU frequency scaling drivers"
 
@@ -302,6 +451,12 @@ config CPUFREQ_DT_PLATDEV
 	  supported platforms.
 
 	  If in doubt, say N.
+
+config FINGERPRINT_BOOST
+	bool "Fingerprint Boost"
+	default y
+	help
+	  Boosts available CPUs to max frequency on fingerprint sensor input.
 
 if X86
 source "drivers/cpufreq/Kconfig.x86"
