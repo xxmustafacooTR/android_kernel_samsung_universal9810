@@ -429,7 +429,9 @@ static void __exynos_hpgov_set_disable(void)
 
 static void __exynos_hpgov_set_enable(void)
 {
+#ifdef CONFIG_PCIEASPM_PERFORMANCE
 	struct sched_param param;
+#endif
 
 	exynos_hpgov.mode = QUAD;
 	exynos_hpgov.user_mode = DISABLE;
@@ -437,7 +439,7 @@ static void __exynos_hpgov_set_enable(void)
 	exynos_hpgov.cur_cpu_min = PM_QOS_CPU_ONLINE_MAX_DEFAULT_VALUE;
 
 	/* create hp task */
-	exynos_hpgov.task = kthread_run_perf_critical(exynos_hpgov_do_update_governor,
+	exynos_hpgov.task = kthread_create(exynos_hpgov_do_update_governor,
 			&exynos_hpgov.data, "exynos_hpgov");
 	if (IS_ERR(exynos_hpgov.task)) {
 		spin_lock(&hpgov_lock);
@@ -447,8 +449,12 @@ static void __exynos_hpgov_set_enable(void)
 		return;
 	}
 
+#ifdef CONFIG_PCIEASPM_PERFORMANCE
 	param.sched_priority = 20;
 	sched_setscheduler_nocheck(exynos_hpgov.task, SCHED_FIFO, &param);
+#else
+	set_user_nice(exynos_hpgov.task, MIN_NICE);
+#endif
 	set_cpus_allowed_ptr(exynos_hpgov.task, cpu_coregroup_mask(0));
 
 	if (exynos_hpgov.task)
