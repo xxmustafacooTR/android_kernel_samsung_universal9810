@@ -159,7 +159,7 @@ static void kbase_job_fault_resume_event_cleanup(struct kbase_context *kctx)
 
 		event = kbase_job_fault_event_dequeue(kctx->kbdev,
 				&kctx->job_fault_resume_event_list);
-		kbase_jd_done_worker(&event->katom->work);
+		kbase_jd_done_worker(&event->katom->job_done_work);
 	}
 
 }
@@ -204,7 +204,7 @@ static void kbase_job_fault_resume_worker(struct work_struct *data)
 			 kbase_ctx_has_no_event_pending(kctx));
 
 	atomic_set(&kctx->job_fault_count, 0);
-	kbase_jd_done_worker(&katom->work);
+	kbase_jd_done_worker(&katom->job_done_work);
 
 	/* In case the following atoms were scheduled during failed job dump
 	 * the job_done_worker was held. We need to rerun it after the dump

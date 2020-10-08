@@ -30,11 +30,11 @@
 #include "mali_kbase.h"
 #include "mali_kbase_sync.h"
 
-void kbase_sync_fence_wait_worker(struct work_struct *data)
+void kbase_sync_fence_wait_worker(struct kthread_work *data)
 {
 	struct kbase_jd_atom *katom;
 
-	katom = container_of(data, struct kbase_jd_atom, work);
+	katom = container_of(data, struct kbase_jd_atom, job_done_work);
 	kbase_soft_event_wait_callback(katom);
 }
 

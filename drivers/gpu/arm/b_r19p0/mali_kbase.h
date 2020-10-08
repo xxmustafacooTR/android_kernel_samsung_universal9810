@@ -194,7 +194,7 @@ int kbase_jd_submit(struct kbase_context *kctx,
  * Handles retrying submission outside of IRQ context if it failed from within
  * IRQ context.
  */
-void kbase_jd_done_worker(struct work_struct *data);
+void kbase_jd_done_worker(struct kthread_work *data);
 
 void kbase_jd_done(struct kbase_jd_atom *katom, int slot_nr, ktime_t *end_timestamp,
 		kbasep_js_atom_done_code done_code);

@@ -608,6 +608,7 @@ static int kbase_file_create_kctx(struct kbase_file *const kfile,
 {
 	struct kbase_device *kbdev = NULL;
 	struct kbase_context *kctx = NULL;
+	struct sched_param param;
 #ifdef CONFIG_DEBUG_FS
 	char kctx_name[64];
 #endif
@@ -672,6 +673,19 @@ static int kbase_file_create_kctx(struct kbase_file *const kfile,
 
 	kfile->kctx = kctx;
 	atomic_set(&kfile->setup_state, KBASE_FILE_COMPLETE);
+
+	kthread_init_worker(&kctx->worker);
+
+	kctx->worker_thread = kthread_run_perf_critical(kthread_worker_fn,
+				&kctx->worker, "mali_kctx_worker");
+
+	if (IS_ERR(kctx->worker_thread)) {
+		pr_err("unable to start mali worker thread\n");
+		return -ENOMEM;
+	}
+
+	param.sched_priority = 20;
+	sched_setscheduler_nocheck(kctx->worker_thread, SCHED_FIFO, &param);
 
 	return 0;
 }

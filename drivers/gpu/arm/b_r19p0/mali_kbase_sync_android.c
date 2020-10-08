@@ -441,8 +441,8 @@ static void kbase_fence_wait_callback(struct sync_fence *fence,
 	 * sync_timeline_signal. So we simply defer the work.
 	 */
 
-	INIT_WORK(&katom->work, kbase_sync_fence_wait_worker);
-	queue_work(kctx->jctx.job_done_wq, &katom->work);
+	kthread_init_work(&katom->job_done_work, kbase_sync_fence_wait_worker);
+	kthread_queue_work(&kctx->worker, &katom->job_done_work);
 }
 
 int kbase_sync_fence_in_wait(struct kbase_jd_atom *katom)
@@ -462,8 +462,8 @@ int kbase_sync_fence_in_wait(struct kbase_jd_atom *katom)
 		katom->event_code = BASE_JD_EVENT_JOB_CANCELLED;
 		/* We should cause the dependent jobs in the bag to be failed,
 		 * to do this we schedule the work queue to complete this job */
-		INIT_WORK(&katom->work, kbase_sync_fence_wait_worker);
-		queue_work(katom->kctx->jctx.job_done_wq, &katom->work);
+		kthread_init_work(&katom->job_done_work, kbase_sync_fence_wait_worker);
+		kthread_queue_work(&katom->kctx->worker, &katom->job_done_work);
 	}
 
 	return 1;
