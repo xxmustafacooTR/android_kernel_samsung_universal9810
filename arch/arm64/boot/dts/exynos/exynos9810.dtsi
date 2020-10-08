@@ -798,8 +798,8 @@
 		gpu_cold_minimum_vol = <0>;
 		gpu_voltage_offset_margin = <37500>;
 		gpu_tmu_control = <1>;
-		gpu_temp_throttling_level_num = <5>;
-		gpu_temp_throttling = <572000 455000 338000 299000 260000>;
+		gpu_temp_throttling_level_num = <6>;
+		gpu_temp_throttling = <572000 546000 455000 338000 299000 260000>;
 		gpu_power_coeff = <625>;
 		gpu_dvfs_time_interval = <5>; /*1 tick : 10ms*/
 		gpu_default_wakeup_lock = <1>;
@@ -5023,7 +5023,7 @@
 		skip_lit_enabled = <0>;
 		cl_busy_ratio = <65>;
 		/* single_freq is parsed from ECT */
-		dual_freq = <2652000>;
+		dual_freq = <2704000>;
 		triple_freq = <2496000>;
 		quad_freq = <2314000>;
 		cal-id = <ACPM_DVFS_CPUCL1>;
