@@ -5301,12 +5301,12 @@
 					type = "active";
 				};
 				big_control_temp: big-control-temp {
-					temperature = <83000>; /* millicelsius */
+					temperature = <86000>; /* millicelsius */
 					hysteresis = <5000>; /* millicelsius */
 					type = "passive";
 				};
 				big_alert0: big-alert0 {
-					temperature = <90000>; /* millicelsius */
+					temperature = <93000>; /* millicelsius */
 					hysteresis = <5000>; /* millicelsius */
 					type = "active";
 				};
@@ -5353,12 +5353,12 @@
 					type = "active";
 				};
 				little_alert1: little-alert1 {
-					temperature = <76000>; /* millicelsius */
+					temperature = <80000>; /* millicelsius */
 					hysteresis = <5000>; /* millicelsius */
 					type = "active";
 				};
 				little_alert2: little-alert2 {
-					temperature = <81000>; /* millicelsius */
+					temperature = <83000>; /* millicelsius */
 					hysteresis = <5000>; /* millicelsius */
 					type = "active";
 				};
@@ -5392,7 +5392,7 @@
 			cooling-maps {
 				map0 {
 				     trip = <&little_alert0>;
-				     /* Corresponds to 1794MHz at freq_table */
+				     /* Corresponds to 1950MHz at freq_table */
 				     cooling-device = <&cpufreq_domain0 0 0>;
 				};
 				map1 {
@@ -5453,17 +5453,17 @@
 					type = "active";
 				};
 				gpu_switch_on: gpu-switch-on {
-					temperature = <80000>; /* millicelsius */
+					temperature = <86000>; /* millicelsius */
 					hysteresis = <2000>; /* millicelsius */
 					type = "active";
 				};
 				gpu_control_temp: gpu-control-temp {
-					temperature = <88000>; /* millicelsius */
+					temperature = <93000>; /* millicelsius */
 					hysteresis = <5000>; /* millicelsius */
 					type = "passive";
 				};
 				gpu_alert0: gpu-alert0 {
-					temperature = <95000>; /* millicelsius */
+					temperature = <96000>; /* millicelsius */
 					hysteresis = <5000>; /* millicelsius */
 					type = "active";
 				};
