@@ -720,6 +720,7 @@ static void sugov_exit(struct cpufreq_policy *policy)
 
 	mutex_unlock(&global_tunables_lock);
 
+	cpufreq_unregister_governor(&blu_schedutil_gov);
 	sugov_kthread_stop(sg_policy);
 	sugov_policy_free(sg_policy);
 
@@ -796,15 +797,20 @@ static struct cpufreq_governor blu_schedutil_gov = {
 	.limits = sugov_limits,
 };
 
-#ifdef CONFIG_CPU_FREQ_DEFAULT_GOV_BLU_SCHEDUTIL
-struct cpufreq_governor *cpufreq_default_governor(void)
-{
-	return &blu_schedutil_gov;
-}
-#endif
 
 static int __init sugov_register(void)
 {
 	return cpufreq_register_governor(&blu_schedutil_gov);
 }
+
+#ifdef CONFIG_CPU_FREQ_DEFAULT_GOV_BLU_SCHEDUTIL
+struct cpufreq_governor *cpufreq_default_governor(void)
+{
+	return &blu_schedutil_gov;
+}
+
 fs_initcall(sugov_register);
+#else
+module_init(sugov_register);
+module_exit(sugov_exit);
+#endif
