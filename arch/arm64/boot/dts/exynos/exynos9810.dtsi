@@ -777,8 +777,8 @@
 		interactive_info = <338000 94 0>;
 		gpu_dvfs_table_size = <6 7>; /*<row col>*/
 		gpu_dvfs_table = <	598000    78  100   5  2002000           2002000		0
-					572000    78   90   5  2002000           1950000		0
-					455000    78   85   1  1794000           1794000		0
+					572000    78   90   1  2002000           2002000		0
+					455000    78   85   1  1794000           1950000		0
 					338000    78   85   1  1539000           1794000		0
 					299000    78   85   1  1014000           1456000		0
 					260000    78   85   1   421000		0		0 >;
@@ -817,10 +817,10 @@
 		gpu_mo_min_clock = <455000>;
 		gpu_boost_gpu_min_lock = <0>;
 		gpu_boost_egl_min_lock = <1872000>;
-		gpu_vk_boost_max_lock = <338000>;
+		gpu_vk_boost_max_lock = <598000>;
 		gpu_vk_boost_mif_min_lock = <2002000>;
 		gpu_bts_support = <1>;
-		gpu_asv_cali_lock_val = <0>; /*Should check this value when MALI_ASV_CALIBRATION_SUPPORT is enabled*/
+		gpu_asv_cali_lock_val = <598000>; /*Should check this value when MALI_ASV_CALIBRATION_SUPPORT is enabled*/
 		gpu_set_pmu_duration_reg = <0>; /* only for KC for now*/
 		gpu_set_pmu_duration_val = <0>; /* only for KC for now*/
 	};
@@ -5296,17 +5296,17 @@
 					type = "active";
 				};
 				big_switch_on: big-switch-on {
-					temperature = <60000>; /* millicelsius */
+					temperature = <75000>; /* millicelsius */
 					hysteresis = <2000>; /* millicelsius */
 					type = "active";
 				};
 				big_control_temp: big-control-temp {
-					temperature = <86000>; /* millicelsius */
+					temperature = <90000>; /* millicelsius */
 					hysteresis = <5000>; /* millicelsius */
 					type = "passive";
 				};
 				big_alert0: big-alert0 {
-					temperature = <93000>; /* millicelsius */
+					temperature = <95000>; /* millicelsius */
 					hysteresis = <5000>; /* millicelsius */
 					type = "active";
 				};
@@ -5353,27 +5353,27 @@
 					type = "active";
 				};
 				little_alert1: little-alert1 {
-					temperature = <80000>; /* millicelsius */
+					temperature = <88000>; /* millicelsius */
 					hysteresis = <5000>; /* millicelsius */
 					type = "active";
 				};
 				little_alert2: little-alert2 {
-					temperature = <83000>; /* millicelsius */
-					hysteresis = <5000>; /* millicelsius */
-					type = "active";
-				};
-				little_alert3: little-alert3 {
-					temperature = <86000>; /* millicelsius */
-					hysteresis = <5000>; /* millicelsius */
-					type = "active";
-				};
-				little_alert4: little-alert4 {
 					temperature = <91000>; /* millicelsius */
 					hysteresis = <5000>; /* millicelsius */
 					type = "active";
 				};
+				little_alert3: little-alert3 {
+					temperature = <83000>; /* millicelsius */
+					hysteresis = <5000>; /* millicelsius */
+					type = "active";
+				};
+				little_alert4: little-alert4 {
+					temperature = <95000>; /* millicelsius */
+					hysteresis = <5000>; /* millicelsius */
+					type = "active";
+				};
 				little_alert5: little-alert5 {
-					temperature = <96000>; /* millicelsius */
+					temperature = <97000>; /* millicelsius */
 					hysteresis = <5000>; /* millicelsius */
 					type = "active";
 				};
@@ -5453,7 +5453,7 @@
 					type = "active";
 				};
 				gpu_switch_on: gpu-switch-on {
-					temperature = <86000>; /* millicelsius */
+					temperature = <88000>; /* millicelsius */
 					hysteresis = <2000>; /* millicelsius */
 					type = "active";
 				};

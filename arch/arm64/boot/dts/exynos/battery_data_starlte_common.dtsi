@@ -305,7 +305,7 @@
 
 	max77705-charger {
 		status = "okay";
-		charger,cpu_max_freq = <0 1690000>; /* KHz */
+		charger,cpu_max_freq = <0 2314000>; /* KHz */
 	};
 
 	max77705-fuelgauge {
