@@ -509,16 +509,20 @@ static struct cpufreq_driver exynos_driver = {
 
 #ifdef CONFIG_CPU_FREQ_SUSPEND
 /* suspend min/max cpu freq tunable */
+#ifdef CONFIG_PCIEASPM_PERFORMANCE
 static bool enable_suspend_freqs = false;
+#else
+static bool enable_suspend_freqs = true;
+#endif
 module_param(enable_suspend_freqs, bool, 0644);
 
 static unsigned int cpu0_suspend_min_freq = 0;
-static unsigned int cpu0_suspend_max_freq = 0;
+static unsigned int cpu0_suspend_max_freq = 715000;
 module_param(cpu0_suspend_min_freq, uint, 0644);
 module_param(cpu0_suspend_max_freq, uint, 0644);
 
 static unsigned int cpu4_suspend_min_freq = 0;
-static unsigned int cpu4_suspend_max_freq = 0;
+static unsigned int cpu4_suspend_max_freq = 741000;
 module_param(cpu4_suspend_min_freq, uint, 0644);
 module_param(cpu4_suspend_max_freq, uint, 0644);
 
