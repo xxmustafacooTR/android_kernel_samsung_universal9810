@@ -760,6 +760,7 @@ struct ufs_hba {
 	int ufshpb_max_regions;
 	struct delayed_work ufshpb_init_work;
 	bool issue_ioctl;
+	struct rw_semaphore query_lock;
 	struct ufshpb_lu *ufshpb_lup[UFS_UPIU_MAX_GENERAL_LUN];
 	struct scsi_device *sdev_ufs_lu[UFS_UPIU_MAX_GENERAL_LUN];
 	struct work_struct ufshpb_eh_work;

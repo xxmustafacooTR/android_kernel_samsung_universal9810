@@ -1042,6 +1042,8 @@ static void ufshcd_ungate_work(struct work_struct *work)
 		spin_unlock_irqrestore(hba->host->host_lock, flags);
 	}
 
+	ufshcd_enable_irq(hba);
+
 	/* Exit from hibern8 */
 	if (ufshcd_can_hibern8_during_gating(hba)) {
 		/* Prevent gating in this path */
@@ -1192,6 +1194,8 @@ static void ufshcd_gate_work(struct work_struct *work)
 		}
 		ufshcd_set_link_hibern8(hba);
 	}
+
+	ufshcd_disable_irq(hba);
 
 #if defined(CONFIG_PM_DEVFREQ)
 	if (ufshcd_is_clkscaling_enabled(hba)) {
@@ -5861,8 +5865,8 @@ static int ufshcd_eh_device_reset_handler(struct scsi_cmnd *cmd)
 out:
 	if (!err) {
 		dev_info(hba->dev, "%s: LU reset succeeded\n", __func__);
-		schedule_delayed_work(&hba->ufshpb_init_work,
-					msecs_to_jiffies(10));
+		queue_delayed_work(system_power_efficient_wq, 
+			&hba->ufshpb_init_work,	msecs_to_jiffies(10));
 		err = SUCCESS;
 	} else {
 		dev_err(hba->dev, "%s: failed with err %d\n", __func__, err);
@@ -6780,8 +6784,8 @@ retry:
 			ret = 0;
 		}
 
-		schedule_delayed_work(&hba->ufshpb_init_work,
-						msecs_to_jiffies(0));
+		queue_delayed_work(system_power_efficient_wq, 
+			&hba->ufshpb_init_work, msecs_to_jiffies(0));
 
 		pm_runtime_put_sync(hba->dev);
 	}
@@ -9194,6 +9198,8 @@ int ufshcd_init(struct ufs_hba *hba, void __iomem *mmio_base, unsigned int irq)
 
 	/*create sysfs related with ufs*/
 	ufshcd_add_sysfs_nodes(hba);
+
+	device_enable_async_suspend(dev);
 
 	return 0;
 

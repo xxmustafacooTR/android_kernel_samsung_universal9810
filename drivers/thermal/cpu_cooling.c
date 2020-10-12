@@ -199,9 +199,6 @@ static int cpufreq_thermal_notifier(struct notifier_block *nb,
 	unsigned long clipped_freq;
 	struct cpufreq_cooling_device *cpufreq_dev;
 
-	if (is_throttle_limit(clipped_freq, policy->cpu))
-			break;
-
 	if (event != CPUFREQ_ADJUST)
 		return NOTIFY_DONE;
 
@@ -222,6 +219,9 @@ static int cpufreq_thermal_notifier(struct notifier_block *nb,
 		 * need to do anything.
 		 */
 		clipped_freq = cpufreq_dev->clipped_freq;
+
+		if (is_throttle_limit(clipped_freq, policy->cpu))
+			break;
 
 		if (policy->max > clipped_freq) {
 			cpufreq_verify_within_limits(policy, 0, clipped_freq);
