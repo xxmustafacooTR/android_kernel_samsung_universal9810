@@ -676,7 +676,11 @@ static int kbase_file_create_kctx(struct kbase_file *const kfile,
 
 	kthread_init_worker(&kctx->worker);
 
+#ifdef CONFIG_PCIEASPM_PERFORMANCE
 	kctx->worker_thread = kthread_run_perf_critical(kthread_worker_fn,
+#else
+	kctx->worker_thread = kthread_create(kthread_worker_fn,
+#endif
 				&kctx->worker, "mali_kctx_worker");
 
 	if (IS_ERR(kctx->worker_thread)) {
@@ -684,9 +688,13 @@ static int kbase_file_create_kctx(struct kbase_file *const kfile,
 		return -ENOMEM;
 	}
 
-	param.sched_priority = 20;
+#ifdef CONFIG_PCIEASPM_PERFORMANCE
+	param.sched_priority = 50;
 	sched_setscheduler_nocheck(kctx->worker_thread, SCHED_FIFO, &param);
-
+#else
+	param.sched_priority = 12;
+	sched_setscheduler(kctx->worker_thread, SCHED_FIFO, &param);
+#endif
 	return 0;
 }
 
