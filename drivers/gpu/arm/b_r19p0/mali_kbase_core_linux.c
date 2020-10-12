@@ -679,7 +679,7 @@ static int kbase_file_create_kctx(struct kbase_file *const kfile,
 #ifdef CONFIG_PCIEASPM_PERFORMANCE
 	kctx->worker_thread = kthread_run_perf_critical(kthread_worker_fn,
 #else
-	kctx->worker_thread = kthread_create(kthread_worker_fn,
+	kctx->worker_thread = kthread_run(kthread_worker_fn,
 #endif
 				&kctx->worker, "mali_kctx_worker");
 
@@ -693,7 +693,7 @@ static int kbase_file_create_kctx(struct kbase_file *const kfile,
 	sched_setscheduler_nocheck(kctx->worker_thread, SCHED_FIFO, &param);
 #else
 	param.sched_priority = 12;
-	sched_setscheduler(kctx->worker_thread, SCHED_FIFO, &param);
+	sched_setscheduler(kctx->worker_thread, SCHED_NORMAL, &param);
 #endif
 	return 0;
 }
