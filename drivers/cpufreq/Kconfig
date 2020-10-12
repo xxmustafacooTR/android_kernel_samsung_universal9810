@@ -54,6 +54,13 @@ config CPU_FREQ_TIMES
 
          If in doubt, say N.
 
+config CPU_FREQ_SUSPEND
+	bool "CPU frequency for suspend"
+	help
+	  Adds a module interface to set CPU min/max frequency for suspend.
+
+	  If in doubt, say N.
+
 choice
 	prompt "Default CPUFreq governor"
 	default CPU_FREQ_DEFAULT_GOV_USERSPACE if ARM_SA1100_CPUFREQ || ARM_SA1110_CPUFREQ
