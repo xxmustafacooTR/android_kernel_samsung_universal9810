@@ -35,13 +35,8 @@
 static int last_max_limit = -1;
 static int sse_mode;
 
-#ifdef CONFIG_PCIEASPM_PERFORMANCE
-unsigned int big_throttle_limit = 2314000;
-unsigned int little_throttle_limit = 2002000;
-#else
-unsigned int big_throttle_limit = 1794000;
-unsigned int little_throttle_limit = 1794000;
-#endif
+unsigned int big_throttle_limit = 0;
+unsigned int little_throttle_limit = 0;
 
 bool is_throttle_limit(unsigned int clipped_freq, int cpu)
 {
