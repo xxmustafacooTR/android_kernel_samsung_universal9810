@@ -30,6 +30,7 @@
 #include <linux/slab.h>
 #include <linux/cpu.h>
 #include <linux/cpu_cooling.h>
+#include <linux/exynos-cpufreq.h>
 #include <linux/exynos-ss.h>
 
 #include <trace/events/thermal.h>
@@ -197,6 +198,9 @@ static int cpufreq_thermal_notifier(struct notifier_block *nb,
 	struct cpufreq_policy *policy = data;
 	unsigned long clipped_freq;
 	struct cpufreq_cooling_device *cpufreq_dev;
+
+	if (is_throttle_limit(clipped_freq, policy->cpu))
+			break;
 
 	if (event != CPUFREQ_ADJUST)
 		return NOTIFY_DONE;
