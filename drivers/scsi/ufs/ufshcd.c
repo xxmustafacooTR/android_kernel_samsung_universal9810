@@ -3,7 +3,10 @@
  *
  * This code is based on drivers/scsi/ufs/ufshcd.c
  * Copyright (C) 2011-2013 Samsung India Software Operations
- * Copyright (c) 2013-2016, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2013-2018, The Linux Foundation. All rights reserved.
+ * Copyright (C) 2018 XiaoMi, Inc.
+ * Copyright (c) 2017-2018 Samsung Electronics Co., Ltd.
+ * Copyright (C) 2018, Google, Inc.
  *
  * Authors:
  *	Santosh Yaraganavi <santosh.sy@samsung.com>
@@ -1950,9 +1953,15 @@ static int ufshcd_comp_scsi_upiu(struct ufs_hba *hba, struct ufshcd_lrb *lrbp)
 		lrbp->command_type = UTP_CMD_TYPE_UFS_STORAGE;
 
 	if (likely(lrbp->cmd)) {
+		if (hba->ufshpb_state == HPB_PRESENT &&
+					hba->issue_ioctl == true)
+				lrbp->lun = 0x7F;
 		ufshcd_prepare_req_desc_hdr(lrbp, &upiu_flags,
 						lrbp->cmd->sc_data_direction);
 		ufshcd_prepare_utp_scsi_cmd_upiu(lrbp, upiu_flags);
+		if (hba->ufshpb_state == HPB_PRESENT &&
+					hba->issue_ioctl == false)
+				ufshpb_prep_fn(hba, lrbp);
 	} else {
 		ret = -EINVAL;
 	}
@@ -2628,6 +2637,42 @@ out:
 	ufshcd_release(hba);
 	return err;
 }
+
+/**
+ * ufshcd_query_descriptor - API function for sending descriptor requests
+ * hba: per-adapter instance
+ * opcode: attribute opcode
+ * idn: attribute idn to access
+ * index: index field
+ * selector: selector field
+ * desc_buf: the buffer that contains the descriptor
+ * buf_len: length parameter passed to the device
+ *
+ * Returns 0 for success, non-zero in case of failure.
+ * The buf_len parameter will contain, on return, the length parameter
+ * received on the response.
+ */
+int ufshcd_query_descriptor(struct ufs_hba *hba,
+			enum query_opcode opcode, enum desc_idn idn, u8 index,
+			u8 selector, u8 *desc_buf, int *buf_len)
+{
+	int err;
+	int retries;
+
+	for (retries = QUERY_REQ_RETRIES; retries > 0; retries--) {
+		err = -EAGAIN;
+		down_read(&hba->query_lock);
+		if (!ufshcd_is_link_hibern8(hba))
+			err = __ufshcd_query_descriptor(hba, opcode, idn, index,
+						selector, desc_buf, buf_len);
+		up_read(&hba->query_lock);
+		if (!err || err == -EINVAL)
+			break;
+	}
+
+	return err;
+}
+EXPORT_SYMBOL(ufshcd_query_descriptor);
 
 /**
  * ufshcd_query_descriptor_retry - API function for sending descriptor
@@ -4494,11 +4539,14 @@ static int ufshcd_change_queue_depth(struct scsi_device *sdev, int depth)
 static int ufshcd_slave_configure(struct scsi_device *sdev)
 {
 	struct request_queue *q = sdev->request_queue;
+	struct ufs_hba *hba = shost_priv(sdev->host);
 
 	blk_queue_update_dma_pad(q, PRDT_DATA_BYTE_COUNT_PAD - 1);
 	blk_queue_max_segment_size(q, PRDT_DATA_BYTE_COUNT_MAX);
 	blk_queue_update_dma_alignment(q, PAGE_SIZE - 1);
 
+	if (sdev->lun < UFS_UPIU_MAX_GENERAL_LUN)
+		hba->sdev_ufs_lu[sdev->lun] = sdev;
 	return 0;
 }
 
@@ -4660,6 +4708,9 @@ ufshcd_transfer_rsp_status(struct ufs_hba *hba, struct ufshcd_lrb *lrbp)
 			}
 
 			break;
+			if (hba->ufshpb_state == HPB_PRESENT &&
+					scsi_status == SAM_STAT_GOOD)
+				ufshpb_rsp_upiu(hba, lrbp);
 		case UPIU_TRANSACTION_REJECT_UPIU:
 			/* TODO: handle Reject UPIU Response */
 			result = DID_ERROR << 16;
@@ -5803,11 +5854,15 @@ static int ufshcd_eh_device_reset_handler(struct scsi_cmnd *cmd)
 		}
 	}
 	spin_lock_irqsave(host->host_lock, flags);
+	if (hba->ufshpb_state == HPB_PRESENT)
+		hba->ufshpb_state = HPB_RESET;
 	ufshcd_transfer_req_compl(hba, DID_RESET);
 	spin_unlock_irqrestore(host->host_lock, flags);
 out:
 	if (!err) {
 		dev_info(hba->dev, "%s: LU reset succeeded\n", __func__);
+		schedule_delayed_work(&hba->ufshpb_init_work,
+					msecs_to_jiffies(10));
 		err = SUCCESS;
 	} else {
 		dev_err(hba->dev, "%s: failed with err %d\n", __func__, err);
@@ -6725,6 +6780,9 @@ retry:
 			ret = 0;
 		}
 
+		schedule_delayed_work(&hba->ufshpb_init_work,
+						msecs_to_jiffies(0));
+
 		pm_runtime_put_sync(hba->dev);
 	}
 
@@ -6849,6 +6907,120 @@ static enum blk_eh_timer_return ufshcd_eh_timed_out(struct scsi_cmnd *scmd)
 	return found ? BLK_EH_NOT_HANDLED : BLK_EH_RESET_TIMER;
 }
 
+static int ufshcd_query_desc_for_ufshpb(struct ufs_hba *hba, int lun,
+		struct ufs_ioctl_query_data *ioctl_data, void __user *buffer)
+{
+	unsigned char *kernel_buf;
+	int kernel_buf_len;
+	int opcode, selector;
+	int err = 0;
+	int index = 0;
+	int length = 0;
+
+	opcode = UPIU_QUERY_OPCODE_LOW(ioctl_data->opcode);
+	selector = 1;
+
+	if (ioctl_data->idn == QUERY_DESC_IDN_STRING)
+		kernel_buf_len = IOCTL_DEV_CTX_MAX_SIZE;
+	else
+		kernel_buf_len = QUERY_DESC_MAX_SIZE;
+
+	kernel_buf = kzalloc(kernel_buf_len, GFP_KERNEL);
+	if (!kernel_buf) {
+		err = -ENOMEM;
+		goto out;
+	}
+
+	switch (opcode) {
+	case UPIU_QUERY_OPCODE_WRITE_DESC:
+		if (kernel_buf_len < ioctl_data->buf_size ||
+					!ioctl_data->buf_size) {
+			err = -EINVAL;
+			goto out_release_mem;
+		}
+		/* support configuration change only */
+		if (ioctl_data->idn != QUERY_DESC_IDN_CONFIGURATION &&
+				ioctl_data->buf_size != UFSHPB_CONFIG_LEN) {
+			err = -ENOTSUPP;
+			goto out_release_mem;
+		}
+		err = copy_from_user(kernel_buf, buffer +
+				sizeof(struct ufs_ioctl_query_data),
+				ioctl_data->buf_size);
+		if (!err)
+			err = ufshpb_control_validation(hba,
+				(struct ufshpb_config_desc *)kernel_buf);
+		if (err)
+			goto out_release_mem;
+		break;
+
+	case UPIU_QUERY_OPCODE_READ_DESC:
+		switch (ioctl_data->idn) {
+		case QUERY_DESC_IDN_UNIT:
+			if (!ufs_is_valid_unit_desc_lun(lun)) {
+				err = -EINVAL;
+				dev_err(hba->dev,
+					"%s: No unit descriptor for lun 0x%x\n",
+						__func__, lun);
+				goto out_release_mem;
+			}
+			index = lun;
+			break;
+		case QUERY_DESC_IDN_STRING:
+			if (!ufs_is_valid_unit_desc_lun(lun)) {
+				err = -EINVAL;
+				dev_err(hba->dev,
+					"No unit descriptor for lun 0x%x\n",
+					lun);
+				goto out_release_mem;
+			}
+			err = ufshpb_issue_req_dev_ctx(hba->ufshpb_lup[lun],
+						kernel_buf,
+						ioctl_data->buf_size);
+			if (err < 0)
+				goto out_release_mem;
+			goto copy_buffer;
+
+		case QUERY_DESC_IDN_DEVICE:
+		case QUERY_DESC_IDN_GEOMETRY:
+		case QUERY_DESC_IDN_CONFIGURAION:
+			break;
+
+		default:
+			err = -EINVAL;
+			dev_err(hba->dev, "invalid idn %d\n", ioctl_data->idn);
+			goto out_release_mem;
+		}
+		break;
+	default:
+		err = -EINVAL;
+		dev_err(hba->dev, "invalid opcode %d\n", opcode);
+		goto out_release_mem;
+	}
+
+	length = ioctl_data->buf_size;
+	err = __ufshcd_query_descriptor(hba, opcode, ioctl_data->idn, index,
+			selector, kernel_buf, &length);
+	if (err)
+		goto out_release_mem;
+copy_buffer:
+	if (opcode == UPIU_QUERY_OPCODE_READ_DESC) {
+		err = copy_to_user(buffer, ioctl_data,
+				sizeof(struct ufs_ioctl_query_data));
+		if (err)
+			dev_err(hba->dev, "Failed copying back to user.\n");
+		err = copy_to_user(buffer + sizeof(struct ufs_ioctl_query_data),
+				kernel_buf, ioctl_data->buf_size);
+		if (err)
+			dev_err(hba->dev,
+				"Failed copying back to user : rsp_buffer.\n");
+	}
+out_release_mem:
+	kfree(kernel_buf);
+out:
+	return err;
+}
+
 /**
  * ufshcd_query_ioctl - perform user read queries
  * @hba: per-adapter instance
@@ -6887,6 +7059,14 @@ static int ufshcd_query_ioctl(struct ufs_hba *hba, u8 lun, void __user *buffer)
 			"%s: Failed copying buffer from user, err %d\n",
 			__func__, err);
 		goto out_release_mem;
+	}
+
+	if (UPIU_QUERY_OPCODE_HIGH(ioctl_data->opcode) ==
+					UPIU_QUERY_OPCODE_HIGH_HPB) {
+		err = ufshcd_query_desc_for_ufshpb(hba, lun,
+					ioctl_data, buffer);
+		kfree(ioctl_data);
+		goto out;
 	}
 
 	/* verify legal parameters & send query */
@@ -8360,6 +8540,7 @@ ufshcd_exit_latency_hist(struct ufs_hba *hba)
  */
 void ufshcd_remove(struct ufs_hba *hba)
 {
+	ufshpb_release(hba, HPB_NEED_INIT);
 	scsi_remove_host(hba->host);
 	/* disable interrupts */
 	ufshcd_disable_intr(hba, hba->intr_mask);
@@ -9005,6 +9186,9 @@ int ufshcd_init(struct ufs_hba *hba, void __iomem *mmio_base, unsigned int irq)
 	 * Set the device to power-off state
 	 */
 	ufshcd_set_ufs_dev_poweroff(hba);
+
+	/* initialize hpb structures */
+	ufshcd_init_hpb(hba);
 
 	async_schedule(ufshcd_async_scan, hba);
 

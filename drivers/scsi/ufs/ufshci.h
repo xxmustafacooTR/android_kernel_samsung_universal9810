@@ -443,6 +443,8 @@ struct utp_transfer_cmd_desc {
 	struct ufshcd_sg_entry    prd_table[SG_ALL];
 };
 
+#define UTRD_CRYPTO_ENABLE	UFS_BIT(23)
+
 /**
  * struct request_desc_header - Descriptor Header common to both UTRD and UTMRD
  * @dword0: Descriptor Header DW0

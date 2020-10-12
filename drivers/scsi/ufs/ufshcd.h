@@ -3,7 +3,9 @@
  *
  * This code is based on drivers/scsi/ufs/ufshcd.h
  * Copyright (C) 2011-2013 Samsung India Software Operations
- * Copyright (c) 2013-2016, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2013-2018, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2017-2018 Samsung Electronics Co., Ltd.
+ * Copyright (C) 2018, Google, Inc.
  *
  * Authors:
  *	Santosh Yaraganavi <santosh.sy@samsung.com>
@@ -72,6 +74,7 @@
 #include "ufs.h"
 #include "ufshci.h"
 #include "ufs_quirks.h"
+#include "ufshpb.h"
 
 #define UFSHCD "ufshcd"
 #define UFSHCD_DRIVER_VERSION "0.2"
@@ -751,6 +754,15 @@ struct ufs_hba {
 #if defined(CONFIG_UFS_DATA_LOG)
 	atomic_t	log_count;
 #endif
+	/* HPB support */
+	u32 ufshpb_feat;
+	int ufshpb_state;
+	int ufshpb_max_regions;
+	struct delayed_work ufshpb_init_work;
+	bool issue_ioctl;
+	struct ufshpb_lu *ufshpb_lup[UFS_UPIU_MAX_GENERAL_LUN];
+	struct scsi_device *sdev_ufs_lu[UFS_UPIU_MAX_GENERAL_LUN];
+	struct work_struct ufshpb_eh_work;
 };
 
 /* Returns true if clocks can be gated. Otherwise false */
@@ -944,6 +956,8 @@ int ufshcd_map_desc_id_to_length(struct ufs_hba *hba, enum desc_idn desc_id,
 	int *desc_length);
 
 u32 ufshcd_get_local_unipro_ver(struct ufs_hba *hba);
+int ufshcd_query_descriptor(struct ufs_hba *hba, enum query_opcode opcode,
+	enum desc_idn idn, u8 index, u8 selector, u8 *desc_buf, int *buf_len);
 
 /* Wrapper functions for safely calling variant operations */
 static inline const char *ufshcd_get_var_name(struct ufs_hba *hba)
