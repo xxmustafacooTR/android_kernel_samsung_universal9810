@@ -109,5 +109,3 @@ SCHED_FEAT(EXYNOS_MS, true)
 #else
 SCHED_FEAT(EXYNOS_MS, false)
 #endif
-
-SCHED_FEAT(HISI_FILTER, true)

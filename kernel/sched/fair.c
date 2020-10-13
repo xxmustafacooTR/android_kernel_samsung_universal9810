@@ -32,7 +32,6 @@
 #include <linux/task_work.h>
 #include <linux/module.h>
 #include <linux/ems.h>
-#include <linux/sched_energy.h>
 
 #include <trace/events/sched.h>
 
@@ -94,6 +93,11 @@ static unsigned int sched_nr_latency = 8;
  * parent will (try to) run first.
  */
 unsigned int sysctl_sched_child_runs_first __read_mostly;
+
+/*
+ * To enable/disable energy aware feature.
+ */
+unsigned int __read_mostly sysctl_sched_energy_aware = 1;
 
 /*
  * SCHED_OTHER wake-up granularity.
@@ -5860,11 +5864,6 @@ unsigned long capacity_min_of(int cpu)
 }
 
 
-static inline bool energy_aware(void)
-{
-	return sched_feat(ENERGY_AWARE);
-}
-
 /**
  * Amount of capacity of a CPU that is (estimated to be) used by CFS tasks
  * @cpu: the CPU to get the utilization of
@@ -8649,67 +8648,13 @@ static struct task_struct *detach_one_task(struct lb_env *env)
 	return NULL;
 }
 
-/* must hold runqueue lock for queue se is currently on */
-static struct task_struct *hisi_get_heaviest_task(
-				struct task_struct *p, int cpu)
-{
-	int num_tasks = 5;
-	struct sched_entity *se = &p->se;
-	unsigned long int max_util = task_util(p), max_preferred_util= 0, util;
-	struct task_struct *tsk, *max_preferred_tsk = NULL, *max_util_task = p;
-	bool boosted, prefer_idle;
-
-	/* The currently running task is not on the runqueue */
-	se = __pick_first_entity(cfs_rq_of(se));
-
-	while (num_tasks && se) {
-		if (!entity_is_task(se)) {
-			se = __pick_next_entity(se);
-			num_tasks--;
-			continue;
-		}
-
-		tsk = task_of(se);
-		util = boosted_task_util(tsk);
-
-#ifdef CONFIG_CGROUP_SCHEDTUNE
-		boosted = schedtune_task_boost(p) > 0;
-		prefer_idle = schedtune_prefer_idle(p) > 0;
-#else
-		boosted = get_sysctl_sched_cfs_boost() > 0;
-		prefer_idle = 0;
-#endif
-
-		if (cpumask_test_cpu(cpu, &tsk->cpus_allowed)) {
-			if (boosted || prefer_idle) {
-				if (util > max_preferred_util) {
-					max_preferred_util = util;
-					max_preferred_tsk = tsk;
-				}
-			} else {
-				if (util > max_util) {
-					max_util = util;
-					max_util_task = tsk;
-				}
-			}
-		}
-
-		se = __pick_next_entity(se);
-		num_tasks--;
-	}
-
-	return max_preferred_tsk ? max_preferred_tsk : max_util_task;
-}
-
 static const unsigned int sched_nr_migrate_break = 32;
-static const unsigned int up_migration_util_filter = 25;
 
 static int __detach_tasks(struct lb_env* env, struct list_head *tasks)
 {
 	struct task_struct *p;
 	unsigned long load;
 	int detached = 0;
-	bool boosted, prefer_idle;
 
 	while (!list_empty(tasks)) {
 		/*
@@ -8838,23 +8783,6 @@ static int detach_tasks(struct lb_env *env)
 			env->loop_break += sched_nr_migrate_break;
 			env->flags |= LBF_NEED_BREAK;
 			break;
-		}
-
-		if (sched_feat(HISI_FILTER) && energy_aware() &&
-		    (capacity_orig_of(env->dst_cpu) > capacity_orig_of(env->src_cpu))) {
-			p = hisi_get_heaviest_task(p, env->dst_cpu);
-
-#ifdef CONFIG_CGROUP_SCHEDTUNE
-			boosted = schedtune_task_boost(p) > 0;
-			prefer_idle = schedtune_prefer_idle(p) > 0;
-#else
-			boosted = get_sysctl_sched_cfs_boost() > 0;
-			prefer_idle = 0;
-#endif
-			if (!boosted && !prefer_idle &&
-				task_util(p) * 100 < capacity_orig_of(env->src_cpu) * up_migration_util_filter)
-				goto next;
-
 		}
 
 		if (!can_migrate_task(p, env))
@@ -9209,11 +9137,9 @@ skip_unlock: __attribute__ ((unused));
 	update_lbt_overutil(cpu, capacity);
 
 	cpu_rq(cpu)->cpu_capacity = capacity;
-	if (!sd->child) {
-		sdg->sgc->capacity = capacity;
-		sdg->sgc->max_capacity = capacity;
-		sdg->sgc->min_capacity = capacity;
-	}
+	sdg->sgc->capacity = capacity;
+	sdg->sgc->max_capacity = capacity;
+	sdg->sgc->min_capacity = capacity;
 }
 
 void update_group_capacity(struct sched_domain *sd, int cpu)
@@ -9227,16 +9153,9 @@ void update_group_capacity(struct sched_domain *sd, int cpu)
 	interval = clamp(interval, 1UL, max_load_balance_interval);
 	sdg->sgc->next_update = jiffies + interval;
 
-	/*
-	 * When there is only 1 CPU in the sched group of a higher
-	 * level sched domain (sd->child != NULL), the load balance
-	 * does not happen for the last level sched domain. Check
-	 * this condition and update the CPU capacity accordingly.
-	 */
-	if (cpumask_weight(sched_group_span(sdg)) == 1) {
+	if (!child) {
 		update_cpu_capacity(sd, cpu);
-		if (!child)
-			return;
+		return;
 	}
 
 	capacity = 0;
