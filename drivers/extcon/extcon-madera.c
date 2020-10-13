@@ -657,7 +657,7 @@ static void madera_jds_start_timeout(struct madera_extcon *info)
 	if (state->timeout_ms && state->timeout) {
 		int ms = state->timeout_ms(info);
 
-		schedule_delayed_work(&info->state_timeout_work,
+		queue_delayed_work(system_power_efficient_wq, &info->state_timeout_work,
 				      msecs_to_jiffies(ms));
 	}
 }
@@ -2446,7 +2446,7 @@ static irqreturn_t madera_micdet(int irq, void *data)
 	 * and prevent race conditions if an IRQ occurs while
 	 * running the delayed work
 	 */
-	schedule_delayed_work(&info->micd_detect_work,
+	queue_delayed_work(system_power_efficient_wq, &info->micd_detect_work,
 			      msecs_to_jiffies(debounce));
 
 	return IRQ_HANDLED;

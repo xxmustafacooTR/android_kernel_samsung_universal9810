@@ -19,8 +19,10 @@ enum {
 
 unsigned long devfreq_boost_freq = CONFIG_DEVFREQ_EXYNOS_MIF_BOOST_FREQ;
 unsigned short devfreq_boost_dur = CONFIG_DEVFREQ_INPUT_BOOST_DURATION_MS;
+unsigned long devfreq_light_input_boost_freq = CONFIG_DEVFREQ_EXYNOS_MIF_LIGHT_INPUT_BOOST_FREQ;
 
 module_param(devfreq_boost_freq, long, 0644);
+module_param(devfreq_light_input_boost_freq, long, 0644);
 module_param(devfreq_boost_dur, short, 0644);
 
 struct boost_dev {
@@ -155,30 +157,40 @@ static void devfreq_update_boosts(struct boost_dev *b, unsigned long state)
 		df->min_freq = df->profile->freq_table[first_freq_idx];
 		df->max_boost = false;
 	} else {
-		df->min_freq = test_bit(INPUT_BOOST, &state) ?
-			       min(devfreq_boost_freq , df->max_freq) :
-			       df->profile->freq_table[first_freq_idx];
 		df->max_boost = test_bit(MAX_BOOST, &state);
 	}
 	update_devfreq(df);
 	mutex_unlock(&df->lock);
 }
 
+static void devfreq_boost_light_input_boost(struct boost_dev *b, unsigned long state)
+{
+	struct devfreq *df = b->df;
+	int first_freq_idx = df->profile->max_state - 1;
+
+	mutex_lock(&df->lock);
+	df->min_freq = test_bit(INPUT_BOOST, &state) ?
+		       min(devfreq_light_input_boost_freq, df->max_freq) :
+		       df->profile->freq_table[first_freq_idx];
+	update_devfreq(df);
+	mutex_unlock(&df->lock);
+}
+
 static int devfreq_boost_thread(void *data)
 {
-	static const struct sched_param sched_max_rt_prio = {
-		.sched_priority = MAX_RT_PRIO - 1
+	static const struct sched_param param = {
+		.sched_priority = 3
 	};
 	struct boost_dev *b = data;
 	unsigned long old_state = 0;
 
-	sched_setscheduler_nocheck(current, SCHED_FIFO, &sched_max_rt_prio);
+	sched_setscheduler_nocheck(current, SCHED_NORMAL, &param);
 
 	while (1) {
 		bool should_stop = false;
 		unsigned long curr_state;
 
-		wait_event(b->boost_waitq,
+		wait_event_interruptible(b->boost_waitq,
 			(curr_state = READ_ONCE(b->state)) != old_state ||
 			(should_stop = kthread_should_stop()));
 
@@ -187,6 +199,7 @@ static int devfreq_boost_thread(void *data)
 
 		old_state = curr_state;
 		devfreq_update_boosts(b, curr_state);
+		devfreq_boost_light_input_boost(b, curr_state);
 	}
 
 	return 0;

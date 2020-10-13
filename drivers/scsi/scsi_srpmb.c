@@ -332,7 +332,11 @@ int init_wsm(struct device *dev)
 		}
 
 		ret = request_irq(rpmb_ctx->irq, rpmb_irq_handler,
+#ifdef CONFIG_PCIEASPM_PERFORMANCE
+				IRQF_TRIGGER_RISING | IRQF_PERF_CRITICAL, sr_pdev->name, rpmb_ctx);
+#else
 				IRQF_TRIGGER_RISING, sr_pdev->name, rpmb_ctx);
+#endif
 		if (ret) {
 			dev_err(&sr_pdev->dev, "request irq failed: %x\n", ret);
 			goto out_srpmb_init_fail;

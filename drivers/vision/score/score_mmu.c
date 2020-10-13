@@ -677,11 +677,15 @@ static void __score_mmu_freelist_deinit(struct score_mmu *mmu)
 static int __score_mmu_unmap_worker_init(struct score_mmu *mmu)
 {
 	int ret = 0;
-	struct sched_param param = { .sched_priority = MAX_RT_PRIO - 1 };
+	struct sched_param param = { .sched_priority = 4 };
 
 	kthread_init_worker(&mmu->unmap_worker);
 
+#ifdef CONFIG_PCIEASPM_PERFORMANCE
+	mmu->unmap_task = kthread_run_perf_critical(kthread_worker_fn,
+#else
 	mmu->unmap_task = kthread_run(kthread_worker_fn,
+#endif
 			&mmu->unmap_worker, "score_unmap_worker");
 	if (IS_ERR(mmu->unmap_task)) {
 		ret = PTR_ERR(mmu->unmap_task);
@@ -690,7 +694,7 @@ static int __score_mmu_unmap_worker_init(struct score_mmu *mmu)
 		goto p_err_kthread;
 	}
 
-	ret = sched_setscheduler_nocheck(mmu->unmap_task, SCHED_FIFO, &param);
+	ret = sched_setscheduler_nocheck(mmu->unmap_task, SCHED_NORMAL, &param);
 	if (ret) {
 		score_err("scheduler setting of unmap_worker failed(%d)\n",
 				ret);

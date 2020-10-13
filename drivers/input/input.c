@@ -466,7 +466,7 @@ DECLARE_STATE_FUNC(idle)
 			}
 		}
 		SET_BOOSTER;
-		schedule_delayed_work(&_this->input_booster_timeout_work[_this->index], msecs_to_jiffies(_this->param[_this->index].time));
+		queue_delayed_work(system_power_efficient_wq, &_this->input_booster_timeout_work[_this->index], msecs_to_jiffies(_this->param[_this->index].time));
 		_this->index++;
 		CHANGE_STATE_TO(press);
 	} else if (input_booster_event == BOOSTER_OFF) {
@@ -489,16 +489,16 @@ DECLARE_STATE_FUNC(press)
 					cancel_delayed_work(&_this->input_booster_timeout_work[(_this->index) ? _this->index-1 : 0]);
 					SET_BOOSTER;
 				}
-				schedule_delayed_work(&_this->input_booster_timeout_work[_this->index], msecs_to_jiffies(_this->param[_this->index].time));
-				pr_booster("[Input Booster] %s           schedule_delayed_work again  time : %d\n", glGage, _this->param[_this->index].time);
+				queue_delayed_work(system_power_efficient_wq, &_this->input_booster_timeout_work[_this->index], msecs_to_jiffies(_this->param[_this->index].time));
+				pr_booster("[Input Booster] %s           queue_delayed_work(system_power_efficient_wq,  again  time : %d\n", glGage, _this->param[_this->index].time);
 				if (!delayed_work_pending(&_this->input_booster_timeout_work[_this->index]) && _this->param[_this->index].time > 0) {
-					pr_booster("[Input Booster] %s           schedule_delayed_work Re-again time : %d\n", glGage, _this->param[(_this->index > 0) ? _this->index-1 : _this->index].time);
-					schedule_delayed_work(&_this->input_booster_timeout_work[(_this->index > 0) ? _this->index-1 : _this->index], msecs_to_jiffies(_this->param[(_this->index > 0) ? _this->index-1 : _this->index].time));
+					pr_booster("[Input Booster] %s           queue_delayed_work(system_power_efficient_wq,  Re-again time : %d\n", glGage, _this->param[(_this->index > 0) ? _this->index-1 : _this->index].time);
+					queue_delayed_work(system_power_efficient_wq, &_this->input_booster_timeout_work[(_this->index > 0) ? _this->index-1 : _this->index], msecs_to_jiffies(_this->param[(_this->index > 0) ? _this->index-1 : _this->index].time));
 				}
 			} else if (_this->param[_this->index].time > 0) {
-				schedule_delayed_work(&_this->input_booster_timeout_work[_this->index], msecs_to_jiffies(_this->param[_this->index].time));
+				queue_delayed_work(system_power_efficient_wq, &_this->input_booster_timeout_work[_this->index], msecs_to_jiffies(_this->param[_this->index].time));
 			} else {
-				schedule_delayed_work(&_this->input_booster_timeout_work[(_this->index) ? _this->index-1 : 0], msecs_to_jiffies(_this->param[(_this->index > 0) ? _this->index-1 : _this->index].time));
+				queue_delayed_work(system_power_efficient_wq, &_this->input_booster_timeout_work[(_this->index) ? _this->index-1 : 0], msecs_to_jiffies(_this->param[(_this->index > 0) ? _this->index-1 : _this->index].time));
 			}
 			_this->index++;
 			_this->multi_events = (_this->multi_events > 0) ? 0 : _this->multi_events;
@@ -508,7 +508,7 @@ DECLARE_STATE_FUNC(press)
 		if (delayed_work_pending(&_this->input_booster_timeout_work[_this->index])) {
 			pr_booster("[Input Booster] %s           cancel the pending workqueue for multi events\n", glGage);
 			cancel_delayed_work(&_this->input_booster_timeout_work[_this->index]);
-			schedule_delayed_work(&_this->input_booster_timeout_work[(_this->index) ? _this->index-1 : 0], msecs_to_jiffies(_this->param[(_this->index > 0) ? _this->index-1 : _this->index].time));
+			queue_delayed_work(system_power_efficient_wq, &_this->input_booster_timeout_work[(_this->index) ? _this->index-1 : 0], msecs_to_jiffies(_this->param[(_this->index > 0) ? _this->index-1 : _this->index].time));
 		} else {
 			pr_booster("[Input Booster] %s      State : Press  index : %d, time : %d\n", glGage, _this->index, _this->param[_this->index].time);
 		}

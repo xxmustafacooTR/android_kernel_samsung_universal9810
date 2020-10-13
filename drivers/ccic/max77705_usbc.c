@@ -2713,7 +2713,7 @@ static void delayed_external_notifier_init(struct work_struct *work)
 	if (ret < 0) {
 		pr_err("Manager notifier init time is %d.\n", retry_count);
 		if (retry_count++ != max_retry_count)
-			schedule_delayed_work(&usbpd_data->usb_external_notifier_register_work, msecs_to_jiffies(2000));
+			queue_delayed_work(system_power_efficient_wq, &usbpd_data->usb_external_notifier_register_work, msecs_to_jiffies(2000));
 		else
 			pr_err("fail to init external notifier\n");
 	} else
@@ -2776,14 +2776,14 @@ void factory_execute_monitor(int type)
 	break;
 	case FAC_ABNORMAL_REPEAT_RID:
 		if (!rid_cnt) {
-			schedule_delayed_work(&usbpd_data->factory_rid_work, msecs_to_jiffies(1000));
+			queue_delayed_work(system_power_efficient_wq, &usbpd_data->factory_rid_work, msecs_to_jiffies(1000));
 			msg_maxim("start the factory_rid_work");
 		}
 		usbpd_data->factory_mode.FAC_Abnormal_Repeat_RID++;
 	break;
 	case FAC_ABNORMAL_REPEAT_STATE:
 		if (!state_cnt) {
-			schedule_delayed_work(&usbpd_data->factory_state_work, msecs_to_jiffies(1000));
+			queue_delayed_work(system_power_efficient_wq, &usbpd_data->factory_state_work, msecs_to_jiffies(1000));
 			msg_maxim("start the factory_state_work");
 		}
 		usbpd_data->factory_mode.FAC_Abnormal_Repeat_State++;
@@ -2983,7 +2983,7 @@ static int max77705_usbc_probe(struct platform_device *pdev)
 	ret = usb_external_notify_register(&usbc_data->usb_external_notifier_nb,
 		pdic_handle_usb_external_notifier_notification, EXTERNAL_NOTIFY_DEV_PDIC);
 	if (ret < 0)
-		schedule_delayed_work(&usbc_data->usb_external_notifier_register_work, msecs_to_jiffies(2000));
+		queue_delayed_work(system_power_efficient_wq, &usbc_data->usb_external_notifier_register_work, msecs_to_jiffies(2000));
 	else
 		pr_info("%s : external notifier register done!\n", __func__);
 

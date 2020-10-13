@@ -2956,9 +2956,9 @@ static void sec_bat_set_polling(
 	case SEC_BATTERY_MONITOR_WORKQUEUE:
 		if (battery->pdata->monitor_initial_count) {
 			battery->pdata->monitor_initial_count--;
-			schedule_delayed_work(&battery->polling_work, HZ);
+			queue_delayed_work(system_power_efficient_wq, &battery->polling_work, HZ);
 		} else
-			schedule_delayed_work(&battery->polling_work,
+			queue_delayed_work(system_power_efficient_wq, &battery->polling_work,
 				polling_time_temp * HZ);
 		break;
 	case SEC_BATTERY_MONITOR_ALARM:

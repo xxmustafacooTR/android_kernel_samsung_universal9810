@@ -600,7 +600,7 @@ static void atkbd_event_work(struct work_struct *work)
 		 * it may not be ready yet. In this case we need to keep
 		 * rescheduling till reconnect completes.
 		 */
-		schedule_delayed_work(&atkbd->event_work,
+		queue_delayed_work(system_power_efficient_wq, &atkbd->event_work,
 					msecs_to_jiffies(100));
 	} else {
 		if (test_and_clear_bit(ATKBD_LED_EVENT_BIT, &atkbd->event_mask))
@@ -627,7 +627,7 @@ static void atkbd_schedule_event_work(struct atkbd *atkbd, int event_bit)
 	atkbd->event_jiffies = jiffies;
 	set_bit(event_bit, &atkbd->event_mask);
 	mb();
-	schedule_delayed_work(&atkbd->event_work, delay);
+	queue_delayed_work(system_power_efficient_wq, &atkbd->event_work, delay);
 }
 
 /*

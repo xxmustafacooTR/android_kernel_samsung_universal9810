@@ -17,6 +17,7 @@
 #include <linux/module.h>
 #include <linux/slab.h>
 #include <linux/time.h>
+#include <linux/ems_service.h>
 
 struct notifier_block fb_notifier;
 
@@ -24,6 +25,8 @@ static struct workqueue_struct *dsboost_wq;
 
 static struct work_struct input_boost_work;
 static struct delayed_work input_boost_rem;
+static struct kpp kpp_ta;
+static struct kpp kpp_fg;
 
 static __read_mostly unsigned short input_boost_duration = CONFIG_INPUT_BOOST_DURATION;
 static __read_mostly unsigned short input_stune_boost = CONFIG_INPUT_STUNE_BOOST;
@@ -46,12 +49,16 @@ static inline void set_boost(bool enable)
 
 		do_prefer_idle("top-app", 1);
 		do_prefer_idle("foreground", 1);
+		kpp_request(STUNE_TOPAPP, &kpp_ta, 1);
+		kpp_request(STUNE_FOREGROUND, &kpp_fg, 1);
 	} else {
 		input_stune_boost_active = reset_stune_boost("top-app",
 				input_stune_slot);
 
 		do_prefer_idle("top-app", 0);
 		do_prefer_idle("foreground", 0);
+		kpp_request(STUNE_TOPAPP, &kpp_ta, 0);
+		kpp_request(STUNE_FOREGROUND, &kpp_fg, 0);
 	}
 }
 

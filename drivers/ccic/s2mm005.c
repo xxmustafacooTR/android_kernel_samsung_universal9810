@@ -1128,7 +1128,7 @@ static void delayed_external_notifier_init(struct work_struct *work)
 	if (ret < 0) {
 		pr_err("Manager notifier init time is %d.\n", retry_count);
 		if (retry_count++ != max_retry_count)
-			schedule_delayed_work(&usbpd_data->usb_external_notifier_register_work, msecs_to_jiffies(2000));
+			queue_delayed_work(system_power_efficient_wq, &usbpd_data->usb_external_notifier_register_work, msecs_to_jiffies(2000));
 		else
 			pr_err("fail to init external notifier\n");
 	} else
@@ -1458,7 +1458,7 @@ static int s2mm005_usbpd_probe(struct i2c_client *i2c,
 	fp_select_pdo = s2mm005_select_pdo;
 	usbpd_data->ccic_check_at_booting = 1;
 	INIT_DELAYED_WORK(&usbpd_data->ccic_init_work, ccic_state_check_work);
-	schedule_delayed_work(&usbpd_data->ccic_init_work, msecs_to_jiffies(200));
+	queue_delayed_work(system_power_efficient_wq, &usbpd_data->ccic_init_work, msecs_to_jiffies(200));
 
 	ret = request_threaded_irq(usbpd_data->irq, NULL, s2mm005_usbpd_irq_thread,
 		(IRQF_TRIGGER_FALLING | IRQF_NO_SUSPEND | IRQF_ONESHOT), "s2mm005-usbpd", usbpd_data);
@@ -1489,7 +1489,7 @@ static int s2mm005_usbpd_probe(struct i2c_client *i2c,
 	ret = usb_external_notify_register(&usbpd_data->usb_external_notifier_nb,
 		pdic_handle_usb_external_notifier_notification, EXTERNAL_NOTIFY_DEV_PDIC);
 	if (ret < 0)
-		schedule_delayed_work(&usbpd_data->usb_external_notifier_register_work, msecs_to_jiffies(2000));
+		queue_delayed_work(system_power_efficient_wq, &usbpd_data->usb_external_notifier_register_work, msecs_to_jiffies(2000));
 	else
 		pr_info("%s : external notifier register done!\n", __func__);
 

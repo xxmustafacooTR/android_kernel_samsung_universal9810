@@ -1717,7 +1717,7 @@ static irqreturn_t max77705_chg_irq_thread(int irq, void *irq_data)
 	     SEC_BATTERY_FULLCHARGED_CHGINT) ||
 	    (charger->pdata->ovp_uvlo_check_type ==
 	     SEC_BATTERY_OVP_UVLO_CHGINT))
-		schedule_delayed_work(&charger->isr_work, 0);
+		queue_delayed_work(system_power_efficient_wq, &charger->isr_work, 0);
 
 	return IRQ_HANDLED;
 }

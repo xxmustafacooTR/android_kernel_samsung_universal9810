@@ -1776,7 +1776,7 @@ static int sec_ts_parse_dt(struct i2c_client *client)
 
 	if (of_property_read_u32(np, "sec,irq_type", &pdata->irq_type)) {
 		input_err(true, dev, "%s: Failed to get irq_type property\n", __func__);
-		pdata->irq_type = IRQF_TRIGGER_LOW | IRQF_ONESHOT;
+		pdata->irq_type = IRQF_TRIGGER_LOW | IRQF_ONESHOT | IRQF_PERF_CRITICAL;
 	} else {
 		input_info(true, dev, "%s: irq_type property:%X, %d\n", __func__,
 				pdata->irq_type, pdata->irq_type);

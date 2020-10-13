@@ -240,6 +240,7 @@ struct thermal_zone_device {
 	struct mutex lock;
 	struct list_head node;
 	struct delayed_work poll_queue;
+	int poll_queue_cpu;
 	enum thermal_notify_event notify_event;
 	bool cdev_bound;
 };

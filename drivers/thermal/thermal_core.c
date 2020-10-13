@@ -39,6 +39,7 @@
 #include <net/netlink.h>
 #include <net/genetlink.h>
 #include <linux/suspend.h>
+#include <linux/cpu.h>
 
 #define CREATE_TRACE_POINTS
 #include <trace/events/thermal.h>
@@ -68,6 +69,9 @@ static struct workqueue_struct *thermal_wq;
 static void start_poll_queue(struct thermal_zone_device *tz, int delay)
 {
 	mod_delayed_work(thermal_wq, &tz->poll_queue,
+			msecs_to_jiffies(delay));
+
+	mod_delayed_work_on(tz->poll_queue_cpu, system_freezable_wq, &tz->poll_queue,
 			msecs_to_jiffies(delay));
 }
 
@@ -1954,6 +1958,7 @@ struct thermal_zone_device *thermal_zone_device_register(const char *type,
 	tz->trips = trips;
 	tz->passive_delay = passive_delay;
 	tz->polling_delay = polling_delay;
+	tz->poll_queue_cpu = 1;
 
 	/* A new thermal zone needs to be updated anyway. */
 	atomic_set(&tz->need_update, 1);
@@ -2362,6 +2367,41 @@ static void thermal_unregister_governors(void)
 	thermal_gov_power_allocator_unregister();
 }
 
+static int thermal_cpu_callback(struct notifier_block *nfb,
+					unsigned long action, void *hcpu)
+{
+	unsigned int cpu = (unsigned long)hcpu;
+	struct thermal_zone_device *pos;
+
+	switch (action) {
+	case CPU_ONLINE:
+		if (cpu == 1) {
+			list_for_each_entry(pos, &thermal_tz_list, node) {
+				pos->poll_queue_cpu = 1;
+				if (pos->polling_delay) {
+					start_poll_queue(pos, pos->polling_delay);
+				}
+			}
+		}
+		break;
+	case CPU_DOWN_PREPARE:
+		list_for_each_entry(pos, &thermal_tz_list, node) {
+			if (pos->poll_queue_cpu == cpu) {
+				pos->poll_queue_cpu = 0;
+				if (pos->polling_delay)
+					start_poll_queue(pos, pos->polling_delay);
+			}
+		}
+		break;
+	}
+	return NOTIFY_OK;
+}
+
+static struct notifier_block thermal_cpu_notifier =
+{
+	.notifier_call = thermal_cpu_callback,
+};
+
 static int thermal_pm_notify(struct notifier_block *nb,
 				unsigned long mode, void *_unused)
 {
@@ -2408,6 +2448,8 @@ static int __init thermal_init(void)
 			0, "thermal_check");
 	apply_workqueue_attrs(thermal_wq, &attr);
 
+	register_hotcpu_notifier(&thermal_cpu_notifier);
+
 	result = thermal_register_governors();
 	if (result)
 		goto error;
@@ -2449,6 +2491,7 @@ error:
 static void __exit thermal_exit(void)
 {
 	unregister_pm_notifier(&thermal_pm_nb);
+	unregister_hotcpu_notifier(&thermal_cpu_notifier);
 	of_thermal_destroy_zones();
 	genetlink_exit();
 	class_unregister(&thermal_class);

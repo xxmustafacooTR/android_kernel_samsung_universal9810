@@ -3982,7 +3982,7 @@ static void sc_shutdown(struct platform_device *pdev)
 
 	set_bit(DEV_SUSPEND, &sc->state);
 
-	wait_event(sc->wait,
+	wait_event_interruptible(sc->wait,
 			!test_bit(DEV_RUN, &sc->state));
 
 	iovmm_deactivate(sc->dev);

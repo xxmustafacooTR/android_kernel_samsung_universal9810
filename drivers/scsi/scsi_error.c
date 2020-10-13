@@ -312,7 +312,7 @@ int scsi_block_when_processing_errors(struct scsi_device *sdev)
 {
 	int online;
 
-	wait_event(sdev->host->host_wait, !scsi_host_in_recovery(sdev->host));
+	wait_event_interruptible(sdev->host->host_wait, !scsi_host_in_recovery(sdev->host));
 
 	online = scsi_device_online(sdev);
 

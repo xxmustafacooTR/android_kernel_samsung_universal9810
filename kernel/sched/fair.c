@@ -32,6 +32,7 @@
 #include <linux/task_work.h>
 #include <linux/module.h>
 #include <linux/ems.h>
+#include <linux/sched_energy.h>
 
 #include <trace/events/sched.h>
 
@@ -7217,6 +7218,7 @@ int find_best_target(struct task_struct *p, int *backup_cpu,
 	int best_idle_cstate = INT_MAX;
 	struct sched_domain *sd;
 	struct sched_group *sg;
+	struct task_struct *curr_tsk;
 	int best_active_cpu = -1;
 	int best_idle_cpu = -1;
 	int target_cpu = -1;
@@ -7461,6 +7463,12 @@ int find_best_target(struct task_struct *p, int *backup_cpu,
 			}
 
 			/*
+			 * Consider only idle CPUs for active migration.
+			 */
+			if (p->state == TASK_RUNNING)
+				continue;
+
+			/*
 			 * Case C) Non latency sensitive tasks on ACTIVE CPUs.
 			 *
 			 * Pack tasks in the most energy efficient capacities.
@@ -7513,6 +7521,14 @@ int find_best_target(struct task_struct *p, int *backup_cpu,
 	 *   a) ACTIVE CPU: target_cpu
 	 *   b) IDLE CPU: best_idle_cpu
 	 */
+
+	if (target_cpu != -1 && !idle_cpu(target_cpu) &&
+			best_idle_cpu != -1) {
+		curr_tsk = READ_ONCE(cpu_rq(target_cpu)->curr);
+		if (curr_tsk && schedtune_task_boost_rcu_locked(curr_tsk)) {
+			target_cpu = best_idle_cpu;
+		}
+	}
 
 	if (prefer_idle && (best_idle_cpu != -1)) {
 		trace_sched_find_best_target(p, prefer_idle, min_util, cpu,
@@ -8633,13 +8649,67 @@ static struct task_struct *detach_one_task(struct lb_env *env)
 	return NULL;
 }
 
+/* must hold runqueue lock for queue se is currently on */
+static struct task_struct *hisi_get_heaviest_task(
+				struct task_struct *p, int cpu)
+{
+	int num_tasks = 5;
+	struct sched_entity *se = &p->se;
+	unsigned long int max_util = task_util(p), max_preferred_util= 0, util;
+	struct task_struct *tsk, *max_preferred_tsk = NULL, *max_util_task = p;
+	bool boosted, prefer_idle;
+
+	/* The currently running task is not on the runqueue */
+	se = __pick_first_entity(cfs_rq_of(se));
+
+	while (num_tasks && se) {
+		if (!entity_is_task(se)) {
+			se = __pick_next_entity(se);
+			num_tasks--;
+			continue;
+		}
+
+		tsk = task_of(se);
+		util = boosted_task_util(tsk);
+
+#ifdef CONFIG_CGROUP_SCHEDTUNE
+		boosted = schedtune_task_boost(p) > 0;
+		prefer_idle = schedtune_prefer_idle(p) > 0;
+#else
+		boosted = get_sysctl_sched_cfs_boost() > 0;
+		prefer_idle = 0;
+#endif
+
+		if (cpumask_test_cpu(cpu, &tsk->cpus_allowed)) {
+			if (boosted || prefer_idle) {
+				if (util > max_preferred_util) {
+					max_preferred_util = util;
+					max_preferred_tsk = tsk;
+				}
+			} else {
+				if (util > max_util) {
+					max_util = util;
+					max_util_task = tsk;
+				}
+			}
+		}
+
+		se = __pick_next_entity(se);
+		num_tasks--;
+	}
+
+	return max_preferred_tsk ? max_preferred_tsk : max_util_task;
+}
+
 static const unsigned int sched_nr_migrate_break = 32;
+static const unsigned int up_migration_util_filter = 25;
 
 static int __detach_tasks(struct lb_env* env, struct list_head *tasks)
 {
 	struct task_struct *p;
 	unsigned long load;
 	int detached = 0;
+	bool boosted, prefer_idle;
 
 	while (!list_empty(tasks)) {
 		/*
@@ -8768,6 +8838,23 @@ static int detach_tasks(struct lb_env *env)
 			env->loop_break += sched_nr_migrate_break;
 			env->flags |= LBF_NEED_BREAK;
 			break;
+		}
+
+		if (sched_feat(HISI_FILTER) && energy_aware() &&
+		    (capacity_orig_of(env->dst_cpu) > capacity_orig_of(env->src_cpu))) {
+			p = hisi_get_heaviest_task(p, env->dst_cpu);
+
+#ifdef CONFIG_CGROUP_SCHEDTUNE
+			boosted = schedtune_task_boost(p) > 0;
+			prefer_idle = schedtune_prefer_idle(p) > 0;
+#else
+			boosted = get_sysctl_sched_cfs_boost() > 0;
+			prefer_idle = 0;
+#endif
+			if (!boosted && !prefer_idle &&
+				task_util(p) * 100 < capacity_orig_of(env->src_cpu) * up_migration_util_filter)
+				goto next;
+
 		}
 
 		if (!can_migrate_task(p, env))
@@ -9122,9 +9209,11 @@ skip_unlock: __attribute__ ((unused));
 	update_lbt_overutil(cpu, capacity);
 
 	cpu_rq(cpu)->cpu_capacity = capacity;
-	sdg->sgc->capacity = capacity;
-	sdg->sgc->max_capacity = capacity;
-	sdg->sgc->min_capacity = capacity;
+	if (!sd->child) {
+		sdg->sgc->capacity = capacity;
+		sdg->sgc->max_capacity = capacity;
+		sdg->sgc->min_capacity = capacity;
+	}
 }
 
 void update_group_capacity(struct sched_domain *sd, int cpu)
@@ -9138,9 +9227,16 @@ void update_group_capacity(struct sched_domain *sd, int cpu)
 	interval = clamp(interval, 1UL, max_load_balance_interval);
 	sdg->sgc->next_update = jiffies + interval;
 
-	if (!child) {
+	/*
+	 * When there is only 1 CPU in the sched group of a higher
+	 * level sched domain (sd->child != NULL), the load balance
+	 * does not happen for the last level sched domain. Check
+	 * this condition and update the CPU capacity accordingly.
+	 */
+	if (cpumask_weight(sched_group_span(sdg)) == 1) {
 		update_cpu_capacity(sd, cpu);
-		return;
+		if (!child)
+			return;
 	}
 
 	capacity = 0;
@@ -10153,6 +10249,13 @@ static int need_active_balance(struct lb_env *env)
 				cpu_overutilized(env->src_cpu) &&
 				!cpu_overutilized(env->dst_cpu)) {
 			return 1;
+	}
+
+	if ((capacity_of(env->src_cpu) < capacity_of(env->dst_cpu)) &&
+				env->src_rq->cfs.h_nr_running == 1 &&
+				cpu_overutilized(env->src_cpu) &&
+				!cpu_overutilized(env->dst_cpu)) {
+		return 1;
 	}
 
 	return unlikely(sd->nr_balance_failed > sd->cache_nice_tries+2);

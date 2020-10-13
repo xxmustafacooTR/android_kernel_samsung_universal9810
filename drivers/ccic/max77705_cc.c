@@ -263,10 +263,10 @@ void max77705_notify_dr_status(struct max77705_usbc_platform_data *usbpd_data, u
 			pr_info("%s: schedule_delayed_work - pd_state : %d\n",
 					__func__, usbpd_data->pd_state);
 			if (usbpd_data->acc_type == CCIC_DOCK_HMT)
-				schedule_delayed_work(&usbpd_data->acc_detach_work,
+				queue_delayed_work(system_power_efficient_wq, &usbpd_data->acc_detach_work,
 					msecs_to_jiffies(GEAR_VR_DETACH_WAIT_MS));
 			else
-				schedule_delayed_work(&usbpd_data->acc_detach_work,
+				queue_delayed_work(system_power_efficient_wq, &usbpd_data->acc_detach_work,
 					msecs_to_jiffies(0));
 		}
 		usbpd_data->is_host = HOST_OFF;

@@ -201,7 +201,7 @@ void g2d_prepare_suspend(struct g2d_device *g2d_dev)
 	set_bit(G2D_DEVICE_STATE_SUSPEND, &g2d_dev->state);
 	spin_unlock_irq(&g2d_dev->lock_task);
 
-	wait_event(g2d_dev->freeze_wait, list_empty(&g2d_dev->tasks_active));
+	wait_event_interruptible(g2d_dev->freeze_wait, list_empty(&g2d_dev->tasks_active));
 }
 
 void g2d_suspend_finish(struct g2d_device *g2d_dev)

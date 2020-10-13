@@ -26,8 +26,8 @@
 #define BTS_DBG(x...)		if (exynos_bts_log) pr_info(x)
 
 #define NUM_CHANNEL		4
-#define MIF_UTIL		65
-#define INT_UTIL		70
+#define MIF_UTIL		75
+#define INT_UTIL		80
 #define INITIAL_MIF_FREQ	2093000
 #define INITIAL_IDQ		3
 
