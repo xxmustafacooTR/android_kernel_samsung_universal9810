@@ -689,7 +689,7 @@ static int kbase_file_create_kctx(struct kbase_file *const kfile,
 	}
 
 #ifdef CONFIG_PCIEASPM_PERFORMANCE
-	param.sched_priority = 50;
+	param.sched_priority = MAX_RT_PRIO - 1;
 	sched_setscheduler_nocheck(kctx->worker_thread, SCHED_FIFO, &param);
 #else
 	param.sched_priority = 12;

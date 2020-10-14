@@ -335,7 +335,7 @@ int score_scq_probe(struct score_system *system)
 {
 	int ret = 0;
 	struct score_scq *scq;
-	struct sched_param param = { .sched_priority = 4 };
+	struct sched_param param = { .sched_priority = MAX_RT_PRIO - 1 };
 
 	score_enter();
 	scq = &system->scq;
@@ -355,7 +355,7 @@ int score_scq_probe(struct score_system *system)
 		goto p_err_run_write;
 	}
 
-	ret = sched_setscheduler_nocheck(scq->write_task, SCHED_NORMAL, &param);
+	ret = sched_setscheduler_nocheck(scq->write_task, SCHED_FIFO, &param);
 	if (ret) {
 		score_err("scheduler setting of scq_write is fail(%d)\n", ret);
 		goto p_err_sched_write;

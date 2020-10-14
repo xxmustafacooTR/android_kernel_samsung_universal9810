@@ -178,13 +178,13 @@ static void devfreq_boost_light_input_boost(struct boost_dev *b, unsigned long s
 
 static int devfreq_boost_thread(void *data)
 {
-	static const struct sched_param param = {
-		.sched_priority = 3
+	static const struct sched_param sched_max_rt_prio = {
+		.sched_priority = MAX_RT_PRIO - 1
 	};
 	struct boost_dev *b = data;
 	unsigned long old_state = 0;
 
-	sched_setscheduler_nocheck(current, SCHED_NORMAL, &param);
+	sched_setscheduler_nocheck(current, SCHED_FIFO, &sched_max_rt_prio);
 
 	while (1) {
 		bool should_stop = false;
