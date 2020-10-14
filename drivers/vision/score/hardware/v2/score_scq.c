@@ -343,11 +343,7 @@ int score_scq_probe(struct score_system *system)
 
 	kthread_init_worker(&scq->write_worker);
 
-#ifdef CONFIG_PCIEASPM_PERFORMANCE
-	scq->write_task = kthread_run_perf_critical(kthread_worker_fn,
-#else
 	scq->write_task = kthread_run(kthread_worker_fn,
-#endif
 			&scq->write_worker, "score_scq");
 	if (IS_ERR(scq->write_task)) {
 		ret = PTR_ERR(scq->write_task);

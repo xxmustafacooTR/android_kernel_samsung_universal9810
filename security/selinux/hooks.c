@@ -612,9 +612,7 @@ static int selinux_is_genfs_special_handling(struct super_block *sb)
 		!strcmp(sb->s_type->name, "pstore") ||
 		!strcmp(sb->s_type->name, "debugfs") ||
 		!strcmp(sb->s_type->name, "tracefs") ||
-		!strcmp(sb->s_type->name, "rootfs") ||
-		!strcmp(sb->s_type->name, "f2fs") ||
-		!strcmp(sb->s_type->name, "sdcardfs");
+		!strcmp(sb->s_type->name, "rootfs");
 }
 
 static int selinux_is_sblabel_mnt(struct super_block *sb)

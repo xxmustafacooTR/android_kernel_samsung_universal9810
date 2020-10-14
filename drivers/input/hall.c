@@ -117,14 +117,14 @@ static void __flip_cover_detect(struct hall_drvdata *ddata, bool flip_status)
 {
 	cancel_delayed_work_sync(&ddata->flip_cover_dwork);
 #ifdef CONFIG_SEC_FACTORY
-	queue_delayed_work(system_power_efficient_wq, &ddata->flip_cover_dwork, HZ / 20);
+	schedule_delayed_work(&ddata->flip_cover_dwork, HZ / 20);
 #else
 	if (flip_status) {
 		wake_lock_timeout(&ddata->flip_wake_lock, HZ * 5 / 100); /* 50ms */
-		queue_delayed_work(system_power_efficient_wq, &ddata->flip_cover_dwork, HZ * 1 / 100); /* 10ms */
+		schedule_delayed_work(&ddata->flip_cover_dwork, HZ * 1 / 100); /* 10ms */
 	} else {
 		wake_unlock(&ddata->flip_wake_lock);
-		queue_delayed_work(system_power_efficient_wq, &ddata->flip_cover_dwork, 0);
+		schedule_delayed_work(&ddata->flip_cover_dwork, 0);
 	}
 #endif
 }
@@ -148,7 +148,7 @@ static int hall_open(struct input_dev *input)
 {
 	struct hall_drvdata *ddata = input_get_drvdata(input);
 	/* update the current status */
-	queue_delayed_work(system_power_efficient_wq, &ddata->flip_cover_dwork, HZ / 2);
+	schedule_delayed_work(&ddata->flip_cover_dwork, HZ / 2);
 	/* Report current state of buttons that are connected to GPIOs */
 	input_sync(input);
 

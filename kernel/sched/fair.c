@@ -95,11 +95,6 @@ static unsigned int sched_nr_latency = 8;
 unsigned int sysctl_sched_child_runs_first __read_mostly;
 
 /*
- * To enable/disable energy aware feature.
- */
-unsigned int __read_mostly sysctl_sched_energy_aware = 1;
-
-/*
  * SCHED_OTHER wake-up granularity.
  * (default: 1 msec * (1 + ilog(ncpus)), units: nanoseconds)
  *
@@ -5864,6 +5859,11 @@ unsigned long capacity_min_of(int cpu)
 }
 
 
+static inline bool energy_aware(void)
+{
+	return sched_feat(ENERGY_AWARE);
+}
+
 /**
  * Amount of capacity of a CPU that is (estimated to be) used by CFS tasks
  * @cpu: the CPU to get the utilization of
@@ -7217,7 +7217,6 @@ int find_best_target(struct task_struct *p, int *backup_cpu,
 	int best_idle_cstate = INT_MAX;
 	struct sched_domain *sd;
 	struct sched_group *sg;
-	struct task_struct *curr_tsk;
 	int best_active_cpu = -1;
 	int best_idle_cpu = -1;
 	int target_cpu = -1;
@@ -7462,12 +7461,6 @@ int find_best_target(struct task_struct *p, int *backup_cpu,
 			}
 
 			/*
-			 * Consider only idle CPUs for active migration.
-			 */
-			if (p->state == TASK_RUNNING)
-				continue;
-
-			/*
 			 * Case C) Non latency sensitive tasks on ACTIVE CPUs.
 			 *
 			 * Pack tasks in the most energy efficient capacities.
@@ -7520,14 +7513,6 @@ int find_best_target(struct task_struct *p, int *backup_cpu,
 	 *   a) ACTIVE CPU: target_cpu
 	 *   b) IDLE CPU: best_idle_cpu
 	 */
-
-	if (target_cpu != -1 && !idle_cpu(target_cpu) &&
-			best_idle_cpu != -1) {
-		curr_tsk = READ_ONCE(cpu_rq(target_cpu)->curr);
-		if (curr_tsk && schedtune_task_boost_rcu_locked(curr_tsk)) {
-			target_cpu = best_idle_cpu;
-		}
-	}
 
 	if (prefer_idle && (best_idle_cpu != -1)) {
 		trace_sched_find_best_target(p, prefer_idle, min_util, cpu,
@@ -10168,13 +10153,6 @@ static int need_active_balance(struct lb_env *env)
 				cpu_overutilized(env->src_cpu) &&
 				!cpu_overutilized(env->dst_cpu)) {
 			return 1;
-	}
-
-	if ((capacity_of(env->src_cpu) < capacity_of(env->dst_cpu)) &&
-				env->src_rq->cfs.h_nr_running == 1 &&
-				cpu_overutilized(env->src_cpu) &&
-				!cpu_overutilized(env->dst_cpu)) {
-		return 1;
 	}
 
 	return unlikely(sd->nr_balance_failed > sd->cache_nice_tries+2);

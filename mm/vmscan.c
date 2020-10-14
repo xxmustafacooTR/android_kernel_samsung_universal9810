@@ -49,12 +49,6 @@
 #include <linux/dax.h>
 #include <linux/psi.h>
 
-#ifdef CONFIG_PCIEASPM_PERFORMANCE
-#include <linux/cpu_input_boost.h>
-#include <linux/devfreq_boost.h>
-#endif
-#include <linux/ems_service.h>
-
 #include <asm/tlbflush.h>
 #include <asm/div64.h>
 
@@ -65,9 +59,6 @@
 
 #define CREATE_TRACE_POINTS
 #include <trace/events/vmscan.h>
-
-static struct kpp kpp_ta;
-static struct kpp kpp_fg;
 
 struct scan_control {
 	/* How many pages shrink_list() should reclaim */
@@ -151,18 +142,12 @@ struct scan_control {
 /*
  * From 0 .. 100.  Higher means more swappy.
  */
-int vm_swappiness = 55;
+int vm_swappiness = 60;
 /*
  * The total number of pages which are beyond the high watermark within all
  * zones.
  */
 unsigned long vm_total_pages;
-
-#ifdef CONFIG_KSWAPD_CPU_AFFINITY_MASK
-char *kswapd_cpu_mask = CONFIG_KSWAPD_CPU_AFFINITY_MASK_VALUE;
-#else
-char *kswapd_cpu_mask = NULL;
-#endif
 
 static LIST_HEAD(shrinker_list);
 static DECLARE_RWSEM(shrinker_rwsem);
@@ -3715,7 +3700,7 @@ static int kswapd(void *p)
 
 	lockdep_set_current_reclaim_state(GFP_KERNEL);
 
-	if (kswapd_cpu_mask == NULL && !cpumask_empty(cpumask))
+	if (!cpumask_empty(cpumask))
 		set_cpus_allowed_ptr(tsk, cpumask);
 	current->reclaim_state = &reclaim_state;
 
@@ -3798,13 +3783,6 @@ void wakeup_kswapd(struct zone *zone, int order, enum zone_type classzone_idx)
 
 	if (!cpuset_zone_allowed(zone, GFP_KERNEL | __GFP_HARDWALL))
 		return;
-
-#ifdef CONFIG_PCIEASPM_PERFORMANCE
-	devfreq_boost_kick_max(DEVFREQ_EXYNOS_MIF, 100);
-	cpu_input_boost_kick_max(100);
-#endif
-	kpp_request(STUNE_TOPAPP, &kpp_ta, 1);
-	kpp_request(STUNE_FOREGROUND, &kpp_fg, 1);
 	pgdat = zone->zone_pgdat;
 	pgdat->kswapd_classzone_idx = max(pgdat->kswapd_classzone_idx, classzone_idx);
 	pgdat->kswapd_order = max(pgdat->kswapd_order, order);
@@ -3897,22 +3875,6 @@ static int cpu_callback(struct notifier_block *nfb, unsigned long action,
 	return NOTIFY_OK;
 }
 
-static int set_kswapd_cpu_mask(pg_data_t *pgdat)
-{
-	int ret = 0;
-	cpumask_t tmask;
-
-	if (!kswapd_cpu_mask)
-		return 0;
-
-	cpumask_clear(&tmask);
-	ret = cpumask_parse(kswapd_cpu_mask, &tmask);
-	if (ret)
-		return ret;
-
-	return set_cpus_allowed_ptr(pgdat->kswapd, &tmask);
-}
-
 /*
  * This kswapd start function will be called by init and node-hot-add.
  * On node-hot-add, kswapd will moved to proper cpus if cpus are hot-added.
@@ -3925,20 +3887,13 @@ int kswapd_run(int nid)
 	if (pgdat->kswapd)
 		return 0;
 
-#ifdef CONFIG_PCIEASPM_PERFORMANCE
-	pgdat->kswapd = kthread_run_perf_critical(kswapd, pgdat, "kswapd%d", nid);
-#else
 	pgdat->kswapd = kthread_run(kswapd, pgdat, "kswapd%d", nid);
-#endif
 	if (IS_ERR(pgdat->kswapd)) {
 		/* failure at boot is fatal */
 		BUG_ON(system_state == SYSTEM_BOOTING);
 		pr_err("Failed to start kswapd on node %d\n", nid);
 		ret = PTR_ERR(pgdat->kswapd);
 		pgdat->kswapd = NULL;
-	} else if (kswapd_cpu_mask) {
-		if (set_kswapd_cpu_mask(pgdat))
-			pr_warn("error setting kswapd cpu affinity mask\n");
 	}
 	return ret;
 }

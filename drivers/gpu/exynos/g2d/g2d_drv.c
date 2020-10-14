@@ -880,7 +880,7 @@ static void g2d_shutdown(struct platform_device *pdev)
 
 	g2d_prepare_suspend(g2d_dev);
 
-	wait_event_interruptible(g2d_dev->freeze_wait, list_empty(&g2d_dev->tasks_active));
+	wait_event(g2d_dev->freeze_wait, list_empty(&g2d_dev->tasks_active));
 
 	if (test_and_set_bit(G2D_DEVICE_STATE_IOVMM_DISABLED, &g2d_dev->state))
 		iovmm_deactivate(g2d_dev->dev);
