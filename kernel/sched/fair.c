@@ -95,6 +95,11 @@ static unsigned int sched_nr_latency = 8;
 unsigned int sysctl_sched_child_runs_first __read_mostly;
 
 /*
+ * To enable/disable energy aware feature.
+ */
+unsigned int __read_mostly sysctl_sched_energy_aware = 1;
+
+/*
  * SCHED_OTHER wake-up granularity.
  * (default: 1 msec * (1 + ilog(ncpus)), units: nanoseconds)
  *
@@ -5856,12 +5861,6 @@ unsigned long capacity_min_of(int cpu)
 	return arch_scale_cpu_capacity(NULL, cpu) *
 	       arch_scale_min_freq_capacity(NULL, cpu)
 	       >> SCHED_CAPACITY_SHIFT;
-}
-
-
-static inline bool energy_aware(void)
-{
-	return sched_feat(ENERGY_AWARE);
 }
 
 /**
