@@ -12,7 +12,9 @@
 #include <linux/moduleparam.h>
 #include <linux/fb.h>
 #include <linux/slab.h>
+#include <linux/sched/sysctl.h>
 #include <linux/version.h>
+#include <linux/ems_service.h>
 
 /* The sched_param struct is located elsewhere in newer kernels */
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 10, 0)
@@ -41,6 +43,8 @@ static unsigned short input_boost_duration __read_mostly =
 static unsigned short wake_boost_duration __read_mostly =
 	CONFIG_WAKE_BOOST_DURATION_MS;
 
+static bool dynamic_eas_boost __read_mostly = 1;
+
 module_param(input_boost_freq_lp, uint, 0644);
 module_param(input_boost_freq_hp, uint, 0644);
 module_param(max_boost_freq_lp, uint, 0644);
@@ -49,6 +53,7 @@ module_param(idle_min_freq_lp, uint, 0644);
 module_param(idle_min_freq_hp, uint, 0644);
 module_param(remove_input_boost_freq_lp, uint, 0644);
 module_param(remove_input_boost_freq_perf, uint, 0644);
+module_param(dynamic_eas_boost, bool, 0644);
 
 module_param(input_boost_duration, short, 0644);
 module_param(wake_boost_duration, short, 0644);
@@ -57,6 +62,9 @@ module_param(wake_boost_duration, short, 0644);
 static __read_mostly int stune_boost = CONFIG_TA_STUNE_BOOST;
 module_param_named(dynamic_stune_boost, stune_boost, int, 0644);
 #endif
+
+static struct kpp kpp_ta;
+static struct kpp kpp_fg;
 
 enum {
 	SCREEN_OFF,
@@ -209,6 +217,9 @@ static void __cpu_input_boost_kick_max(struct boost_drv *b,
 	} while (atomic_long_cmpxchg(&b->max_boost_expires, curr_expires,
 				     new_expires) != curr_expires);
 
+	kpp_request(STUNE_TOPAPP, &kpp_ta, 1);
+	kpp_request(STUNE_FOREGROUND, &kpp_fg, 1);
+
 	set_bit(MAX_BOOST, &b->state);
 	if (!mod_delayed_work(system_unbound_wq, &b->max_unboost,
 			      boost_jiffies))
@@ -249,6 +260,9 @@ static void input_unboost_worker(struct work_struct *work)
 	struct boost_drv *b = container_of(to_delayed_work(work),
 					   typeof(*b), input_unboost);
 
+	kpp_request(STUNE_TOPAPP, &kpp_ta, 0);
+	kpp_request(STUNE_FOREGROUND, &kpp_fg, 0);
+
 	clear_bit(INPUT_BOOST, &b->state);
 	wake_up(&b->boost_waitq);
 }
@@ -257,6 +271,9 @@ static void max_unboost_worker(struct work_struct *work)
 {
 	struct boost_drv *b = container_of(to_delayed_work(work),
 					   typeof(*b), max_unboost);
+
+	kpp_request(STUNE_TOPAPP, &kpp_ta, 0);
+	kpp_request(STUNE_FOREGROUND, &kpp_fg, 0);
 
 	clear_bit(MAX_BOOST, &b->state);
 	clear_bit(WAKE_BOOST, &b->state);
@@ -277,7 +294,7 @@ static int cpu_thread(void *data)
 		bool should_stop = false;
 		unsigned long curr_state;
 
-		wait_event(b->boost_waitq,
+		wait_event_interruptible(b->boost_waitq,
 			(curr_state = READ_ONCE(b->state)) != old_state ||
 			(should_stop = kthread_should_stop()));
 
@@ -311,6 +328,8 @@ static int cpu_notifier_cb(struct notifier_block *nb, unsigned long action,
 	if (test_bit(SCREEN_OFF, &b->state)) {
 		policy->min = get_min_freq(policy);
 		clear_stune_boost(b);
+		if (dynamic_eas_boost)
+			sysctl_sched_energy_aware = 1;
 		return NOTIFY_OK;
 	}
 
@@ -318,6 +337,10 @@ static int cpu_notifier_cb(struct notifier_block *nb, unsigned long action,
 	if (test_bit(MAX_BOOST, &b->state)) {
 		policy->min = get_max_boost_freq(policy);
 		update_stune_boost(b, stune_boost);
+		if (dynamic_eas_boost)
+			sysctl_sched_energy_aware = 0;
+		else
+			sysctl_sched_energy_aware = 1;
 		return NOTIFY_OK;
 	}
 
@@ -332,6 +355,9 @@ static int cpu_notifier_cb(struct notifier_block *nb, unsigned long action,
 		policy->min = get_min_freq(policy);
 		clear_stune_boost(b);
 	}
+
+	/* If we are not boosting max for app launch/device wake, enable EAS */
+	sysctl_sched_energy_aware = 1;
 
 	return NOTIFY_OK;
 }
