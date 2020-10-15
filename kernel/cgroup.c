@@ -2885,6 +2885,7 @@ static ssize_t __cgroup_procs_write(struct kernfs_open_file *of, char *buf,
 	struct task_struct *tsk;
 	struct cgroup_subsys *ss;
 	struct cgroup *cgrp;
+	struct sched_param param;
 	pid_t pid;
 	int ssid, ret;
 
@@ -4831,7 +4832,6 @@ int cgroupstats_build(struct cgroupstats *stats, struct dentry *dentry)
 {
 	struct kernfs_node *kn = kernfs_node_from_dentry(dentry);
 	struct cgroup *cgrp;
-	struct sched_param param;
 	struct css_task_iter it;
 	struct task_struct *tsk;
 
