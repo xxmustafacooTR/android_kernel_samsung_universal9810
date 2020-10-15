@@ -17,7 +17,10 @@
 #include <linux/cpumask.h>
 #include <linux/cpufreq.h>
 #include <linux/pm_opp.h>
-#include <linux/ems_service.h>
+#ifdef CONFIG_PCIEASPM_PERFORMANCE
+#include <linux/cpu_input_boost.h>
+#include <linux/devfreq_boost.h>
+#endif
 
 #include <soc/samsung/exynos-cpu_hotplug.h>
 
@@ -34,6 +37,7 @@
 
 static int last_max_limit = -1;
 static int sse_mode;
+static int dvfs_disable = 0;
 
 unsigned int big_throttle_limit = 0;
 unsigned int little_throttle_limit = 0;
@@ -121,18 +125,16 @@ static ssize_t show_cpufreq_min_limit(struct kobject *kobj,
 }
 
 static bool boosted;
-static struct kpp kpp_ta;
-static struct kpp kpp_fg;
 
 static inline void control_boost(bool enable)
 {
 	if (boosted && !enable) {
-		kpp_request(STUNE_TOPAPP, &kpp_ta, 0);
-		kpp_request(STUNE_FOREGROUND, &kpp_fg, 0);
 		boosted = false;
 	} else if (!boosted && enable) {
-		kpp_request(STUNE_TOPAPP, &kpp_ta, 1);
-		kpp_request(STUNE_FOREGROUND, &kpp_fg, 1);
+#ifdef CONFIG_PCIEASPM_PERFORMANCE
+		cpu_input_boost_kick_max(500);
+		devfreq_boost_kick_max(DEVFREQ_EXYNOS_MIF, 500);
+#endif
 		boosted = true;
 	}
 }
@@ -150,6 +152,9 @@ static ssize_t store_cpufreq_min_limit(struct kobject *kobj,
 	bool set_limit = false;
 	int index = 0;
 	struct cpumask mask;
+
+	if (dvfs_disable)
+		return count;
 
 	if (!sscanf(buf, "%8d", &input))
 		return -EINVAL;
@@ -257,6 +262,9 @@ static ssize_t store_cpufreq_min_limit_wo_boost(struct kobject *kobj,
 	bool set_limit = false;
 	int index = 0;
 	struct cpumask mask;
+
+	if (dvfs_disable)
+		return count;
 
 	if (!sscanf(buf, "%8d", &input))
 		return -EINVAL;
@@ -516,6 +524,9 @@ static ssize_t store_cpufreq_max_limit(struct kobject *kobj, struct kobj_attribu
 {
 	int input;
 
+	if (dvfs_disable)
+		return count;
+
 	if (!sscanf(buf, "%8d", &input))
 		return -EINVAL;
 
@@ -552,7 +563,7 @@ static ssize_t store_execution_mode_change(struct kobject *kobj, struct kobj_att
 }
 
 static ssize_t show_throttle_limit(struct kobject *kobj,
-				struct kobj_attribute *attr, char *buf)
+				  struct kobj_attribute *attr, char *buf)
 {
 	return snprintf(buf, 16, "%u:%u", big_throttle_limit, little_throttle_limit);
 }
@@ -567,6 +578,36 @@ static ssize_t store_throttle_limit(struct kobject *kobj, struct kobj_attribute 
 
 	big_throttle_limit = big_throttle;
 	little_throttle_limit = little_throttle;
+
+	return count;
+}
+
+static ssize_t show_dvfs_disable(struct kobject *kobj,
+				struct kobj_attribute *attr, char *buf)
+{
+	return snprintf(buf, 10, "%d\n", dvfs_disable);
+}
+
+static ssize_t store_dvfs_disable(struct kobject *kobj, struct kobj_attribute *attr,
+					const char *buf, size_t count)
+{
+	struct list_head *domains = get_domain_list();
+	struct exynos_cpufreq_domain *domain;
+	int input;
+
+	if (sscanf(buf, "%8d", &input) < 1)
+		return -EINVAL;
+
+	if (input > 0) {
+		list_for_each_entry_reverse(domain, domains, list) {
+			enable_domain_cpus(domain);
+			pm_qos_update_request(&domain->user_max_qos_req,
+						domain->max_freq);
+			pm_qos_update_request(&domain->user_min_qos_req, 0);
+			pm_qos_update_request(&domain->user_min_qos_wo_boost_req, 0);
+		}
+	}
+	dvfs_disable = input;
 
 	return count;
 }
@@ -588,6 +629,9 @@ __ATTR(execution_mode_change, 0644,
 static struct kobj_attribute throttle_limit =
 __ATTR(throttle_limit, 0644,
 		show_throttle_limit, store_throttle_limit);
+static struct kobj_attribute disable_dvfs =
+__ATTR(disable_dvfs, 0644,
+		show_dvfs_disable, store_dvfs_disable);
 
 static __init void init_sysfs(void)
 {
@@ -608,6 +652,9 @@ static __init void init_sysfs(void)
 
 	if (sysfs_create_file(power_kobj, &throttle_limit.attr))
 		pr_err("failed to create throttle_limit node\n");
+
+	if (sysfs_create_file(power_kobj, &disable_dvfs.attr))
+		pr_err("failed to create disable_dvfs node\n");
 
 }
 
