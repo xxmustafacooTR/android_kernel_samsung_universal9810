@@ -25,7 +25,6 @@
 #include <linux/cpu_input_boost.h>
 #include <linux/devfreq_boost.h>
 #endif
-#include <linux/ems_service.h>
 #include "internal.h"
 
 #ifdef CONFIG_COMPACTION
@@ -52,9 +51,6 @@ static inline void count_compact_events(enum vm_event_item item, long delta)
 #define block_end_pfn(pfn, order)	ALIGN((pfn) + 1, 1UL << (order))
 #define pageblock_start_pfn(pfn)	block_start_pfn(pfn, pageblock_order)
 #define pageblock_end_pfn(pfn)		block_end_pfn(pfn, pageblock_order)
-
-static struct kpp kpp_ta;
-static struct kpp kpp_fg;
 
 static unsigned long release_freepages(struct list_head *freelist)
 {
@@ -1894,8 +1890,6 @@ static void kcompactd_do_work(pg_data_t *pgdat)
 	devfreq_boost_kick_max(DEVFREQ_EXYNOS_MIF, 100);
 	cpu_input_boost_kick_max(100);
 #endif
-	kpp_request(STUNE_TOPAPP, &kpp_ta, 1);
-	kpp_request(STUNE_FOREGROUND, &kpp_fg, 1);
 
 	for (zoneid = 0; zoneid <= cc.classzone_idx; zoneid++) {
 		int status;

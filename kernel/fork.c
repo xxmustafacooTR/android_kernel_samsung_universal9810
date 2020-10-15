@@ -84,7 +84,6 @@
 #include <linux/cpu_input_boost.h>
 #include <linux/devfreq_boost.h>
 #endif
-#include <linux/ems_service.h>
 
 #include <asm/pgtable.h>
 #include <asm/pgalloc.h>
@@ -2161,9 +2160,6 @@ struct task_struct *fork_idle(int cpu)
 	return task;
 }
 
-static struct kpp kpp_ta;
-static struct kpp kpp_fg;
-
 /*
  *  Ok, this is the main fork-routine.
  *
@@ -2181,11 +2177,9 @@ long _do_fork(unsigned long clone_flags,
 	int trace = 0;
 	long nr;
 
+#ifdef CONFIG_PCIEASPM_PERFORMANCE
 	/* Check if userspace launches an app */
 	if (is_zygote_pid(current->pid)) {
-		kpp_request(STUNE_TOPAPP, &kpp_ta, 1);
-		kpp_request(STUNE_FOREGROUND, &kpp_fg, 1);
-#ifdef CONFIG_PCIEASPM_PERFORMANCE
 		cpu_input_boost_kick_max(50);
 		devfreq_boost_kick_max(DEVFREQ_EXYNOS_MIF, 50);
 #endif
