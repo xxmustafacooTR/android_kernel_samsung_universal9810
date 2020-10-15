@@ -70,4 +70,8 @@ static inline struct task_struct *task_of(struct sched_entity *se)
 
 struct list_head *lb_cfs_tasks(struct rq *rq, int sse);
 
+#ifdef CONFIG_FREQVAR_TUNE
 extern unsigned long freqvar_st_boost_vector(int cpu);
+#else
+static inline unsigned long freqvar_st_boost_vector(int cpu) { return 0; }
+#endif

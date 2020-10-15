@@ -2572,7 +2572,7 @@ static inline void get_interactive_gov_params(struct cpufreq_policy *policy,
 }
 #endif
 
-#ifdef CONFIG_CPU_FREQ_GOV_SCHEDUTIL
+#if defined(CONFIG_CPU_FREQ_GOV_SCHEDUTILX) || defined(CONFIG_CPU_FREQ_GOV_SCHEDUTIL)
 struct sugov_tunables {
 	struct gov_attr_set attr_set;
 	unsigned int up_rate_limit_us;
@@ -2661,7 +2661,7 @@ static inline void get_cpufreq_gov_params(struct cpufreq_policy *policy,
 #endif
 	} else if (!strcmp(policy->governor->name,
 		CPUFREQ_GOV_SCHEDUTIL)) {
-#ifdef CONFIG_CPU_FREQ_GOV_SCHEDUTIL
+#if defined(CONFIG_CPU_FREQ_GOV_SCHEDUTILX) || defined(CONFIG_CPU_FREQ_GOV_SCHEDUTIL)
 		get_schedutil_gov_params(policy, &data->cpu_freq_gov_data);
 #endif
 	}

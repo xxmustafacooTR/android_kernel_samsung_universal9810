@@ -32,3 +32,7 @@ obj-$(CONFIG_CPU_FREQ_GOV_BLU_SCHEDUTIL) += cpufreq_blu_schedutil.o
 obj-$(CONFIG_PSI) += psi.o
 obj-$(CONFIG_SCHED_EMS) += ems/
 
+# Squeeze a little bit more juice
+ccflags-y := -O3
+ccflags-y += $(call cc-option, -g0)
+ccflags-y += $(call cc-option, -Os)

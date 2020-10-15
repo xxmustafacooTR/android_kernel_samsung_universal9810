@@ -598,7 +598,7 @@ extern struct cpufreq_governor cpufreq_gov_sched;
 #define CPUFREQ_DEFAULT_GOVERNOR	(&cpufreq_gov_sched)
 #endif
 
-#if defined (CONFIG_CPU_FREQ_GOV_SCHEDUTIL)
+#if defined(CONFIG_CPU_FREQ_GOV_SCHEDUTILX) || defined(CONFIG_CPU_FREQ_GOV_SCHEDUTIL)
 int sugov_fast_start(struct cpufreq_policy *policy, unsigned int cpu);
 #else
 static inline int sugov_fast_start(struct cpufreq_policy *policy, unsigned int cpu) { return 0; }

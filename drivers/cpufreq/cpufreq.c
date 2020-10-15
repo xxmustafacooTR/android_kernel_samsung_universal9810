@@ -1450,7 +1450,7 @@ static int cpufreq_offline(unsigned int cpu)
 
 	down_write(&policy->rwsem);
 
-#if defined(CONFIG_EXYNOS_HOTPLUG_GOVERNOR) && defined(CONFIG_CPU_FREQ_GOV_SCHEDUTIL)
+#if defined(CONFIG_EXYNOS_HOTPLUG_GOVERNOR) && defined(CONFIG_CPU_FREQ_GOV_SCHEDUTIL) || defined(CONFIG_CPU_FREQ_GOV_SCHEDUTILX)
 	if (cpu != policy->cpu) {
 		if (!cpufreq_suspended && policy->governor) {
 			cpufreq_remove_update_util_hook(cpu);
