@@ -16,7 +16,7 @@ SCHED_FEAT(START_DEBIT, true)
  * wakeup-preemption), since its likely going to consume data we
  * touched, increases cache locality.
  */
-SCHED_FEAT(NEXT_BUDDY, false)
+SCHED_FEAT(NEXT_BUDDY, true)
 
 /*
  * Prefer to schedule the task that ran last (when we did
@@ -24,6 +24,12 @@ SCHED_FEAT(NEXT_BUDDY, false)
  * cache locality.
  */
 SCHED_FEAT(LAST_BUDDY, true)
+
+/*
+ * skip buddy i.e task called yield() is always skipped and the
+ * next entity is selected to run irrespective of the vruntime
+ */
+SCHED_FEAT(STRICT_SKIP_BUDDY, true)
 
 /*
  * Consider buddies to be cache hot, decreases the likelyness of a
@@ -43,7 +49,7 @@ SCHED_FEAT(LB_BIAS, true)
 /*
  * Decrement CPU capacity based on time not spent running tasks
  */
-SCHED_FEAT(NONTASK_CAPACITY, true)
+SCHED_FEAT(NONTASK_CAPACITY, false)
 
 /*
  * Queue remote wakeups on the target CPU and process them
@@ -55,6 +61,7 @@ SCHED_FEAT(TTWU_QUEUE, true)
  * When doing wakeups, attempt to limit superfluous scans of the LLC domain.
  */
 SCHED_FEAT(SIS_AVG_CPU, false)
+SCHED_FEAT(SIS_PROP, true)
 
 #ifdef HAVE_RT_PUSH_IPI
 /*
@@ -78,6 +85,7 @@ SCHED_FEAT(ATTACH_AGE_LOAD, true)
  * UtilEstimation. Use estimated CPU utilization.
  */
 SCHED_FEAT(UTIL_EST, true)
+SCHED_FEAT(UTIL_EST_FASTUP, true)
 
 /*
  * Energy aware scheduling. Use platform energy model to guide scheduling
@@ -120,4 +128,19 @@ SCHED_FEAT(EXYNOS_MS, false)
  * If disabled, this behaviour will only apply to tasks of the
  * RT class.
  */
+#ifdef CONFIG_PCIEASPM_PERFORMANCE
+SCHED_FEAT(SCHEDTUNE_BOOST_HOLD_ALL, true)
+#else
 SCHED_FEAT(SCHEDTUNE_BOOST_HOLD_ALL, false)
+#endif
+
+/*
+ * Inflate the effective utilization of SchedTune-boosted tasks, which
+ * generally leads to usage of higher frequencies.
+ * If disabled, boosts will only bias tasks to higher-capacity CPUs.
+ */
+#ifdef CONFIG_PCIEASPM_PERFORMANCE
+SCHED_FEAT(SCHEDTUNE_BOOST_UTIL, true)
+#else
+SCHED_FEAT(SCHEDTUNE_BOOST_UTIL, false)
+#endif
