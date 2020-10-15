@@ -5216,10 +5216,12 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
 {
 	struct cfs_rq *cfs_rq;
 	struct sched_entity *se = &p->se;
+#ifdef CONFIG_DYNAMIC_STUNE_BOOST
 #ifdef CONFIG_SMP
 	int task_new = flags & ENQUEUE_WAKEUP_NEW;
 #endif
 	bool prefer_idle = schedtune_prefer_idle(p) > 0;
+#endif
 
 	/*
 	 * The code below (indirectly) updates schedutil which looks at
@@ -5295,6 +5297,7 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
 #ifdef CONFIG_SMP
 	if (!se) {
 		walt_inc_cumulative_runnable_avg(rq, p);
+#ifdef CONFIG_DYNAMIC_STUNE_BOOST
 		/*
 		 * If the task prefers idle cpu, and it also is the first
 		 * task enqueued in this runqueue, then we don't check
@@ -5306,6 +5309,7 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
 			update_overutilized_status(rq);
 			trace_sched_overutilized(true);
 		}
+#endif
 	}
 
 #endif /* CONFIG_SMP */
@@ -7246,7 +7250,9 @@ int find_best_target(struct task_struct *p, int *backup_cpu,
 	int best_idle_cstate = INT_MAX;
 	struct sched_domain *sd;
 	struct sched_group *sg;
+#ifdef CONFIG_CGROUP_SCHEDTUNE
 	struct task_struct *curr_tsk;
+#endif
 	int best_active_cpu = -1;
 	int best_idle_cpu = -1;
 	int target_cpu = -1;
@@ -7544,6 +7550,7 @@ int find_best_target(struct task_struct *p, int *backup_cpu,
 	 *   b) IDLE CPU: best_idle_cpu
 	 */
 
+#ifdef CONFIG_CGROUP_SCHEDTUNE
 	if (target_cpu != -1 && !idle_cpu(target_cpu) &&
 			best_idle_cpu != -1) {
 		curr_tsk = READ_ONCE(cpu_rq(target_cpu)->curr);
@@ -7551,6 +7558,7 @@ int find_best_target(struct task_struct *p, int *backup_cpu,
 			target_cpu = best_idle_cpu;
 		}
 	}
+#endif
 
 	if (prefer_idle && (best_idle_cpu != -1)) {
 		trace_sched_find_best_target(p, prefer_idle, min_util, cpu,
@@ -7618,7 +7626,11 @@ task_is_boosted(struct task_struct *p) {
 static inline bool
 cpu_is_in_target_set(struct task_struct *p, int cpu)
 {
+#ifdef CONFIG_CGROUP_SCHEDTUNE
 	bool boosted = (schedtune_prefer_perf(p) || task_is_boosted(p));
+#else
+	bool boosted = (task_is_boosted(p));
+#endif
 	int first_cpu = start_cpu(boosted);
 	int next_usable_cpu = cpumask_next(first_cpu - 1, tsk_cpus_allowed(p));
 	return cpu >= next_usable_cpu || next_usable_cpu >= nr_cpu_ids;
@@ -7727,11 +7739,12 @@ static void nohz_balancer_kick(bool only_update);
 
 static bool ontime_sync_allowed(struct task_struct *p)
 {
+#ifdef CONFIG_CGROUP_SCHEDTUNE
 	if (schedtune_ontime_en(p)) {
 		if (!schedtune_prefer_perf(p))
 			return false;
 	}
-
+#endif
 	return true;
 }
 
@@ -8551,7 +8564,7 @@ int can_migrate_task(struct task_struct *p, struct lb_env *env)
 	if (!ontime_can_migration(p, env->dst_cpu))
 		return 0;
 
-#ifdef CONFIG_SCHED_TUNE
+#ifdef CONFIG_CGROUP_SCHEDTUNE
 	if (smaller_cpu_capacity(env->dst_cpu, env->src_cpu) &&
 	    schedtune_prefer_perf(p))
 		return 0;
