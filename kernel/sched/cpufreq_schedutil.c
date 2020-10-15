@@ -63,7 +63,6 @@ struct sugov_policy {
 	struct task_struct *thread;
 	bool work_in_progress;
 
-	bool limits_changed;
 	bool need_freq_update;
 
 	/* Framebuffer callbacks */
@@ -118,11 +117,8 @@ static bool sugov_should_update_freq(struct sugov_policy *sg_policy, u64 time)
 {
 	s64 delta_ns;
 
-	if (unlikely(sg_policy->limits_changed)) {
-		sg_policy->limits_changed = false;
-		sg_policy->need_freq_update = true;
+	if (unlikely(sg_policy->need_freq_update))
 		return true;
-	}
 
 	delta_ns = time - sg_policy->last_freq_update_time;
 
@@ -359,9 +355,7 @@ static void sugov_update_single(struct update_util_data *hook, u64 time,
 	if (!sugov_should_update_freq(sg_policy, time))
 		return;
 
-	/* Limits may have changed, don't skip frequency update */
-	busy = use_pelt() && !sg_policy->need_freq_update &&
-	       sugov_cpu_is_busy(sg_cpu);
+	busy = sugov_cpu_is_busy(sg_cpu);
 
 	if (flags & SCHED_CPUFREQ_DL) {
 		next_f = policy->cpuinfo.max_freq;
@@ -909,7 +903,6 @@ static void sugov_exit(struct cpufreq_policy *policy)
 	struct sugov_tunables *tunables = sg_policy->tunables;
 	unsigned int count;
 
-	cpufreq_disable_fast_switch(policy);
 	mutex_lock(&global_tunables_lock);
 
 	count = gov_attr_set_put(&tunables->attr_set, &sg_policy->tunables_hook);
@@ -940,7 +933,6 @@ static int sugov_start(struct cpufreq_policy *policy)
 	sg_policy->last_freq_update_time = 0;
 	sg_policy->next_freq = 0;
 	sg_policy->work_in_progress = false;
-	sg_policy->limits_changed = false;
 	sg_policy->need_freq_update = false;
 	sg_policy->cached_raw_freq = 0;
 
@@ -1002,7 +994,7 @@ static void sugov_limits(struct cpufreq_policy *policy)
 
 	sugov_update_min(policy);
 
-	sg_policy->limits_changed = true;
+	sg_policy->need_freq_update = true;
 
 	mutex_unlock(&global_tunables_lock);
 }
