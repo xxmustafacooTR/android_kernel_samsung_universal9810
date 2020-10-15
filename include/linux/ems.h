@@ -209,6 +209,7 @@ extern unsigned int frt_disable_cpufreq;
 struct boost_groups {
 	/* Maximum boost value for all RUNNABLE tasks on a CPU */
 	int boost_max;
+	u64 boost_ts;
 	struct {
 		/* True when this boost group maps an actual cgroup */
 		bool valid;
@@ -216,6 +217,8 @@ struct boost_groups {
 		int boost;
 		/* Count of RUNNABLE tasks on that boost group */
 		unsigned tasks;
+		/* Timestamp of boost activation */
+		u64 ts;
 	} group[BOOSTGROUPS_COUNT];
 	/* CPU's boost group locking */
 	raw_spinlock_t lock;
