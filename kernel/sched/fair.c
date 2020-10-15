@@ -6382,7 +6382,6 @@ int select_energy_cpu_idx(struct energy_env *eenv)
 {
 	struct sched_domain *sd;
 	struct sched_group *sg;
-	struct task_struct *curr_tsk;
 	int sd_cpu = -1;
 	int cpu_idx;
 	int margin;
@@ -7247,6 +7246,7 @@ int find_best_target(struct task_struct *p, int *backup_cpu,
 	int best_idle_cstate = INT_MAX;
 	struct sched_domain *sd;
 	struct sched_group *sg;
+	struct task_struct *curr_tsk;
 	int best_active_cpu = -1;
 	int best_idle_cpu = -1;
 	int target_cpu = -1;
