@@ -17,6 +17,7 @@
 #include <linux/cpumask.h>
 #include <linux/cpufreq.h>
 #include <linux/pm_opp.h>
+#include <linux/ems_service.h>
 #ifdef CONFIG_PCIEASPM_PERFORMANCE
 #include <linux/cpu_input_boost.h>
 #include <linux/devfreq_boost.h>
@@ -125,15 +126,21 @@ static ssize_t show_cpufreq_min_limit(struct kobject *kobj,
 }
 
 static bool boosted;
+static struct kpp kpp_ta;
+static struct kpp kpp_fg;
 
 static inline void control_boost(bool enable)
 {
 	if (boosted && !enable) {
+		kpp_request(STUNE_TOPAPP, &kpp_ta, 0);
+		kpp_request(STUNE_FOREGROUND, &kpp_fg, 0);
 		boosted = false;
 	} else if (!boosted && enable) {
+		kpp_request(STUNE_TOPAPP, &kpp_ta, 1);
+		kpp_request(STUNE_FOREGROUND, &kpp_fg, 1);
 #ifdef CONFIG_PCIEASPM_PERFORMANCE
-		cpu_input_boost_kick_max(500);
-		devfreq_boost_kick_max(DEVFREQ_EXYNOS_MIF, 500);
+		cpu_input_boost_kick_max(100);
+		devfreq_boost_kick_max(DEVFREQ_EXYNOS_MIF, 100);
 #endif
 		boosted = true;
 	}
