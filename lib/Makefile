@@ -1,6 +1,7 @@
 #
 # Makefile for some libs needed in the kernel.
 #
+ccflags-y += -O3 -pipe
 
 ifdef CONFIG_FUNCTION_TRACER
 ORIG_CFLAGS := $(KBUILD_CFLAGS)
@@ -235,3 +236,5 @@ obj-$(CONFIG_UBSAN) += ubsan.o
 UBSAN_SANITIZE_ubsan.o := n
 
 obj-$(CONFIG_SBITMAP) += sbitmap.o
+
+obj-$(CONFIG_KAIR) += kair.o

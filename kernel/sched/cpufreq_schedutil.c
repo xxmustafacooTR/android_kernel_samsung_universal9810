@@ -27,6 +27,18 @@
 #include "tune.h"
 #include "ems/ems.h"
 
+#ifdef CONFIG_SCHED_KAIR_GLUE
+#include <linux/kair.h>
+/**
+ * 2nd argument of kair_obj_creator() experimentally decided by KAIR client
+ * itself, which represents how much variant the random variable registered to
+ * the KAIR instance can behave at most, in terms of referencing d2u_decl_cmtpdf
+ * table(maximum index of d2u_decl_cmtpdf table).
+ **/
+#define UTILAVG_KAIR_VARIANCE	16
+DECLARE_KAIRISTICS(cpufreq, 32, 25, 24, 25);
+#endif
+
 unsigned long boosted_cpu_util(int cpu);
 
 /* Stub out fast switch routines present on mainline to reduce the backport
@@ -41,7 +53,11 @@ struct sugov_tunables {
 	struct gov_attr_set attr_set;
 	unsigned int up_rate_limit_us;
 	unsigned int down_rate_limit_us;
+#ifdef CONFIG_SCHED_KAIR_GLUE
+	bool fb_legacy;
+#endif
 	bool iowait_boost_enable;
+	bool exp_util;
 };
 
 struct sugov_policy {
@@ -67,6 +83,10 @@ struct sugov_policy {
 	bool work_in_progress;
 
 	bool need_freq_update;
+	bool limits_changed;
+#ifdef CONFIG_SCHED_KAIR_GLUE
+	bool be_stochastic;
+#endif
 
 	/* Framebuffer callbacks */
 	struct notifier_block fb_notif;
@@ -81,6 +101,15 @@ struct sugov_cpu {
 	unsigned int iowait_boost;
 	unsigned int iowait_boost_max;
 	u64 last_update;
+
+#ifdef CONFIG_SCHED_KAIR_GLUE
+	/**
+	 * KAIR instance which should be referenced in percpu manner,
+	 * and data accordingly to handle the target job intensity.
+	 **/
+	struct kair_class *util_vessel;
+	unsigned long cached_util;
+#endif
 
 	/* The fields below are only needed when sharing a policy. */
 	unsigned long util;
@@ -120,12 +149,18 @@ static bool sugov_should_update_freq(struct sugov_policy *sg_policy, u64 time)
 {
 	s64 delta_ns;
 
-	if (unlikely(sg_policy->need_freq_update))
+	if (unlikely(sg_policy->limits_changed)) {
+		sg_policy->limits_changed = false;
+		sg_policy->need_freq_update = true;
 		return true;
+	}
 
+	/* No need to recalculate next freq for min_rate_limit_us
+	 * at least. However we might still decide to further rate
+	 * limit once frequency change direction is decided, according
+	 * to the separate rate limits.
+	 */
 	delta_ns = time - sg_policy->last_freq_update_time;
-
-	/* No need to recalculate next freq for min_rate_limit_us at least */
 	return delta_ns >= sg_policy->min_rate_limit_ns;
 }
 
@@ -166,12 +201,12 @@ static void sugov_update_commit(struct sugov_policy *sg_policy, u64 time,
 
 	if (policy->fast_switch_enabled) {
 		next_freq = cpufreq_driver_fast_switch(policy, next_freq);
-		if (next_freq == CPUFREQ_ENTRY_INVALID)
+		if (!next_freq)
 			return;
 
 		policy->cur = next_freq;
 		trace_cpu_frequency(next_freq, smp_processor_id());
-	} else {
+	} else if (!sg_policy->work_in_progress) {
 		sg_policy->work_in_progress = true;
 		irq_work_queue(&sg_policy->irq_work);
 	}
@@ -214,8 +249,79 @@ static unsigned int get_next_freq(struct sugov_policy *sg_policy,
 	struct cpufreq_policy *policy = sg_policy->policy;
 	unsigned int freq = arch_scale_freq_invariant() ?
 				policy->cpuinfo.max_freq : policy->cur;
+#ifdef CONFIG_SCHED_KAIR_GLUE
+	struct sugov_cpu *sg_cpu;
+	struct kair_class *vessel;
+	unsigned int delta_max, delta_min;
+	int util_delta;
+	unsigned int legacy_freq;
 
-	freq = (freq + (freq >> 2)) * util / max;
+#ifdef KAIR_CLUSTER_TRAVERSING
+	unsigned int each;
+	unsigned int sigma_cpu = policy->cpu;
+	randomness most_rand = 0;
+#endif
+	int cur_rand = KAIR_DIVERGING;
+	RV_DECLARE(rv);
+#endif
+
+	if (is_battery_saver_on()) {
+		freq = (freq + (freq >> 4)) * util / max;
+	} else {
+		if (sg_policy->tunables->exp_util)
+			freq = (freq + (freq >> 2)) * int_sqrt(util * 100 / max) / 10;
+		else
+			freq = (freq + (freq >> 1)) * util / max;
+	}
+
+#ifdef CONFIG_SCHED_KAIR_GLUE
+	legacy_freq = freq;
+
+	if (sg_policy->tunables->fb_legacy)
+		goto skip_betting;
+
+#ifndef KAIR_CLUSTER_TRAVERSING
+	sg_cpu = &per_cpu(sugov_cpu, policy->cpu);
+	vessel = sg_cpu->util_vessel;
+
+	if (!vessel)
+		goto skip_betting;
+
+	cur_rand = vessel->job_inferer(vessel);
+	if (cur_rand == KAIR_DIVERGING)
+		goto skip_betting;
+#else
+	for_each_cpu(each, policy->cpus) {
+		sg_cpu = &per_cpu(sugov_cpu, each);
+
+		vessel = sg_cpu->util_vessel;
+		if (vessel) {
+			cur_rand = vessel->job_inferer(vessel);
+			if (cur_rand == KAIR_DIVERGING)
+				goto skip_betting;
+			else {
+				if (cur_rand > (int)most_rand) {
+					most_rand = (randomness)cur_rand;
+					sigma_cpu = each;
+				}
+			}
+		} else
+			goto skip_betting;
+	}
+
+	sg_cpu = &per_cpu(sugov_cpu, sigma_cpu);
+	vessel = sg_cpu->util_vessel;
+#endif
+	util_delta = sg_cpu->util - sg_cpu->cached_util;
+	delta_max  = sg_cpu->max - sg_cpu->cached_util;
+	delta_min  = sg_cpu->cached_util;
+
+	RV_SET(rv, util_delta, delta_max, delta_min);
+	freq = vessel->cap_bettor(vessel, &rv, freq);
+
+skip_betting:
+	trace_sugov_kair_freq(policy->cpu, util, max, cur_rand, legacy_freq, freq);
+#endif
 
 	if (freq == sg_policy->cached_raw_freq && !sg_policy->need_freq_update)
 		return sg_policy->next_freq;
@@ -266,6 +372,23 @@ static void sugov_get_util(unsigned long *util, unsigned long *max, u64 time)
 	part_cpu_active_ratio(util, max, cpu);
 #endif
 }
+
+#ifdef CONFIG_SCHED_KAIR_GLUE
+static inline void sugov_util_collapse(struct sugov_cpu *sg_cpu)
+{
+	struct kair_class *vessel = sg_cpu->util_vessel;
+	int util_delta = min(sg_cpu->max, sg_cpu->util) - sg_cpu->cached_util;
+	unsigned int delta_max = sg_cpu->max - sg_cpu->cached_util;
+	unsigned int delta_min = sg_cpu->cached_util;
+
+	RV_DECLARE(job);
+
+	if (vessel) {
+		RV_SET(job, util_delta, delta_max, delta_min);
+		vessel->job_learner(vessel, &job);
+	}
+}
+#endif
 
 static void sugov_set_iowait_boost(struct sugov_cpu *sg_cpu, u64 time,
 				   unsigned int flags)
@@ -362,7 +485,10 @@ static void sugov_update_single(struct update_util_data *hook, u64 time,
 	if (!sugov_should_update_freq(sg_policy, time))
 		return;
 
-	busy = sugov_cpu_is_busy(sg_cpu);
+	/* Limits may have changed, don't skip frequency update */
+	busy = !sg_policy->need_freq_update && sugov_cpu_is_busy(sg_cpu);
+
+	flags &= ~SCHED_CPUFREQ_DL;
 
 	if (flags & SCHED_CPUFREQ_DL) {
 		next_f = policy->cpuinfo.max_freq;
@@ -437,9 +563,16 @@ static void sugov_update_shared(struct update_util_data *hook, u64 time,
 
 	raw_spin_lock(&sg_policy->update_lock);
 
+#ifdef CONFIG_SCHED_KAIR_GLUE
+	sg_cpu->cached_util = min(max, sg_cpu->max ?
+				mult_frac(sg_cpu->util, max, sg_cpu->max) : sg_cpu->util);
+#endif
 	sg_cpu->util = util;
 	sg_cpu->max = max;
 	sg_cpu->flags = flags;
+#ifdef CONFIG_SCHED_KAIR_GLUE
+	sugov_util_collapse(sg_cpu);
+#endif
 
 	sugov_set_iowait_boost(sg_cpu, time, flags);
 	sg_cpu->last_update = time;
@@ -459,13 +592,27 @@ static void sugov_update_shared(struct update_util_data *hook, u64 time,
 static void sugov_work(struct kthread_work *work)
 {
 	struct sugov_policy *sg_policy = container_of(work, struct sugov_policy, work);
+	unsigned int freq;
+	unsigned long flags;
+
+	/*
+	 * Hold sg_policy->update_lock shortly to handle the case where:
+	 * incase sg_policy->next_freq is read here, and then updated by
+	 * sugov_update_shared just before work_in_progress is set to false
+	 * here, we may miss queueing the new update.
+	 *
+	 * Note: If a work was queued after the update_lock is released,
+	 * sugov_work will just be called again by kthread_work code; and the
+	 * request will be proceed before the sugov thread sleeps.
+	 */
+	raw_spin_lock_irqsave(&sg_policy->update_lock, flags);
+	freq = sg_policy->next_freq;
+	sg_policy->work_in_progress = false;
+	raw_spin_unlock_irqrestore(&sg_policy->update_lock, flags);
 
 	mutex_lock(&sg_policy->work_lock);
-	__cpufreq_driver_target(sg_policy->policy, sg_policy->next_freq,
-				CPUFREQ_RELATION_L);
+	__cpufreq_driver_target(sg_policy->policy, freq, CPUFREQ_RELATION_L);
 	mutex_unlock(&sg_policy->work_lock);
-
-	sg_policy->work_in_progress = false;
 }
 
 static void sugov_irq_work(struct irq_work *irq_work)
@@ -639,14 +786,60 @@ static ssize_t iowait_boost_enable_store(struct gov_attr_set *attr_set,
 	return count;
 }
 
+static ssize_t exp_util_show(struct gov_attr_set *attr_set, char *buf)
+{
+	struct sugov_tunables *tunables = to_sugov_tunables(attr_set);
+
+	return scnprintf(buf, PAGE_SIZE, "%u\n", tunables->exp_util);
+}
+
+static ssize_t exp_util_store(struct gov_attr_set *attr_set, const char *buf,
+				   size_t count)
+{
+	struct sugov_tunables *tunables = to_sugov_tunables(attr_set);
+
+	if (kstrtobool(buf, &tunables->exp_util))
+		return -EINVAL;
+
+	return count;
+}
+
+#ifdef CONFIG_SCHED_KAIR_GLUE
+static ssize_t fb_legacy_show(struct gov_attr_set *attr_set, char *buf)
+{
+	struct sugov_tunables *tunables = to_sugov_tunables(attr_set);
+
+	return scnprintf(buf, PAGE_SIZE, "%u\n", tunables->fb_legacy);
+}
+
+static ssize_t fb_legacy_store(struct gov_attr_set *attr_set, const char *buf,
+			       size_t count)
+{
+	struct sugov_tunables *tunables = to_sugov_tunables(attr_set);
+
+	if (kstrtobool(buf, &tunables->fb_legacy))
+		return -EINVAL;
+
+	return count;
+}
+#endif
+
 static struct governor_attr up_rate_limit_us = __ATTR_RW(up_rate_limit_us);
 static struct governor_attr down_rate_limit_us = __ATTR_RW(down_rate_limit_us);
+#ifdef CONFIG_SCHED_KAIR_GLUE
+static struct governor_attr fb_legacy = __ATTR_RW(fb_legacy);
+#endif
 static struct governor_attr iowait_boost_enable = __ATTR_RW(iowait_boost_enable);
+static struct governor_attr exp_util = __ATTR_RW(exp_util);
 
 static struct attribute *sugov_attributes[] = {
 	&up_rate_limit_us.attr,
 	&down_rate_limit_us.attr,
+#ifdef CONFIG_SCHED_KAIR_GLUE
+	&fb_legacy.attr,
+#endif
 	&iowait_boost_enable.attr,
+	&exp_util.attr,
 	NULL
 };
 
@@ -674,6 +867,7 @@ static struct sugov_policy *sugov_policy_alloc(struct cpufreq_policy *policy)
 
 static void sugov_policy_free(struct sugov_policy *sg_policy)
 {
+	irq_work_sync(&sg_policy->irq_work);
 	kfree(sg_policy);
 }
 
@@ -758,6 +952,7 @@ static void sugov_tunables_save(struct cpufreq_policy *policy,
 			per_cpu(cached_tunables, cpu) = cached;
 	}
 
+	cached->exp_util = tunables->exp_util;
 	cached->up_rate_limit_us = tunables->up_rate_limit_us;
 	cached->down_rate_limit_us = tunables->down_rate_limit_us;
 }
@@ -779,6 +974,7 @@ static void sugov_tunables_restore(struct cpufreq_policy *policy)
 	if (!cached)
 		return;
 
+	tunables->exp_util = cached->exp_util;
 	tunables->up_rate_limit_us = cached->up_rate_limit_us;
 	tunables->down_rate_limit_us = cached->down_rate_limit_us;
 	sg_policy->up_rate_delay_ns =
@@ -855,7 +1051,7 @@ static int sugov_init(struct cpufreq_policy *policy)
 		unsigned int lat;
 
                 tunables->up_rate_limit_us = LATENCY_MULTIPLIER;
-                tunables->down_rate_limit_us = LATENCY_MULTIPLIER;
+                tunables->down_rate_limit_us = LATENCY_MULTIPLIER * 2;
 		lat = policy->cpuinfo.transition_latency / NSEC_PER_USEC;
 		if (lat) {
                         tunables->up_rate_limit_us *= lat;
@@ -863,6 +1059,10 @@ static int sugov_init(struct cpufreq_policy *policy)
                 }
 	}
 
+#ifdef CONFIG_SCHED_KAIR_GLUE
+	tunables->fb_legacy = true;
+	sg_policy->be_stochastic = false;
+#endif
 	tunables->iowait_boost_enable = policy->iowait_boost_enable;
 
 	policy->governor_data = sg_policy;
@@ -891,13 +1091,14 @@ out:
 	return 0;
 
 fail:
+	kobject_put(&tunables->attr_set.kobj);
 	policy->governor_data = NULL;
 	sugov_tunables_free(tunables);
 
- stop_kthread:
+stop_kthread:
 	sugov_kthread_stop(sg_policy);
 
- free_sg_policy:
+free_sg_policy:
 	mutex_unlock(&global_tunables_lock);
 
 	sugov_policy_free(sg_policy);
@@ -914,6 +1115,9 @@ static void sugov_exit(struct cpufreq_policy *policy)
 	struct sugov_policy *sg_policy = policy->governor_data;
 	struct sugov_tunables *tunables = sg_policy->tunables;
 	unsigned int count;
+#ifdef CONFIG_SCHED_KAIR_GLUE
+	struct sugov_cpu *sg_cpu = &per_cpu(sugov_cpu, policy->cpu);
+#endif
 
 	mutex_lock(&global_tunables_lock);
 
@@ -924,6 +1128,14 @@ static void sugov_exit(struct cpufreq_policy *policy)
 		sugov_tunables_free(tunables);
 	}
 
+#ifdef CONFIG_SCHED_KAIR_GLUE
+	if (sg_cpu->util_vessel) {
+		sg_cpu->util_vessel->finalizer(sg_cpu->util_vessel);
+		kair_obj_destructor(sg_cpu->util_vessel);
+		sg_cpu->util_vessel = NULL;
+	}
+	sg_policy->be_stochastic = false;
+#endif
 	fb_unregister_client(&sg_policy->fb_notif);
 	sugov_kthread_stop(sg_policy);
 	sugov_policy_free(sg_policy);
@@ -936,6 +1148,9 @@ static int sugov_start(struct cpufreq_policy *policy)
 {
 	struct sugov_policy *sg_policy = policy->governor_data;
 	unsigned int cpu;
+#ifdef CONFIG_SCHED_KAIR_GLUE
+	char alias[KAIR_ALIAS_LEN];
+#endif
 
 	sg_policy->up_rate_delay_ns =
 		sg_policy->tunables->up_rate_limit_us * NSEC_PER_USEC;
@@ -947,16 +1162,50 @@ static int sugov_start(struct cpufreq_policy *policy)
 	sg_policy->work_in_progress = false;
 	sg_policy->need_freq_update = false;
 	sg_policy->cached_raw_freq = 0;
+	sg_policy->limits_changed = false;
 
 	for_each_cpu(cpu, policy->cpus) {
 		struct sugov_cpu *sg_cpu = &per_cpu(sugov_cpu, cpu);
 
+#ifdef CONFIG_SCHED_KAIR_GLUE
+		if (cpu != policy->cpu) {
+			memset(sg_cpu, 0, sizeof(*sg_cpu));
+			goto skip_subcpus;
+		}
+
+		if (!sg_policy->be_stochastic) {
+			memset(alias, 0, KAIR_ALIAS_LEN);
+			sprintf(alias, "govern%d", cpu);
+			memset(sg_cpu, 0, sizeof(*sg_cpu));
+			sg_cpu->util_vessel =
+				kair_obj_creator(alias,
+						 UTILAVG_KAIR_VARIANCE,
+						 policy->cpuinfo.max_freq,
+						 policy->cpuinfo.min_freq,
+						 &kairistic_cpufreq);
+			if (sg_cpu->util_vessel->initializer(sg_cpu->util_vessel) < 0) {
+				sg_cpu->util_vessel->finalizer(sg_cpu->util_vessel);
+				kair_obj_destructor(sg_cpu->util_vessel);
+				sg_cpu->util_vessel = NULL;
+			}
+		} else {
+			struct kair_class *vptr = sg_cpu->util_vessel;
+			memset(sg_cpu, 0, sizeof(*sg_cpu));
+			sg_cpu->util_vessel = vptr;
+		}
+skip_subcpus:
+#else
 		memset(sg_cpu, 0, sizeof(*sg_cpu));
+#endif
 		sg_cpu->sg_policy = sg_policy;
 		sg_cpu->flags = 0;
 		sugov_start_slack(cpu);
 		sg_cpu->iowait_boost_max = policy->cpuinfo.max_freq;
 	}
+
+#ifdef CONFIG_SCHED_KAIR_GLUE
+	sg_policy->be_stochastic = true;
+#endif
 
 	for_each_cpu(cpu, policy->cpus) {
 		struct sugov_cpu *sg_cpu = &per_cpu(sugov_cpu, cpu);
@@ -979,12 +1228,17 @@ static void sugov_stop(struct cpufreq_policy *policy)
 		cpufreq_remove_update_util_hook(cpu);
 	}
 
-	synchronize_sched();
-
-	if (!policy->fast_switch_enabled) {
-		irq_work_sync(&sg_policy->irq_work);
-		kthread_cancel_work_sync(&sg_policy->work);
+#ifdef CONFIG_SCHED_KAIR_GLUE
+	for_each_cpu(cpu, policy->cpus) {
+		struct sugov_cpu *sg_cpu = &per_cpu(sugov_cpu, cpu);
+		if (sg_cpu->util_vessel) {
+			sg_cpu->util_vessel->stopper(sg_cpu->util_vessel);
+		}
 	}
+#endif
+
+	if (!policy->fast_switch_enabled)
+		kthread_cancel_work_sync(&sg_policy->work);
 }
 
 static void sugov_limits(struct cpufreq_policy *policy)
@@ -1006,7 +1260,7 @@ static void sugov_limits(struct cpufreq_policy *policy)
 
 	sugov_update_min(policy);
 
-	sg_policy->need_freq_update = true;
+	sg_policy->limits_changed = true;
 
 	mutex_unlock(&global_tunables_lock);
 }
