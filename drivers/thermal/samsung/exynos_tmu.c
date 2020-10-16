@@ -64,6 +64,10 @@
 #ifdef CONFIG_SEC_PM
 #include <linux/sec_sysfs.h>
 #endif
+#ifdef CONFIG_GAMING_CONTROL
+/* Gaming control */
+#include <linux/gaming_control.h>
+#endif
 
 /* Exynos generic registers */
 #define EXYNOS_TMU_REG_TRIMINFO7_0(p)	(((p) - 0) * 4)
@@ -867,18 +871,23 @@ static int exynos9810_tmu_read(struct exynos_tmu_data *data)
 #ifdef CONFIG_EXYNOS_ACPM_THERMAL
 	exynos_acpm_tmu_set_read_temp(data->tzd->id, &temp, &stat);
 #endif
-
-	if (data->hotplug_enable) {
-		if ((stat == 2) && !cpufreq_limited) {
-			pm_qos_update_request(&thermal_cpu_limit_request,
-					data->limited_frequency);
-			cpufreq_limited = true;
-		} else if ((stat == 0 || stat == 1) && cpufreq_limited) {
-			pm_qos_update_request(&thermal_cpu_limit_request,
-					PM_QOS_CLUSTER1_FREQ_MAX_DEFAULT_VALUE);
-			cpufreq_limited = false;
+#ifdef CONFIG_GAMING_CONTROL
+	if (nr_running_games == 0) {
+#endif
+		if (data->hotplug_enable) {
+			if ((stat == 2) && !cpufreq_limited) {
+				pm_qos_update_request(&thermal_cpu_limit_request,
+						data->limited_frequency);
+				cpufreq_limited = true;
+			} else if ((stat == 0 || stat == 1) && cpufreq_limited) {
+				pm_qos_update_request(&thermal_cpu_limit_request,
+						PM_QOS_CLUSTER1_FREQ_MAX_DEFAULT_VALUE);
+				cpufreq_limited = false;
+			}
 		}
+#ifdef CONFIG_GAMING_CONTROL
 	}
+#endif
 
 	return temp;
 }

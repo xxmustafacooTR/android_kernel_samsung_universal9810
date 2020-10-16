@@ -30,7 +30,7 @@
 
 #define GAME_LIST_LENGTH 1024
 #define NUM_SUPPORTED_RUNNING_GAMES 20
-#define GAMING_CONTROL_VERSION "0.2"
+#define GAMING_CONTROL_VERSION "0.3"
 
 #define TASK_STARTED 1
 
@@ -48,7 +48,7 @@ char games_list[GAME_LIST_LENGTH] = {0};
 int games_pid[NUM_SUPPORTED_RUNNING_GAMES] = {
 	[0 ... (NUM_SUPPORTED_RUNNING_GAMES - 1)] = -1
 };
-static int nr_running_games = 0;
+int nr_running_games = 0;
 
 static void set_gaming_mode(int mode)
 {
