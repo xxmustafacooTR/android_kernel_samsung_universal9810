@@ -872,22 +872,20 @@ static int exynos9810_tmu_read(struct exynos_tmu_data *data)
 	exynos_acpm_tmu_set_read_temp(data->tzd->id, &temp, &stat);
 #endif
 #ifdef CONFIG_GAMING_CONTROL
-	if (nr_running_games == 0) {
+	if (!is_game_boost_enabled() && data->hotplug_enable) {
+#else
+	if (data->hotplug_enable) {
 #endif
-		if (data->hotplug_enable) {
-			if ((stat == 2) && !cpufreq_limited) {
-				pm_qos_update_request(&thermal_cpu_limit_request,
-						data->limited_frequency);
-				cpufreq_limited = true;
-			} else if ((stat == 0 || stat == 1) && cpufreq_limited) {
-				pm_qos_update_request(&thermal_cpu_limit_request,
-						PM_QOS_CLUSTER1_FREQ_MAX_DEFAULT_VALUE);
-				cpufreq_limited = false;
-			}
+		if ((stat == 2) && !cpufreq_limited) {
+			pm_qos_update_request(&thermal_cpu_limit_request,
+					data->limited_frequency);
+			cpufreq_limited = true;
+		} else if ((stat == 0 || stat == 1) && cpufreq_limited) {
+			pm_qos_update_request(&thermal_cpu_limit_request,
+					PM_QOS_CLUSTER1_FREQ_MAX_DEFAULT_VALUE);
+			cpufreq_limited = false;
 		}
-#ifdef CONFIG_GAMING_CONTROL
 	}
-#endif
 
 	return temp;
 }

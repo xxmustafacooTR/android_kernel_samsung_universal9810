@@ -274,7 +274,7 @@ static void cpuboost_input_event(struct input_handle *handle,
 {
 	u64 now;
 #ifdef CONFIG_GAMING_CONTROL
-	if (!input_boost_enabled || nr_running_games > 0)
+	if (!input_boost_enabled || is_game_boost_enabled())
 #else
 	if (!input_boost_enabled)
 #endif

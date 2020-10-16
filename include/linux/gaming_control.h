@@ -26,10 +26,13 @@ enum game_opts {
 
 #ifdef CONFIG_GAMING_CONTROL
 extern void game_option(struct task_struct *tsk, enum game_opts opts);
-extern int nr_running_games;
+bool is_game_boost_enabled(void);
 #else
 static void game_option(struct task_struct *tsk, enum game_opts opts) {}
-static int nr_running_games = 0;
+static inline bool is_game_boost_enabled()
+{
+	return false;
+}
 #endif /* CONFIG_GAMING_CONTROL */
 
 #endif /* _GAMING_CONTROL_H_ */

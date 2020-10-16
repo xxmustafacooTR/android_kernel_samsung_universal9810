@@ -48,25 +48,33 @@ char games_list[GAME_LIST_LENGTH] = {0};
 int games_pid[NUM_SUPPORTED_RUNNING_GAMES] = {
 	[0 ... (NUM_SUPPORTED_RUNNING_GAMES - 1)] = -1
 };
-int nr_running_games = 0;
+static int nr_running_games = 0;
+static bool gaming_mode = false;
 
-static void set_gaming_mode(int mode)
+// returns whether gaming mode is enabled or disabled
+bool is_game_boost_enabled(void)
+{
+	return gaming_mode;
+}
+
+static void set_gaming_mode(bool mode)
 {
 #ifdef CONFIG_BATTERY_SAVER
-	if (is_battery_saver_on()) {
-		mode = 0;
-	}
+	if (mode && !(is_battery_saver_on())) {
+#else
+	if (mode) {
 #endif
-	if (mode == 1) {
 		pm_qos_update_request(&gaming_control_min_mif_qos, min_mif_freq);
 		pm_qos_update_request(&gaming_control_max_little_qos, max_little_freq);
 		pm_qos_update_request(&gaming_control_min_big_qos, min_big_freq);
 		pm_qos_update_request(&gaming_control_max_big_qos, max_big_freq);
+		gaming_mode = true;
 	} else {
 		pm_qos_update_request(&gaming_control_min_mif_qos, PM_QOS_BUS_THROUGHPUT_DEFAULT_VALUE);
 		pm_qos_update_request(&gaming_control_max_little_qos, PM_QOS_CLUSTER0_FREQ_MAX_DEFAULT_VALUE);
 		pm_qos_update_request(&gaming_control_min_big_qos, PM_QOS_CLUSTER1_FREQ_MIN_DEFAULT_VALUE);
 		pm_qos_update_request(&gaming_control_max_big_qos, PM_QOS_CLUSTER1_FREQ_MAX_DEFAULT_VALUE);
+		gaming_mode = false;
 	}
 }
 
@@ -96,7 +104,7 @@ static void clear_dead_pids(void)
 
 	/* If there's no running games, turn off game mode */
 	if (nr_running_games == 0)
-		set_gaming_mode(0);
+		set_gaming_mode(false);
 }
 
 static int check_for_games(struct task_struct *tsk)
@@ -152,13 +160,13 @@ void game_option(struct task_struct *tsk, enum game_opts opts)
 
 		store_game_pid(tsk->pid);
 		tsk->app_state = TASK_STARTED;
-		set_gaming_mode(1);
+		set_gaming_mode(true);
 		break;
 	case GAME_RUNNING:
-		set_gaming_mode(1);
+		set_gaming_mode(true);
 		break;
 	case GAME_PAUSE:
-		set_gaming_mode(0);
+		set_gaming_mode(false);
 		break;
 	default:
 		break;
