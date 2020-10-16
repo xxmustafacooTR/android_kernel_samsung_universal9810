@@ -25,6 +25,11 @@
 #include <linux/kthread.h>
 #include <linux/sched/rt.h>
 
+#ifdef CONFIG_GAMING_CONTROL
+/* Gaming control */
+#include <linux/gaming_control.h>
+#endif
+
 
 #include "../../kernel/sched/sched.h"
 
@@ -268,8 +273,11 @@ static void cpuboost_input_event(struct input_handle *handle,
 		unsigned int type, unsigned int code, int value)
 {
 	u64 now;
-
+#ifdef CONFIG_GAMING_CONTROL
+	if (!input_boost_enabled || gaming_mode)
+#else
 	if (!input_boost_enabled)
+#endif
 		return;
 
 	now = ktime_to_us(ktime_get());

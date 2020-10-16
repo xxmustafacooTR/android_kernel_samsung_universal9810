@@ -7,6 +7,9 @@
 #include <linux/slab.h>
 #include <linux/ems.h>
 #include <linux/ems_service.h>
+#ifdef CONFIG_BATTERY_SAVER
+#include <linux/battery_saver.h>
+#endif
 
 #include <trace/events/sched.h>
 #include <linux/list.h>
@@ -482,7 +485,11 @@ void schedtune_enqueue_task(struct task_struct *p, int cpu)
 	struct schedtune *st;
 	int idx;
 
+#ifdef CONFIG_BATTERY_SAVER
+	if (!unlikely(schedtune_initialized) || is_battery_saver_on())
+#else
 	if (!unlikely(schedtune_initialized))
+#endif
 		return;
 
 	/*
@@ -524,7 +531,11 @@ int schedtune_can_attach(struct cgroup_taskset *tset)
 	int tasks;
 	u64 now;
 
+#ifdef CONFIG_BATTERY_SAVER
+	if (!unlikely(schedtune_initialized) || is_battery_saver_on())
+#else
 	if (!unlikely(schedtune_initialized))
+#endif
 		return 0;
 
 
@@ -627,7 +638,11 @@ void schedtune_dequeue_task(struct task_struct *p, int cpu)
 	struct schedtune *st;
 	int idx;
 
+#ifdef CONFIG_BATTERY_SAVER
+	if (!unlikely(schedtune_initialized) || is_battery_saver_on())
+#else
 	if (!unlikely(schedtune_initialized))
+#endif
 		return;
 
 	/*
@@ -665,7 +680,11 @@ void schedtune_exit_task(struct task_struct *tsk)
 	struct rq *rq;
 	int idx;
 
+#ifdef CONFIG_BATTERY_SAVER
+	if (!unlikely(schedtune_initialized) || is_battery_saver_on())
+#else
 	if (!unlikely(schedtune_initialized))
+#endif
 		return;
 
 	rq = lock_rq_of(tsk, &irq_flags);
@@ -700,7 +719,11 @@ int schedtune_task_boost(struct task_struct *p)
 	struct schedtune *st;
 	int task_boost;
 
+#ifdef CONFIG_BATTERY_SAVER
+	if (!unlikely(schedtune_initialized) || is_battery_saver_on())
+#else
 	if (!unlikely(schedtune_initialized))
+#endif
 		return 0;
 
 	/* Get task boost value */
@@ -770,7 +793,11 @@ int schedtune_prefer_idle(struct task_struct *p)
 	struct schedtune *st;
 	int prefer_idle;
 
+#ifdef CONFIG_BATTERY_SAVER
+	if (!unlikely(schedtune_initialized) || is_battery_saver_on())
+#else
 	if (!unlikely(schedtune_initialized))
+#endif
 		return 0;
 
 	/* Get prefer_idle value */
@@ -863,6 +890,11 @@ prefer_idle_read(struct cgroup_subsys_state *css, struct cftype *cft)
 {
 	struct schedtune *st = css_st(css);
 
+#ifdef CONFIG_BATTERY_SAVER
+	if (is_battery_saver_on())
+		return 0;
+#endif
+
 	return st->prefer_idle;
 }
 
@@ -880,6 +912,11 @@ static u64
 prefer_perf_read(struct cgroup_subsys_state *css, struct cftype *cft)
 {
 	struct schedtune *st = css_st(css);
+
+#ifdef CONFIG_BATTERY_SAVER
+	if (is_battery_saver_on())
+		return 0;
+#endif
 
 	return st->prefer_perf;
 }

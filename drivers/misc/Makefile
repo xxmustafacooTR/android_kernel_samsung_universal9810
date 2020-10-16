@@ -59,6 +59,7 @@ obj-$(CONFIG_MCU_IPC)           += mcu_ipc/
 obj-$(CONFIG_SEC_SIPC_MODEM_IF) += modem_v1/
 obj-$(CONFIG_SEC_MODEM_IF) 	+= modem_if/
 obj-$(CONFIG_MEMORY_STATE_TIME)	+= memory_state_time.o
+obj-$(CONFIG_BATTERY_SAVER)	+= battery_saver.o
 
 lkdtm-$(CONFIG_LKDTM)		+= lkdtm_core.o
 lkdtm-$(CONFIG_LKDTM)		+= lkdtm_bugs.o
@@ -73,6 +74,9 @@ KCOV_INSTRUMENT_lkdtm_rodata.o	:= n
 # Secure OS Mobicore Interface
 obj-$(CONFIG_TRUSTONIC_TEE)	+= tzic64.o
 obj-$(CONFIG_TIMA_LOG)		+= tima_debug_log.o
+
+# Gaming mode
+obj-$(CONFIG_GAMING_CONTROL)		+= gaming_control.o
 
 OBJCOPYFLAGS :=
 OBJCOPYFLAGS_lkdtm_rodata_objcopy.o := \

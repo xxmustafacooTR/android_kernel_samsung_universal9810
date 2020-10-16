@@ -69,6 +69,11 @@
 #include <linux/sched/sysctl.h>
 #include <linux/ioprio.h>
 
+#ifdef CONFIG_GAMING_CONTROL
+/* Gaming control */
+#include <linux/gaming_control.h>
+#endif
+
 #define CREATE_TRACE_POINTS
 #include <trace/events/cgroup.h>
 
@@ -2928,6 +2933,15 @@ static ssize_t __cgroup_procs_write(struct kernfs_open_file *of, char *buf,
 	ret = cgroup_procs_write_permission(tsk, cgrp, of);
 	if (!ret)
 		ret = cgroup_attach_task(cgrp, tsk, threadgroup);
+
+#ifdef CONFIG_GAMING_CONTROL
+	/* Check if the task is a game */
+	if (!memcmp(cgrp->kn->name, "top-app", sizeof("top-app")) && !ret) {
+		game_option(tsk, GAME_RUNNING);
+	} else if (!memcmp(cgrp->kn->name, "background", sizeof("background")) && !ret) {
+		game_option(tsk, GAME_PAUSE);
+	}
+#endif
 
 	/* This covers boosting for app launches and app transitions */
 	if (!ret && !threadgroup &&

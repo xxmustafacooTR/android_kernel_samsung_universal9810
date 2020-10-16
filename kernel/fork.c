@@ -98,6 +98,11 @@
 #define CREATE_TRACE_POINTS
 #include <trace/events/task.h>
 
+#ifdef CONFIG_GAMING_CONTROL
+/* Gaming control */
+#include <linux/gaming_control.h>
+#endif
+
 #ifdef CONFIG_SECURITY_DEFEX
 #include <linux/defex.h>
 #endif
@@ -2183,6 +2188,9 @@ long _do_fork(unsigned long clone_flags,
 		cpu_input_boost_kick_max(50);
 		devfreq_boost_kick_max(DEVFREQ_EXYNOS_MIF, 50);
 	}
+#endif
+#ifdef CONFIG_GAMING_CONTROL
+	game_option(current, GAME_START);
 #endif
 
 	/*

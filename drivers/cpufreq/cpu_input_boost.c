@@ -14,6 +14,9 @@
 #include <linux/slab.h>
 #include <linux/sched/sysctl.h>
 #include <linux/version.h>
+#ifdef CONFIG_BATTERY_SAVER
+#include <linux/battery_saver.h>
+#endif
 
 /* The sched_param struct is located elsewhere in newer kernels */
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 10, 0)
@@ -302,6 +305,13 @@ static int cpu_notifier_cb(struct notifier_block *nb, unsigned long action,
 	if (action != CPUFREQ_ADJUST)
 		return NOTIFY_OK;
 
+#ifdef CONFIG_BATTERY_SAVER
+	if (is_battery_saver_on()) {
+		policy->min = policy->cpuinfo.min_freq;
+		return NOTIFY_OK;
+	}
+#endif
+
 	/* Boost CPU to max frequency on wake, regardless of screen state */
 	if (test_bit(WAKE_BOOST, &b->state)) {
 		policy->min = get_max_boost_freq(policy);
@@ -311,8 +321,13 @@ static int cpu_notifier_cb(struct notifier_block *nb, unsigned long action,
 		return NOTIFY_OK;
 	}
 
+#ifdef CONFIG_BATTERY_SAVER
+	/* Unboost when the screen is off or battery saver is on */
+	if (is_battery_saver_on() || test_bit(SCREEN_OFF, &b->state)) {
+#else
 	/* Unboost when the screen is off */
 	if (test_bit(SCREEN_OFF, &b->state)) {
+#endif
 		policy->min = get_min_freq(policy);
 #ifdef CONFIG_DYNAMIC_STUNE_BOOST
 		clear_stune_boost(b);

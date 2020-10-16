@@ -1676,6 +1676,11 @@ struct task_struct {
 	unsigned int flags;	/* per process flags, defined below */
 	unsigned int ptrace;
 
+#ifdef CONFIG_GAMING_CONTROL
+	/* Android app state */
+	int app_state;
+#endif
+
 #ifdef CONFIG_SMP
 	struct llist_node wake_entry;
 	int on_cpu;

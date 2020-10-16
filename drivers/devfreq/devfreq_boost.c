@@ -11,6 +11,9 @@
 #include <linux/kthread.h>
 #include <linux/moduleparam.h>
 #include <linux/compiler.h>
+#ifdef CONFIG_BATTERY_SAVER
+#include <linux/battery_saver.h>
+#endif
 
 #define MAX_USER_RT_PRIO        100
 #define MAX_RT_PRIO             MAX_USER_RT_PRIO
@@ -160,7 +163,11 @@ static void devfreq_update_boosts(struct boost_dev *b, unsigned long state)
 	int first_freq_idx = df->profile->max_state - 1;
 
 	mutex_lock(&df->lock);
+#ifdef CONFIG_BATTERY_SAVER
+	if (is_battery_saver_on() || test_bit(SCREEN_OFF, &state)) {
+#else
 	if (test_bit(SCREEN_OFF, &state)) {
+#endif
 		df->min_freq = df->profile->freq_table[first_freq_idx];
 		df->max_boost = false;
 	} else {
