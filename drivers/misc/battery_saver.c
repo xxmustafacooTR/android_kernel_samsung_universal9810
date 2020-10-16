@@ -7,7 +7,11 @@
 #include <linux/moduleparam.h>
 #include <linux/battery_saver.h>
 
+#ifdef CONFIG_PCIEASPM_PERFORMANCE
 static bool enabled = false;
+#else
+static bool enabled = true;
+#endif
 module_param(enabled, bool, 0644);
 
 // returns whether battery saver is enabled or disabled
