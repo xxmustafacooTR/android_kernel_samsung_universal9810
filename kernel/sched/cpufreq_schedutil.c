@@ -12,7 +12,7 @@
 #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 
 #include <linux/cpufreq.h>
-#include <linux/display_state.h>
+#include <linux/fb.h>
 #include <linux/kthread.h>
 #include <linux/slab.h>
 #include <linux/cpu_pm.h>
@@ -86,6 +86,10 @@ struct sugov_policy {
 #ifdef CONFIG_SCHED_KAIR_GLUE
 	bool be_stochastic;
 #endif
+
+	/* Framebuffer callbacks */
+	struct notifier_block fb_notif;
+	bool is_panel_blank;
 };
 
 struct sugov_cpu {
@@ -188,9 +192,6 @@ static void sugov_update_commit(struct sugov_policy *sg_policy, u64 time,
 	if (sg_policy->next_freq == next_freq)
 		return;
 
-	if (sg_policy->next_freq > next_freq)
-		next_freq = (sg_policy->next_freq + next_freq) >> 1;
-
 	sg_policy->next_freq = next_freq;
 	sg_policy->last_freq_update_time = time;
 
@@ -259,14 +260,14 @@ static unsigned int get_next_freq(struct sugov_policy *sg_policy,
 	int cur_rand = KAIR_DIVERGING;
 	RV_DECLARE(rv);
 #endif
-	if (is_battery_saver_on() && is_display_off()) {
+
+	if (is_battery_saver_on() && sg_policy->is_panel_blank) {
 		freq = (freq + (freq >> 4)) * util / max;
 	} else if (sg_policy->tunables->exp_util) {
 		freq = (freq + (freq >> 2)) * int_sqrt(util * 100 / max) / 10;
 	} else {
 		freq = (freq + (freq >> 2)) * util / max;
 	}
-
 
 #ifdef CONFIG_SCHED_KAIR_GLUE
 	legacy_freq = freq;
@@ -391,9 +392,9 @@ static void sugov_set_iowait_boost(struct sugov_cpu *sg_cpu, u64 time,
 
 	if (!sg_policy->tunables->iowait_boost_enable ||
 #ifdef CONFIG_BATTERY_SAVER
-	     is_display_off() || is_battery_saver_on())
+	     sg_policy->is_panel_blank || is_battery_saver_on())
 #else
-	     is_display_off())
+	     sg_policy->is_panel_blank)
 #endif
 		return;
 
@@ -583,27 +584,11 @@ static void sugov_update_shared(struct update_util_data *hook, u64 time,
 static void sugov_work(struct kthread_work *work)
 {
 	struct sugov_policy *sg_policy = container_of(work, struct sugov_policy, work);
-	unsigned int freq;
-	unsigned long flags;
-
-	/*
-	 * Hold sg_policy->update_lock shortly to handle the case where:
-	 * incase sg_policy->next_freq is read here, and then updated by
-	 * sugov_update_shared just before work_in_progress is set to false
-	 * here, we may miss queueing the new update.
-	 *
-	 * Note: If a work was queued after the update_lock is released,
-	 * sugov_work will just be called again by kthread_work code; and the
-	 * request will be proceed before the sugov thread sleeps.
-	 */
-	raw_spin_lock_irqsave(&sg_policy->update_lock, flags);
-	freq = sg_policy->next_freq;
-	sg_policy->work_in_progress = false;
-	raw_spin_unlock_irqrestore(&sg_policy->update_lock, flags);
-
 	mutex_lock(&sg_policy->work_lock);
-	__cpufreq_driver_target(sg_policy->policy, freq, CPUFREQ_RELATION_L);
+	__cpufreq_driver_target(sg_policy->policy, sg_policy->next_freq,
+				CPUFREQ_RELATION_L);
 	mutex_unlock(&sg_policy->work_lock);
+	sg_policy->work_in_progress = false;
 }
 
 static void sugov_irq_work(struct irq_work *irq_work)
@@ -975,6 +960,23 @@ static void sugov_tunables_restore(struct cpufreq_policy *policy)
 					   sg_policy->down_rate_delay_ns);
 }
 
+static int fb_notifier_cb(struct notifier_block *nb, unsigned long action,
+			  void *data)
+{
+	struct sugov_policy *sg_policy = container_of(nb, struct sugov_policy, fb_notif);
+	int *blank = ((struct fb_event *)data)->data;
+
+	if (action != FB_EARLY_EVENT_BLANK)
+		return NOTIFY_OK;
+
+	if (*blank == FB_BLANK_UNBLANK)
+		sg_policy->is_panel_blank = false;
+	else
+		sg_policy->is_panel_blank = true;
+
+	return NOTIFY_OK;
+}
+
 static int sugov_init(struct cpufreq_policy *policy)
 {
 	struct sugov_policy *sg_policy;
@@ -1045,6 +1047,7 @@ static int sugov_init(struct cpufreq_policy *policy)
 
 	policy->governor_data = sg_policy;
 	sg_policy->tunables = tunables;
+	sg_policy->is_panel_blank = false;
 
 	sugov_tunables_restore(policy);
 
@@ -1057,6 +1060,14 @@ static int sugov_init(struct cpufreq_policy *policy)
 out:
 	mutex_unlock(&global_tunables_lock);
 
+	sg_policy->fb_notif.notifier_call = fb_notifier_cb;
+	sg_policy->fb_notif.priority = INT_MAX;
+	ret = fb_register_client(&sg_policy->fb_notif);
+	if (ret) {
+		pr_err("Failed to register fb notifier, err: %d\n", ret);
+		goto fail;
+	}
+
 	return 0;
 
 fail:
@@ -1066,6 +1077,7 @@ fail:
 
 stop_kthread:
 	sugov_kthread_stop(sg_policy);
+
 free_sg_policy:
 	mutex_unlock(&global_tunables_lock);
 
@@ -1104,6 +1116,7 @@ static void sugov_exit(struct cpufreq_policy *policy)
 	}
 	sg_policy->be_stochastic = false;
 #endif
+	fb_unregister_client(&sg_policy->fb_notif);
 	sugov_kthread_stop(sg_policy);
 	sugov_policy_free(sg_policy);
 	mutex_unlock(&global_tunables_lock);
@@ -1195,6 +1208,7 @@ static void sugov_stop(struct cpufreq_policy *policy)
 	}
 
 	synchronize_sched();
+
 #ifdef CONFIG_SCHED_KAIR_GLUE
 	for_each_cpu(cpu, policy->cpus) {
 		struct sugov_cpu *sg_cpu = &per_cpu(sugov_cpu, cpu);
@@ -1204,9 +1218,9 @@ static void sugov_stop(struct cpufreq_policy *policy)
 	}
 #endif
 
-	if (!policy->fast_switch_enabled) {	
-		irq_work_sync(&sg_policy->irq_work);	
-		kthread_cancel_work_sync(&sg_policy->work);	
+	if (!policy->fast_switch_enabled) {
+		irq_work_sync(&sg_policy->irq_work);
+		kthread_cancel_work_sync(&sg_policy->work);
 	}
 }
 
@@ -1261,7 +1275,6 @@ static void sugov_update_min(struct cpufreq_policy *policy)
 
 	/* min_cap is minimum value making higher frequency than policy->min */
 	min_cap = max_cap * policy->min / policy->max;
-	/* min_cap = (min_cap * policy->min / policy->max) + 1; */
 	min_cap = (min_cap * 4 / 5) + 1;
 
 	for_each_cpu(cpu, policy->cpus) {

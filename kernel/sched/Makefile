@@ -1,4 +1,5 @@
-ccflags-y += -O3 -pipe
+ccflags-y += -O3 -pipe -Wall
+# CFLAGS_cpufreq_schedutil.o := $(PROFILING) -Wextra
 
 ifdef CONFIG_FUNCTION_TRACER
 CFLAGS_REMOVE_clock.o = $(CC_FLAGS_FTRACE)
