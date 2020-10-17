@@ -21,10 +21,6 @@
 #include <linux/cpu_cooling.h>
 #include <linux/suspend.h>
 #include <linux/ems.h>
-#ifdef CONFIG_GAMING_CONTROL
-/* Gaming control */
-#include <linux/gaming_control.h>
-#endif
 
 #include <soc/samsung/cal-if.h>
 #include <soc/samsung/ect_parser.h>
@@ -543,11 +539,7 @@ void set_suspend_freqs(bool suspend)
 	unsigned int cpu0_set_suspend_min_freq, cpu0_set_suspend_max_freq = 0;
 	unsigned int cpu4_set_suspend_min_freq, cpu4_set_suspend_max_freq = 0;
 
-#ifdef CONFIG_GAMING_CONTROL
-	if (!enable_suspend_freqs && is_game_boost_enabled())
-#else
 	if (!enable_suspend_freqs)
-#endif
 		return;
 
 	if (suspend) {
