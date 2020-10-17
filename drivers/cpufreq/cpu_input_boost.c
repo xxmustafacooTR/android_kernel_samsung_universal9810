@@ -10,7 +10,7 @@
 #include <linux/input.h>
 #include <linux/kthread.h>
 #include <linux/moduleparam.h>
-#include <linux/display_state.h>
+#include <linux/fb.h>
 #include <linux/slab.h>
 #include <linux/sched/sysctl.h>
 #include <linux/version.h>
@@ -66,6 +66,7 @@ module_param_named(dynamic_stune_boost, stune_boost, int, 0644);
 #endif
 
 enum {
+	SCREEN_OFF,
 	INPUT_BOOST,
 	MAX_BOOST,
 	WAKE_BOOST
@@ -75,6 +76,7 @@ struct boost_drv {
 	struct delayed_work input_unboost;
 	struct delayed_work max_unboost;
 	struct notifier_block cpu_notif;
+	struct notifier_block fb_notif;
 	wait_queue_head_t boost_waitq;
 	atomic_long_t max_boost_expires;
 	unsigned long state;
@@ -121,16 +123,17 @@ static unsigned int get_max_boost_freq(struct cpufreq_policy *policy)
 
 static unsigned int get_min_freq(struct cpufreq_policy *policy)
 {
+	struct boost_drv *b = &boost_drv_g;
 	unsigned int freq;
 
 	if (cpumask_test_cpu(policy->cpu, cpu_lp_mask) &&
-			is_display_off())
+			test_bit(SCREEN_OFF, &b->state))
 		freq = idle_min_freq_lp;
 	else if (cpumask_test_cpu(policy->cpu, cpu_perf_mask) &&
-			is_display_off())
+			test_bit(SCREEN_OFF, &b->state))
 		freq = idle_min_freq_hp;
 	else if (cpumask_test_cpu(policy->cpu, cpu_lp_mask) &&
-			(!is_display_off()))
+			(!test_bit(SCREEN_OFF, &b->state)))
 		freq = remove_input_boost_freq_lp;
 	else
 		freq = remove_input_boost_freq_perf;
@@ -176,7 +179,7 @@ static void clear_stune_boost(struct boost_drv *b)
 
 static void __cpu_input_boost_kick(struct boost_drv *b)
 {
-	if (is_display_off())
+	if (test_bit(SCREEN_OFF, &b->state))
 		return;
 
 	if (!input_boost_duration)
@@ -221,7 +224,7 @@ void cpu_input_boost_kick_max(unsigned int duration_ms)
 {
 	struct boost_drv *b = &boost_drv_g;
 
-	if (is_display_off())
+	if (test_bit(SCREEN_OFF, &b->state))
 		return;
 
 	__cpu_input_boost_kick_max(b, duration_ms);
@@ -229,7 +232,7 @@ void cpu_input_boost_kick_max(unsigned int duration_ms)
 
 static void __cpu_input_boost_kick_wake(struct boost_drv *b)
 {
-	if (!is_display_off())
+	if (!test_bit(SCREEN_OFF, &b->state))
 		return;
 
 	if (!wake_boost_duration)
@@ -320,10 +323,10 @@ static int cpu_notifier_cb(struct notifier_block *nb, unsigned long action,
 
 #ifdef CONFIG_BATTERY_SAVER
 	/* Unboost when the screen is off or battery saver is on */
-	if (is_battery_saver_on() || is_display_off()) {
+	if (is_battery_saver_on() || test_bit(SCREEN_OFF, &b->state)) {
 #else
 	/* Unboost when the screen is off */
-	if (is_display_off()) {
+	if (test_bit(SCREEN_OFF, &b->state)) {
 #endif
 		policy->min = get_min_freq(policy);
 #ifdef CONFIG_DYNAMIC_STUNE_BOOST
@@ -365,6 +368,29 @@ static int cpu_notifier_cb(struct notifier_block *nb, unsigned long action,
 
 	/* If we are not boosting max for app launch/device wake, enable EAS */
 	sysctl_sched_energy_aware = 1;
+
+	return NOTIFY_OK;
+}
+
+static int fb_notifier_cb(struct notifier_block *nb,
+			       unsigned long action, void *data)
+{
+	struct boost_drv *b = container_of(nb, typeof(*b), fb_notif);
+	struct fb_event *evdata = data;
+	int *blank = evdata->data;
+
+	/* Parse framebuffer blank events as soon as they occur */
+	if (action != FB_EARLY_EVENT_BLANK)
+		return NOTIFY_OK;
+
+	/* Boost when the screen turns on and unboost when it turns off */
+	if (*blank == FB_BLANK_UNBLANK) {
+		__cpu_input_boost_kick_wake(b);
+		clear_bit(SCREEN_OFF, &b->state);
+	} else {
+		set_bit(SCREEN_OFF, &b->state);
+		wake_up(&b->boost_waitq);
+	}
 
 	return NOTIFY_OK;
 }
@@ -463,13 +489,21 @@ static int __init cpu_input_boost_init(void)
 	ret = cpufreq_register_notifier(&b->cpu_notif, CPUFREQ_POLICY_NOTIFIER);
 	if (ret) {
 		pr_err("Failed to register cpufreq notifier, err: %d\n", ret);
-		goto unregister_cpu_notif;
+		return ret;
 	}
 
 	cpu_input_boost_input_handler.private = b;
 	ret = input_register_handler(&cpu_input_boost_input_handler);
 	if (ret) {
 		pr_err("Failed to register input handler, err: %d\n", ret);
+		goto unregister_cpu_notif;
+	}
+
+	b->fb_notif.notifier_call = fb_notifier_cb;
+	b->fb_notif.priority = INT_MAX;
+	ret = fb_register_client(&b->fb_notif);
+	if (ret) {
+		pr_err("Failed to register fb notifier, err: %d\n", ret);
 		goto unregister_handler;
 	}
 
@@ -477,11 +511,13 @@ static int __init cpu_input_boost_init(void)
 	if (IS_ERR(thread)) {
 		ret = PTR_ERR(thread);
 		pr_err("Failed to start CPU boost thread, err: %d\n", ret);
-		return ret;
+		goto unregister_drm_notif;
 	}
 
 	return 0;
 
+unregister_drm_notif:
+	fb_unregister_client(&b->fb_notif);
 unregister_handler:
 	input_unregister_handler(&cpu_input_boost_input_handler);
 unregister_cpu_notif:
