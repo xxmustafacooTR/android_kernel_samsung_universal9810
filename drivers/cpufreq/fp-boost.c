@@ -32,6 +32,9 @@
 #include <linux/input.h>
 #include <linux/slab.h>
 #include <linux/time.h>
+#ifdef CONFIG_CPU_FREQ_SUSPEND
+extern void set_suspend_freqs(bool);
+#endif
 
 /* Available bits for boost_policy state */
 #define DRIVER_ENABLED        (1U << 0)
@@ -104,6 +107,9 @@ static void fp_unboost_main(struct work_struct *work)
 	struct boost_policy *b = boost_policy_g;
 	pr_info("Unboosting\n");
 	touched = false;
+#ifdef CONFIG_CPU_FREQ_SUSPEND
+	set_suspend_freqs(!touched);
+#endif
 	/* This clears the wake-boost bit and unboosts everything */
 	unboost_all_cpus(b);
 }
@@ -169,6 +175,9 @@ static void cpu_fp_input_event(struct input_handle *handle, unsigned int type,
 
 	pr_info("Recieved input event\n");
 	touched = true;
+#ifdef CONFIG_CPU_FREQ_SUSPEND
+	set_suspend_freqs(!touched);
+#endif
 	set_boost_bit(b, FINGERPRINT_BOOST);
 
 	/* Delaying work to ensure all CPUs are online */
