@@ -570,7 +570,6 @@ struct governor_attr {
 			 size_t count);
 };
 
-int cpufreq_update_freq(int cpu, unsigned int min, unsigned int max);
 /* CPUFREQ DEFAULT GOVERNOR */
 /*
  * Performance governor is fallback governor if any other gov failed to auto

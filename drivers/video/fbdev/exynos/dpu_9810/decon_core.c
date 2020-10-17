@@ -41,6 +41,7 @@
 #include <linux/sec_debug.h>
 #endif
 #include <linux/devfreq_boost.h>
+#include <linux/display_state.h>
 
 #include "decon.h"
 #include "dsim.h"
@@ -53,7 +54,7 @@
 extern void set_suspend_freqs(bool);
 #endif
 
-bool is_suspend = false;
+bool display_off = false;
 
 int decon_log_level = 4;
 module_param(decon_log_level, int, 0644);
@@ -87,6 +88,11 @@ void __iomem *regs_dphy_clk_0;
 void __iomem *regs_dphy_clk_1;
 void __iomem *regs_dphy_clk_2;
 #endif
+
+bool is_display_off(void)
+{
+	return display_off;
+}
 
 void tracing_mark_write(struct decon_device *decon, char id, char *str1, int value)
 {
@@ -1128,14 +1134,14 @@ blank_exit:
 	decon_info("%s -\n", __func__);
 
 	if (blank_mode == FB_BLANK_UNBLANK) {
-		is_suspend = false;
+		display_off = false;
 #ifdef CONFIG_CPU_FREQ_SUSPEND
-		set_suspend_freqs(false);
+		set_suspend_freqs(is_display_off());
 #endif
 	} else {
-		is_suspend = true;
+		display_off = true;
 #ifdef CONFIG_CPU_FREQ_SUSPEND
-		set_suspend_freqs(true);
+		set_suspend_freqs(is_display_off());
 #endif
 	}
 

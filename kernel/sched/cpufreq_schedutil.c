@@ -12,7 +12,7 @@
 #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 
 #include <linux/cpufreq.h>
-#include <linux/fb.h>
+#include <linux/display_state.h>
 #include <linux/kthread.h>
 #include <linux/slab.h>
 #include <linux/cpu_pm.h>
@@ -83,14 +83,9 @@ struct sugov_policy {
 	bool work_in_progress;
 
 	bool need_freq_update;
-	bool limits_changed;
 #ifdef CONFIG_SCHED_KAIR_GLUE
 	bool be_stochastic;
 #endif
-
-	/* Framebuffer callbacks */
-	struct notifier_block fb_notif;
-	bool is_panel_blank;
 };
 
 struct sugov_cpu {
@@ -149,11 +144,8 @@ static bool sugov_should_update_freq(struct sugov_policy *sg_policy, u64 time)
 {
 	s64 delta_ns;
 
-	if (unlikely(sg_policy->limits_changed)) {
-		sg_policy->limits_changed = false;
-		sg_policy->need_freq_update = true;
+	if (unlikely(sg_policy->need_freq_update))
 		return true;
-	}
 
 	/* No need to recalculate next freq for min_rate_limit_us
 	 * at least. However we might still decide to further rate
@@ -196,17 +188,20 @@ static void sugov_update_commit(struct sugov_policy *sg_policy, u64 time,
 	if (sg_policy->next_freq == next_freq)
 		return;
 
+	if (sg_policy->next_freq > next_freq)
+		next_freq = (sg_policy->next_freq + next_freq) >> 1;
+
 	sg_policy->next_freq = next_freq;
 	sg_policy->last_freq_update_time = time;
 
 	if (policy->fast_switch_enabled) {
 		next_freq = cpufreq_driver_fast_switch(policy, next_freq);
-		if (!next_freq)
+		if (next_freq == CPUFREQ_ENTRY_INVALID)
 			return;
 
 		policy->cur = next_freq;
 		trace_cpu_frequency(next_freq, smp_processor_id());
-	} else if (!sg_policy->work_in_progress) {
+	} else {
 		sg_policy->work_in_progress = true;
 		irq_work_queue(&sg_policy->irq_work);
 	}
@@ -248,13 +243,14 @@ static unsigned int get_next_freq(struct sugov_policy *sg_policy,
 {
 	struct cpufreq_policy *policy = sg_policy->policy;
 	unsigned int freq = arch_scale_freq_invariant() ?
-				policy->cpuinfo.max_freq : policy->cur;
+				policy->max : policy->cur;
 #ifdef CONFIG_SCHED_KAIR_GLUE
 	struct sugov_cpu *sg_cpu;
 	struct kair_class *vessel;
 	unsigned int delta_max, delta_min;
 	int util_delta;
 	unsigned int legacy_freq;
+	unsigned int freqtuneable = 1;
 
 #ifdef KAIR_CLUSTER_TRAVERSING
 	unsigned int each;
@@ -264,15 +260,16 @@ static unsigned int get_next_freq(struct sugov_policy *sg_policy,
 	int cur_rand = KAIR_DIVERGING;
 	RV_DECLARE(rv);
 #endif
+	if (is_battery_saver_on())
+		freqtuneable = 3;
 
-	if (is_battery_saver_on()) {
-		freq = (freq + (freq >> 4)) * util / max;
-	} else {
-		if (sg_policy->tunables->exp_util)
-			freq = (freq + (freq >> 2)) * int_sqrt(util * 100 / max) / 10;
-		else
-			freq = (freq + (freq >> 1)) * util / max;
-	}
+	if (is_display_off())
+		freqtuneable = 5;
+
+	if (sg_policy->tunables->exp_util)
+		freq = (freq + (freq >> freqtuneable)) * int_sqrt(util * 100 / max) / 10;
+	else
+		freq = (freq + (freq >> freqtuneable)) * util / max;
 
 #ifdef CONFIG_SCHED_KAIR_GLUE
 	legacy_freq = freq;
@@ -397,9 +394,9 @@ static void sugov_set_iowait_boost(struct sugov_cpu *sg_cpu, u64 time,
 
 	if (!sg_policy->tunables->iowait_boost_enable ||
 #ifdef CONFIG_BATTERY_SAVER
-	     sg_policy->is_panel_blank || is_battery_saver_on())
+	     is_display_off() || is_battery_saver_on())
 #else
-	     sg_policy->is_panel_blank)
+	     is_display_off())
 #endif
 		return;
 
@@ -485,10 +482,7 @@ static void sugov_update_single(struct update_util_data *hook, u64 time,
 	if (!sugov_should_update_freq(sg_policy, time))
 		return;
 
-	/* Limits may have changed, don't skip frequency update */
-	busy = !sg_policy->need_freq_update && sugov_cpu_is_busy(sg_cpu);
-
-	flags &= ~SCHED_CPUFREQ_DL;
+	busy = sugov_cpu_is_busy(sg_cpu);
 
 	if (flags & SCHED_CPUFREQ_DL) {
 		next_f = policy->cpuinfo.max_freq;
@@ -500,7 +494,8 @@ static void sugov_update_single(struct update_util_data *hook, u64 time,
 		 * Do not reduce the frequency if the CPU has not been idle
 		 * recently, as the reduction is likely to be premature then.
 		 */
-		if (busy && next_f < sg_policy->next_freq) {
+		if (busy && next_f < sg_policy->next_freq &&
+		    sg_policy->next_freq != UINT_MAX) {
 			next_f = sg_policy->next_freq;
 
 			/* Reset cached freq as next_freq has changed */
@@ -867,7 +862,6 @@ static struct sugov_policy *sugov_policy_alloc(struct cpufreq_policy *policy)
 
 static void sugov_policy_free(struct sugov_policy *sg_policy)
 {
-	irq_work_sync(&sg_policy->irq_work);
 	kfree(sg_policy);
 }
 
@@ -985,23 +979,6 @@ static void sugov_tunables_restore(struct cpufreq_policy *policy)
 					   sg_policy->down_rate_delay_ns);
 }
 
-static int fb_notifier_cb(struct notifier_block *nb, unsigned long action,
-			  void *data)
-{
-	struct sugov_policy *sg_policy = container_of(nb, struct sugov_policy, fb_notif);
-	int *blank = ((struct fb_event *)data)->data;
-
-	if (action != FB_EARLY_EVENT_BLANK)
-		return NOTIFY_OK;
-
-	if (*blank == FB_BLANK_UNBLANK)
-		sg_policy->is_panel_blank = false;
-	else
-		sg_policy->is_panel_blank = true;
-
-	return NOTIFY_OK;
-}
-
 static int sugov_init(struct cpufreq_policy *policy)
 {
 	struct sugov_policy *sg_policy;
@@ -1051,7 +1028,7 @@ static int sugov_init(struct cpufreq_policy *policy)
 		unsigned int lat;
 
                 tunables->up_rate_limit_us = LATENCY_MULTIPLIER;
-                tunables->down_rate_limit_us = LATENCY_MULTIPLIER * 2;
+                tunables->down_rate_limit_us = LATENCY_MULTIPLIER;
 		lat = policy->cpuinfo.transition_latency / NSEC_PER_USEC;
 		if (lat) {
                         tunables->up_rate_limit_us *= lat;
@@ -1059,15 +1036,23 @@ static int sugov_init(struct cpufreq_policy *policy)
                 }
 	}
 
+	/* Hard-code some sane rate-limit values */
+	tunables->up_rate_limit_us = 10000;
+	tunables->down_rate_limit_us = 20000;
+
 #ifdef CONFIG_SCHED_KAIR_GLUE
 	tunables->fb_legacy = true;
 	sg_policy->be_stochastic = false;
 #endif
 	tunables->iowait_boost_enable = policy->iowait_boost_enable;
+#ifdef CONFIG_PCIEASPM_PERFORMANCE
+	tunables->exp_util = true;
+#else
+	tunables->exp_util = true;
+#endif
 
 	policy->governor_data = sg_policy;
 	sg_policy->tunables = tunables;
-	sg_policy->is_panel_blank = false;
 
 	sugov_tunables_restore(policy);
 
@@ -1080,14 +1065,6 @@ static int sugov_init(struct cpufreq_policy *policy)
 out:
 	mutex_unlock(&global_tunables_lock);
 
-	sg_policy->fb_notif.notifier_call = fb_notifier_cb;
-	sg_policy->fb_notif.priority = INT_MAX;
-	ret = fb_register_client(&sg_policy->fb_notif);
-	if (ret) {
-		pr_err("Failed to register fb notifier, err: %d\n", ret);
-		goto fail;
-	}
-
 	return 0;
 
 fail:
@@ -1098,9 +1075,8 @@ fail:
 stop_kthread:
 	sugov_kthread_stop(sg_policy);
 
-free_sg_policy:
 	mutex_unlock(&global_tunables_lock);
-
+free_sg_policy:
 	sugov_policy_free(sg_policy);
 
 disable_fast_switch:
@@ -1136,7 +1112,6 @@ static void sugov_exit(struct cpufreq_policy *policy)
 	}
 	sg_policy->be_stochastic = false;
 #endif
-	fb_unregister_client(&sg_policy->fb_notif);
 	sugov_kthread_stop(sg_policy);
 	sugov_policy_free(sg_policy);
 	mutex_unlock(&global_tunables_lock);
@@ -1162,7 +1137,6 @@ static int sugov_start(struct cpufreq_policy *policy)
 	sg_policy->work_in_progress = false;
 	sg_policy->need_freq_update = false;
 	sg_policy->cached_raw_freq = 0;
-	sg_policy->limits_changed = false;
 
 	for_each_cpu(cpu, policy->cpus) {
 		struct sugov_cpu *sg_cpu = &per_cpu(sugov_cpu, cpu);
@@ -1228,6 +1202,7 @@ static void sugov_stop(struct cpufreq_policy *policy)
 		cpufreq_remove_update_util_hook(cpu);
 	}
 
+	synchronize_sched();
 #ifdef CONFIG_SCHED_KAIR_GLUE
 	for_each_cpu(cpu, policy->cpus) {
 		struct sugov_cpu *sg_cpu = &per_cpu(sugov_cpu, cpu);
@@ -1237,8 +1212,10 @@ static void sugov_stop(struct cpufreq_policy *policy)
 	}
 #endif
 
-	if (!policy->fast_switch_enabled)
-		kthread_cancel_work_sync(&sg_policy->work);
+	if (!policy->fast_switch_enabled) {	
+		irq_work_sync(&sg_policy->irq_work);	
+		kthread_cancel_work_sync(&sg_policy->work);	
+	}
 }
 
 static void sugov_limits(struct cpufreq_policy *policy)
@@ -1260,7 +1237,7 @@ static void sugov_limits(struct cpufreq_policy *policy)
 
 	sugov_update_min(policy);
 
-	sg_policy->limits_changed = true;
+	sg_policy->need_freq_update = true;
 
 	mutex_unlock(&global_tunables_lock);
 }
@@ -1291,8 +1268,8 @@ static void sugov_update_min(struct cpufreq_policy *policy)
 	max_cap = arch_scale_cpu_capacity(NULL, policy->cpu);
 
 	/* min_cap is minimum value making higher frequency than policy->min */
-	min_cap = max_cap * policy->min / policy->max;
-	min_cap = (min_cap * 4 / 5) + 1;
+	min_cap = (max_cap * policy->min / policy->max) + 1;
+	/* min_cap = (min_cap * 4 / 5) + 1; */
 
 	for_each_cpu(cpu, policy->cpus) {
 		sg_exynos = &per_cpu(sugov_exynos, cpu);

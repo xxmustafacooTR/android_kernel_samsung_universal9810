@@ -24,6 +24,7 @@
 #include <linux/slab.h>
 #include <linux/gaming_control.h>
 #include <linux/pm_qos.h>
+#include <linux/cpufreq.h>
 #ifdef CONFIG_BATTERY_SAVER
 #include <linux/battery_saver.h>
 #endif

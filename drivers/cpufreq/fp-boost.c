@@ -159,7 +159,7 @@ static void cpu_fp_input_event(struct input_handle *handle, unsigned int type,
 	struct fp_config *fp = &b->fp;
 	uint32_t state;
 
-	if (!is_display_on())
+	if (is_display_off())
 		return;
 
 	state = get_boost_state(b);
