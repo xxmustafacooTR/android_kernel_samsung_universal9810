@@ -35,6 +35,8 @@
 
 #define TASK_STARTED 1
 
+static unsigned int cpu0_tmp_min_freq, cpu0_tmp_max_freq = 0;
+static unsigned int cpu4_tmp_min_freq, cpu4_tmp_max_freq = 0;
 /* PM QoS implementation */
 struct pm_qos_request gaming_control_min_mif_qos;
 struct pm_qos_request gaming_control_min_big_qos;
@@ -66,17 +68,66 @@ bool is_game_boost_enabled(void)
 
 static void set_gaming_mode(bool mode)
 {
+	struct cpufreq_policy *policy0 = cpufreq_cpu_get(0);
+	struct cpufreq_policy *policy4 = cpufreq_cpu_get(4);
+
+	unsigned int cpu0_set_suspend_min_freq, cpu0_set_suspend_max_freq = 0;
+	unsigned int cpu4_set_suspend_min_freq, cpu4_set_suspend_max_freq = 0;
+
 #ifdef CONFIG_BATTERY_SAVER
 	if (mode && !(is_battery_saver_on())) {
 #else
 	if (mode) {
 #endif
-		pm_qos_update_request(&gaming_control_min_mif_qos, min_mif_freq);
-		pm_qos_update_request(&gaming_control_max_little_qos, max_little_freq);
-		pm_qos_update_request(&gaming_control_min_big_qos, min_big_freq);
-		pm_qos_update_request(&gaming_control_max_big_qos, max_big_freq);
-		gaming_mode = true;
+		/* save current min/max cpu0 freq */
+		cpu0_tmp_max_freq = policy0->max;
+
+		/* save current min/max cpu4 freq */
+		cpu4_tmp_min_freq = policy4->min;
+		cpu4_tmp_max_freq = policy4->max;
+
+		if (!max_little_freq)
+			goto cpu4;
+
+		if (!max_little_freq)
+			cpu0_set_suspend_max_freq = cpu0_tmp_max_freq;
+		else
+			cpu0_set_suspend_max_freq = max_little_freq;
+
+		/* set min/max cpu0 freq for suspend */
+		cpufreq_update_freq(0, cpu0_set_suspend_min_freq, cpu0_set_suspend_max_freq);
+
+cpu4:
+		if (!min_big_freq && !max_big_freq)
+			goto out;
+
+		if (!min_big_freq)
+			cpu4_set_suspend_min_freq = cpu4_tmp_min_freq;
+		else
+			cpu4_set_suspend_min_freq = min_big_freq;
+
+		if (!max_big_freq)
+			cpu4_set_suspend_max_freq = cpu4_tmp_max_freq;
+		else
+			cpu4_set_suspend_max_freq = max_big_freq;
+
+		/* set min/max cpu4 freq for suspend */
+		cpufreq_update_freq(4, cpu4_set_suspend_min_freq, cpu4_set_suspend_max_freq);
+
+out:
+		if (!max_little_freq && !min_big_freq && !max_big_freq) {
+			gaming_mode = false;
+		} else {
+			pm_qos_update_request(&gaming_control_min_mif_qos, min_mif_freq);
+			pm_qos_update_request(&gaming_control_max_little_qos, max_little_freq);
+			pm_qos_update_request(&gaming_control_min_big_qos, min_big_freq);
+			pm_qos_update_request(&gaming_control_max_big_qos, max_big_freq);
+			gaming_mode = true;
+		}
 	} else {
+		/* restore previous min/max cpu freq */
+		cpufreq_update_freq(0, cpu0_tmp_min_freq, cpu0_tmp_max_freq);
+		cpufreq_update_freq(4, cpu4_tmp_min_freq, cpu4_tmp_max_freq);
 		pm_qos_update_request(&gaming_control_min_mif_qos, PM_QOS_BUS_THROUGHPUT_DEFAULT_VALUE);
 		pm_qos_update_request(&gaming_control_max_little_qos, PM_QOS_CLUSTER0_FREQ_MAX_DEFAULT_VALUE);
 		pm_qos_update_request(&gaming_control_min_big_qos, PM_QOS_CLUSTER1_FREQ_MIN_DEFAULT_VALUE);
