@@ -1,3 +1,4 @@
+ccflags-y += -O3 -pipe -Wall
 
 ccflags-$(CONFIG_PM_DEBUG)	:= -DDEBUG
 

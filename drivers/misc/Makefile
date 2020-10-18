@@ -1,4 +1,4 @@
-ccflags-y += -O3 -pipe
+ccflags-y += -O3 -pipe -Wall
 
 #
 # Makefile for misc devices that really don't fit anywhere else.
