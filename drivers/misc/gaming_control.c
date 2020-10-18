@@ -41,14 +41,12 @@ struct pm_qos_request gaming_control_min_big_qos;
 struct pm_qos_request gaming_control_max_big_qos;
 struct pm_qos_request gaming_control_max_little_qos;
 static unsigned int min_mif_freq = 1794000;
+static unsigned int max_little_freq = 0;
+static unsigned int max_big_freq = 0;
 #ifdef CONFIG_PCIEASPM_PERFORMANCE
-static unsigned int max_little_freq = 2002000;
 static unsigned int min_big_freq = 1794000;
-static unsigned int max_big_freq = 2314000;
 #else
-static unsigned int max_little_freq = 1794000;
 static unsigned int min_big_freq = 1586000;
-static unsigned int max_big_freq = 1794000;
 #endif
 
 char games_list[GAME_LIST_LENGTH] = {0};
@@ -71,10 +69,14 @@ static void set_gaming_mode(bool mode)
 #else
 	if (mode) {
 #endif
-		pm_qos_update_request(&gaming_control_min_mif_qos, min_mif_freq);
-		pm_qos_update_request(&gaming_control_max_little_qos, max_little_freq);
-		pm_qos_update_request(&gaming_control_min_big_qos, min_big_freq);
-		pm_qos_update_request(&gaming_control_max_big_qos, max_big_freq);
+		if (!min_mif_freq)
+			pm_qos_update_request(&gaming_control_min_mif_qos, min_mif_freq);
+		if (!max_little_freq)
+			pm_qos_update_request(&gaming_control_max_little_qos, max_little_freq);
+		if (!min_big_freq)
+			pm_qos_update_request(&gaming_control_min_big_qos, min_big_freq);
+		if (!max_big_freq)
+			pm_qos_update_request(&gaming_control_max_big_qos, max_big_freq);
 		gaming_mode = true;
 	} else {
 		pm_qos_update_request(&gaming_control_min_mif_qos, PM_QOS_BUS_THROUGHPUT_DEFAULT_VALUE);

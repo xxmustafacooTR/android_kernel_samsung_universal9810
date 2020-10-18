@@ -2950,7 +2950,7 @@ static ssize_t __cgroup_procs_write(struct kernfs_open_file *of, char *buf,
 	        devfreq_boost_kick_max(DEVFREQ_EXYNOS_MIF, 250);
 	        kpp_request(STUNE_TOPAPP, &kpp_ta, 1);
 	} else if (!ret && !strcmp(of->kn->parent->name, "foreground") &&
-	    is_zygote_pid(task->parent->pid)) {
+	    is_zygote_pid(tsk->parent->pid)) {
 #ifdef CONFIG_PCIEASPM_PERFORMANCE
 		cpu_input_boost_kick_max(250);
 #endif
@@ -2968,15 +2968,15 @@ static ssize_t __cgroup_procs_write(struct kernfs_open_file *of, char *buf,
 #endif
 
 	if (!ret && !strcmp(of->kn->parent->name, "audioserver")) {
-		set_task_ioprio(task, IOPRIO_PRIO_VALUE(IOPRIO_CLASS_RT, 1));
+		set_task_ioprio(tsk, IOPRIO_PRIO_VALUE(IOPRIO_CLASS_RT, 1));
 		param.sched_priority = 20;
-		sched_setscheduler_nocheck(task, SCHED_FIFO | SCHED_RR | SCHED_RESET_ON_FORK, &param);
+		sched_setscheduler_nocheck(tsk, SCHED_FIFO | SCHED_RR | SCHED_RESET_ON_FORK, &param);
 		kpp_request(STUNE_TOPAPP, &kpp_ta, 2);
 		kpp_request(STUNE_FOREGROUND, &kpp_fg, 2);
 	} else if (!strcmp(of->kn->parent->name, "ndroid.systemui")) {
-		set_task_ioprio(task, IOPRIO_PRIO_VALUE(IOPRIO_CLASS_RT, 2));
+		set_task_ioprio(tsk, IOPRIO_PRIO_VALUE(IOPRIO_CLASS_RT, 2));
 		param.sched_priority = 15;
-		sched_setscheduler_nocheck(task, SCHED_FIFO | SCHED_RR | SCHED_RESET_ON_FORK, &param);
+		sched_setscheduler_nocheck(tsk, SCHED_FIFO | SCHED_RR | SCHED_RESET_ON_FORK, &param);
 		kpp_request(STUNE_TOPAPP, &kpp_ta, 1);
 		kpp_request(STUNE_FOREGROUND, &kpp_fg, 1);
 	}

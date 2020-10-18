@@ -50,11 +50,10 @@ unsigned int little_throttle_limit = 0;
 bool is_throttle_limit(unsigned int clipped_freq, int cpu)
 {
 	unsigned int freq = 0;
-	if (cpumask_test_cpu(cpu, cpu_perf_mask)) {
+	if (cpumask_test_cpu(cpu, cpu_perf_mask))
 		freq = big_throttle_limit;
-	} else {
+	else
 		freq = little_throttle_limit;
-	}
 
 	return (clipped_freq < freq);
 }
@@ -165,10 +164,14 @@ static ssize_t store_cpufreq_min_limit(struct kobject *kobj,
 	struct cpumask mask;
 
 #ifdef CONFIG_GAMING_CONTROL
-	if (dvfs_disable || is_game_boost_enabled())
-#else
-	if (dvfs_disable)
+	/* Clear all constraint by cpufreq_min_limit */
+	if (is_game_boost_enabled()) {
+		pm_qos_update_request(&domain->user_min_qos_req, 0);
+		control_boost(0);
+		return count;
+	}
 #endif
+	if (dvfs_disable)
 		return count;
 
 	if (!sscanf(buf, "%8d", &input))
@@ -279,10 +282,13 @@ static ssize_t store_cpufreq_min_limit_wo_boost(struct kobject *kobj,
 	struct cpumask mask;
 
 #ifdef CONFIG_GAMING_CONTROL
-	if (dvfs_disable || is_game_boost_enabled())
-#else
-	if (dvfs_disable)
+	/* Clear all constraint by cpufreq_min_limit */
+	if (is_game_boost_enabled()) {
+		pm_qos_update_request(&domain->user_min_qos_wo_boost_req, 0);
+		return count;
+	}
 #endif
+	if (dvfs_disable)
 		return count;
 
 	if (!sscanf(buf, "%8d", &input))
