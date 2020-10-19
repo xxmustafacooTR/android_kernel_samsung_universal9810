@@ -64,21 +64,42 @@ bool is_game_boost_enabled(void)
 
 static void set_gaming_mode(bool mode)
 {
+	unsigned int set_min_mif_freq, set_max_little_freq = 0;
+	unsigned int set_min_big_freq, set_max_big_freq = 0;
 #ifdef CONFIG_BATTERY_SAVER
 	if (mode && !(is_battery_saver_on())) {
 #else
 	if (mode) {
 #endif
 		if (!min_mif_freq)
-			pm_qos_update_request(&gaming_control_min_mif_qos, min_mif_freq);
+			set_min_mif_freq = min_mif_freq;
+		else
+			set_min_mif_freq = PM_QOS_BUS_THROUGHPUT_DEFAULT_VALUE;
+
 		if (!max_little_freq)
-			pm_qos_update_request(&gaming_control_max_little_qos, max_little_freq);
+			set_max_little_freq = max_little_freq;
+		else
+			set_max_little_freq = PM_QOS_CLUSTER0_FREQ_MAX_DEFAULT_VALUE;
+
 		if (!min_big_freq)
-			pm_qos_update_request(&gaming_control_min_big_qos, min_big_freq);
+			set_min_big_freq = min_big_freq;
+		else
+			set_min_big_freq = PM_QOS_CLUSTER1_FREQ_MIN_DEFAULT_VALUE;
+
 		if (!max_big_freq)
-			pm_qos_update_request(&gaming_control_max_big_qos, max_big_freq);
-		gaming_mode = true;
-	} else {
+			set_max_big_freq = max_big_freq;
+		else
+			set_max_big_freq = PM_QOS_CLUSTER1_FREQ_MAX_DEFAULT_VALUE;
+
+		if (!min_mif_freq && !max_little_freq && !min_big_freq && !max_big_freq)
+			gaming_mode = false;
+		else
+			pm_qos_update_request(&gaming_control_min_mif_qos, set_min_mif_freq);
+			pm_qos_update_request(&gaming_control_max_little_qos, set_max_little_freq);
+			pm_qos_update_request(&gaming_control_min_big_qos, set_min_big_freq);
+			pm_qos_update_request(&gaming_control_max_big_qos, set_max_big_freq);
+			gaming_mode = true;
+	} else if (gaming_mode) {
 		pm_qos_update_request(&gaming_control_min_mif_qos, PM_QOS_BUS_THROUGHPUT_DEFAULT_VALUE);
 		pm_qos_update_request(&gaming_control_max_little_qos, PM_QOS_CLUSTER0_FREQ_MAX_DEFAULT_VALUE);
 		pm_qos_update_request(&gaming_control_min_big_qos, PM_QOS_CLUSTER1_FREQ_MIN_DEFAULT_VALUE);

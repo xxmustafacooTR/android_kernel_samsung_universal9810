@@ -871,12 +871,12 @@ static int exynos9810_tmu_read(struct exynos_tmu_data *data)
 #ifdef CONFIG_EXYNOS_ACPM_THERMAL
 	exynos_acpm_tmu_set_read_temp(data->tzd->id, &temp, &stat);
 #endif
-#ifdef CONFIG_GAMING_CONTROL
-	if (!is_game_boost_enabled() && data->hotplug_enable) {
-#else
 	if (data->hotplug_enable) {
-#endif
+#ifdef CONFIG_GAMING_CONTROL
+		if ((stat == 2) && !cpufreq_limited && !is_game_boost_enabled()) {
+#else
 		if ((stat == 2) && !cpufreq_limited) {
+#endif
 			pm_qos_update_request(&thermal_cpu_limit_request,
 					data->limited_frequency);
 			cpufreq_limited = true;

@@ -22,10 +22,6 @@
 #include <linux/cpu_input_boost.h>
 #include <linux/devfreq_boost.h>
 #endif
-#ifdef CONFIG_GAMING_CONTROL
-/* Gaming control */
-#include <linux/gaming_control.h>
-#endif
 
 #include <soc/samsung/exynos-cpu_hotplug.h>
 
@@ -163,14 +159,6 @@ static ssize_t store_cpufreq_min_limit(struct kobject *kobj,
 	int index = 0;
 	struct cpumask mask;
 
-#ifdef CONFIG_GAMING_CONTROL
-	/* Clear all constraint by cpufreq_min_limit */
-	if (is_game_boost_enabled()) {
-		pm_qos_update_request(&domain->user_min_qos_req, 0);
-		control_boost(0);
-		return count;
-	}
-#endif
 	if (dvfs_disable)
 		return count;
 
@@ -281,13 +269,6 @@ static ssize_t store_cpufreq_min_limit_wo_boost(struct kobject *kobj,
 	int index = 0;
 	struct cpumask mask;
 
-#ifdef CONFIG_GAMING_CONTROL
-	/* Clear all constraint by cpufreq_min_limit */
-	if (is_game_boost_enabled()) {
-		pm_qos_update_request(&domain->user_min_qos_wo_boost_req, 0);
-		return count;
-	}
-#endif
 	if (dvfs_disable)
 		return count;
 
@@ -549,11 +530,7 @@ static ssize_t store_cpufreq_max_limit(struct kobject *kobj, struct kobj_attribu
 {
 	int input;
 
-#ifdef CONFIG_GAMING_CONTROL
-	if (dvfs_disable || is_game_boost_enabled())
-#else
 	if (dvfs_disable)
-#endif
 		return count;
 
 	if (!sscanf(buf, "%8d", &input))
