@@ -70,7 +70,6 @@
 #include <linux/psi.h>
 #include <net/sock.h>
 #include <linux/ioprio.h>
-#include <linux/ems_service.h>
 
 #ifdef CONFIG_GAMING_CONTROL
 /* Gaming control */
@@ -2880,9 +2879,6 @@ static int cgroup_procs_write_permission(struct task_struct *task,
 	return ret;
 }
 
-static struct kpp kpp_ta;
-static struct kpp kpp_fg;
-
 /*
  * Find the task_struct of the task to attach by vpid and pass it along to the
  * function to attach either it or all tasks in its threadgroup. Will lock
@@ -2948,14 +2944,12 @@ static ssize_t __cgroup_procs_write(struct kernfs_open_file *of, char *buf,
 		cpu_input_boost_kick_max(250);
 #endif
 	        devfreq_boost_kick_max(DEVFREQ_EXYNOS_MIF, 250);
-	        kpp_request(STUNE_TOPAPP, &kpp_ta, 1);
 	} else if (!ret && !strcmp(of->kn->parent->name, "foreground") &&
 	    is_zygote_pid(tsk->parent->pid)) {
 #ifdef CONFIG_PCIEASPM_PERFORMANCE
 		cpu_input_boost_kick_max(250);
 #endif
 		devfreq_boost_kick_max(DEVFREQ_EXYNOS_MIF, 250);
-		kpp_request(STUNE_TOPAPP, &kpp_ta, 1);
 	}
 
 #ifdef CONFIG_GAMING_CONTROL
@@ -2971,14 +2965,10 @@ static ssize_t __cgroup_procs_write(struct kernfs_open_file *of, char *buf,
 		set_task_ioprio(tsk, IOPRIO_PRIO_VALUE(IOPRIO_CLASS_RT, 1));
 		param.sched_priority = 20;
 		sched_setscheduler_nocheck(tsk, SCHED_FIFO | SCHED_RR | SCHED_RESET_ON_FORK, &param);
-		kpp_request(STUNE_TOPAPP, &kpp_ta, 2);
-		kpp_request(STUNE_FOREGROUND, &kpp_fg, 2);
 	} else if (!strcmp(of->kn->parent->name, "ndroid.systemui")) {
 		set_task_ioprio(tsk, IOPRIO_PRIO_VALUE(IOPRIO_CLASS_RT, 2));
 		param.sched_priority = 15;
 		sched_setscheduler_nocheck(tsk, SCHED_FIFO | SCHED_RR | SCHED_RESET_ON_FORK, &param);
-		kpp_request(STUNE_TOPAPP, &kpp_ta, 1);
-		kpp_request(STUNE_FOREGROUND, &kpp_fg, 1);
 	}
 
 	put_task_struct(tsk);
