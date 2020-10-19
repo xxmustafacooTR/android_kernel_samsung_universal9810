@@ -74,14 +74,10 @@ static void set_gaming_mode(bool mode)
 	if (is_battery_saver_on())
 		mode = false;
 #endif
-	if (!mode || (!min_mif_freq && !max_little_freq && !min_big_freq && !max_big_freq))
-		gaming_mode = false;
-		goto out;
+	if (!min_mif_freq && !max_little_freq && !min_big_freq && !max_big_freq)
+		goto disable;
 
 	if (mode) {
-		if (gaming_mode)
-			return;
-
 		if (!min_mif_freq)
 			set_min_mif_freq = min_mif_freq;
 
@@ -95,8 +91,10 @@ static void set_gaming_mode(bool mode)
 			set_max_big_freq = max_big_freq;
 
 		gaming_mode = true;
+		goto out;
 	}
-
+disable:
+	gaming_mode = false;
 out:
 	pm_qos_update_request(&gaming_control_min_mif_qos, set_min_mif_freq);
 	pm_qos_update_request(&gaming_control_max_little_qos, set_max_little_freq);
