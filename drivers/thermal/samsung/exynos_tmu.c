@@ -1406,6 +1406,9 @@ static int exynos_tmu_parse_ect(struct exynos_tmu_data *data)
 		if (function->range_list[i].max_frequency == 1950000)
 			function->range_list[i].max_frequency = 2002000;
 
+		if (function->range_list[i].max_frequency == 2860000)
+			function->range_list[i].max_frequency = 2886000;
+
 		for (i = 0; i < function->num_of_range; ++i) {
 			temperature = function->range_list[i].lower_bound_temperature;
 			freq = function->range_list[i].max_frequency;

@@ -602,11 +602,6 @@ struct task_cputime_atomic {
 	atomic64_t sum_exec_runtime;
 };
 
-#ifdef CONFIG_SMP
-extern struct root_domain def_root_domain;
-extern struct mutex sched_domains_mutex;
-#endif
-
 #define INIT_CPUTIME_ATOMIC \
 	(struct task_cputime_atomic) {				\
 		.utime = ATOMIC64_INIT(0),			\
