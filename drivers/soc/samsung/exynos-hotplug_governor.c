@@ -450,7 +450,7 @@ static void __exynos_hpgov_set_enable(void)
 	}
 
 #ifdef CONFIG_PCIEASPM_PERFORMANCE
-	param.sched_priority = MAX_USER_RT_PRIO - 1;
+	param.sched_priority = MAX_USER_RT_PRIO / 2;
 	sched_setscheduler_nocheck(exynos_hpgov.task, SCHED_FIFO, &param);
 #else
 	set_user_nice(exynos_hpgov.task, MIN_NICE);
