@@ -223,8 +223,11 @@ static void __cpu_input_boost_kick_max(struct boost_drv *b,
 void cpu_input_boost_kick_max(unsigned int duration_ms)
 {
 	struct boost_drv *b = &boost_drv_g;
-
+#ifdef CONFIG_BATTERY_SAVER
+	if (is_battery_saver_on() || test_bit(SCREEN_OFF, &b->state))
+#else
 	if (test_bit(SCREEN_OFF, &b->state))
+#endif
 		return;
 
 	__cpu_input_boost_kick_max(b, duration_ms);
