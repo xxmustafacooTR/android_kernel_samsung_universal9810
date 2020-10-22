@@ -1251,13 +1251,26 @@ int get_speaker_gain(void)
 int set_speaker_gain(int gain)
 {
 	struct max98512_priv *max98512 = snd_soc_codec_get_drvdata(max98512_codec);
-	int digital_gain;
+	unsigned int digital_gain;
 
 	moro_speaker_value = gain;
-	digital_gain = (gain+2)*4;
-	gain = (gain/3)+1;
 
+	if(gain<12)
+		goto spkgain;
+
+// MAX98512_R0035_AMP_VOL_CTRL
+	digital_gain = (gain+2)*4;
+
+	max98512_wrapper_update(max98512, MAX98512R,
+					MAX98512_R0035_AMP_VOL_CTRL,
+					MAX98512_AMP_VOL_MASK,
+					digital_gain);
+
+	max98512->digital_gain = digital_gain;
+
+spkgain:
 // MAX98512_R003A_SPK_GAIN
+	gain = (gain/3)+1;
 
 	max98512_wrapper_update(max98512, MAX98512R,
 					MAX98512_R003A_SPK_GAIN,
@@ -1267,15 +1280,6 @@ int set_speaker_gain(int gain)
 	max98512->spk_gain_right = gain;
 
 	max98512->spk_gain = gain;
-
-// MAX98512_R0035_AMP_VOL_CTRL
-
-	max98512_wrapper_update(max98512, MAX98512R,
-					MAX98512_R0035_AMP_VOL_CTRL,
-					MAX98512_AMP_VOL_MASK,
-					digital_gain);
-
-	max98512->digital_gain = digital_gain;
 
 	return max98512->spk_gain_right;
 }
@@ -1290,13 +1294,26 @@ int get_earpiece_gain(void)
 int set_earpiece_gain(int gain)
 {
 	struct max98512_priv *max98512 = snd_soc_codec_get_drvdata(max98512_codec);
-	int digital_gain;
+	unsigned int digital_gain;
 
 	moro_earpiece_value = gain;
-	digital_gain = (gain+2)*4;
-	gain = (gain/3)+1;
 
+	if(gain<12)
+		goto eargain;
+
+// MAX98512_R0035_AMP_VOL_CTRL
+	digital_gain = (gain+2)*4;
+
+	max98512_wrapper_update(max98512, MAX98512L,
+					MAX98512_R0035_AMP_VOL_CTRL,
+					MAX98512_AMP_VOL_MASK,
+					digital_gain);
+
+	max98512->digital_gain_rcv = digital_gain;
+
+eargain:
 // MAX98512_R003A_SPK_GAIN
+	gain = (gain/3)+1;
 
 	max98512_wrapper_update(max98512, MAX98512L,
 					MAX98512_R003A_SPK_GAIN,
@@ -1306,15 +1323,6 @@ int set_earpiece_gain(int gain)
 	max98512->spk_gain_left = gain;
 
 	max98512->spk_gain = gain;
-
-// MAX98512_R0035_AMP_VOL_CTRL
-
-	max98512_wrapper_update(max98512, MAX98512L,
-					MAX98512_R0035_AMP_VOL_CTRL,
-					MAX98512_AMP_VOL_MASK,
-					digital_gain);
-
-	max98512->digital_gain_rcv = digital_gain;
 
 	return max98512->spk_gain_left;
 }
