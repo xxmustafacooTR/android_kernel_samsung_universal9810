@@ -33,6 +33,9 @@
 #include "gpu_ipa.h"
 #endif /* CONFIG_CPU_THERMAL_IPA */
 #include "gpu_custom_interface.h"
+#ifdef CONFIG_GAMING_CONTROL
+#include <linux/gaming_control.h>
+#endif
 
 #ifdef CONFIG_SOC_EXYNOS9810
 #define GPU_MAX_VOLT		1000000
@@ -941,7 +944,11 @@ static ssize_t set_max_lock_dvfs(struct device *dev, struct device_attribute *at
 	struct exynos_context *platform = (struct exynos_context *)pkbdev->platform_context;
 
 	// Kill it from now without interferring Game Launcher
-	return count;
+#ifdef CONFIG_GAMING_CONTROL
+	// Kill it while game controller working
+	if (is_game_boost_enabled())
+#endif
+		return count;
 
 	if (!platform)
 		return -ENODEV;
@@ -1015,7 +1022,11 @@ static ssize_t set_min_lock_dvfs(struct device *dev, struct device_attribute *at
 	struct exynos_context *platform = (struct exynos_context *)pkbdev->platform_context;
 
 	// Kill it from now without interferring Game Launcher
-	return count;
+#ifdef CONFIG_GAMING_CONTROL
+	// Kill it while game controller working
+	if (is_game_boost_enabled())
+#endif
+		return count;
 
 	if (!platform)
 		return -ENODEV;
