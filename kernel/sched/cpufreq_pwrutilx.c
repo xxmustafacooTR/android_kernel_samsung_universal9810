@@ -574,7 +574,7 @@ static void pwrgov_policy_free(struct pwrgov_policy *sg_policy)
 static int pwrgov_kthread_create(struct pwrgov_policy *sg_policy)
 {
 	struct task_struct *thread;
-	struct sched_param param = { .sched_priority = MAX_USER_RT_PRIO - 1 };
+	struct sched_param param = { .sched_priority = MAX_USER_RT_PRIO / 2 };
 	struct cpufreq_policy *policy = sg_policy->policy;
 	int ret;
 
