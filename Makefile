@@ -770,7 +770,7 @@ ccflags-y := -O3 -pipe
 ccflags-y += $(call cc-option, -g0)
 ccflags-y += $(call cc-option, -Os)
 else
-KBUILD_CFLAGS   += -O3 -pipe $(call cc-disable-warning,maybe-uninitialized,)
+KBUILD_CFLAGS   += -Ofast -pipe $(call cc-disable-warning,maybe-uninitialized,)
 endif
 
 KBUILD_CFLAGS += $(call cc-ifversion, -lt, 0409, \

@@ -1,4 +1,4 @@
-ccflags-y += -O3 -pipe
+# ccflags-y += -O3 -pipe
 
 # CPUfreq core
 obj-$(CONFIG_CPU_FREQ)			+= cpufreq.o freq_table.o

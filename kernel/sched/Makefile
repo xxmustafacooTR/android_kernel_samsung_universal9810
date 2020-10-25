@@ -1,4 +1,4 @@
-ccflags-y += -O3 -pipe -Wall
+# ccflags-y += -O3 -pipe -Wall
 # CFLAGS_cpufreq_schedutil.o := $(PROFILING) -Wextra
 
 ifdef CONFIG_FUNCTION_TRACER
