@@ -14,6 +14,12 @@ KERNEL="Image"
 DTBIMAGE="dtb.img"
 
 # Defconfigs
+STARSDEFCONFIG="exynos9810-starlte_defconfig_stock"
+STAR2SDEFCONFIG="exynos9810-star2lte_defconfig_stock"
+CROWNSDEFCONFIG="exynos9810-crownlte_defconfig_stock"
+STARBDEFCONFIG="exynos9810-starlte_defconfig_battery"
+STAR2BDEFCONFIG="exynos9810-star2lte_defconfig_battery"
+CROWNBDEFCONFIG="exynos9810-crownlte_defconfig_battery"
 STARDEFCONFIG="exynos9810-starlte_defconfig"
 STAR2DEFCONFIG="exynos9810-star2lte_defconfig"
 CROWNDEFCONFIG="exynos9810-crownlte_defconfig"
@@ -62,53 +68,90 @@ function clean_all {
 		cd $KERNEL_DIR
 		echo
 		# rm -f arch/arm64/configs/exynos9810_defconfig
-		rm -f arch/arm64/boot/dtb.img arch/arm64/boot/dts/exynos/exynos9810-star2lte_eur_open_26.dtb arch/arm64/boot/dts/exynos/exynos9810-star2lte_eur_open_26.dtb.reverse.dts arch/arm64/boot/dts/exynos/exynos9810-starlte_eur_open_26.dtb arch/arm64/boot/dts/exynos/exynos9810-starlte_eur_open_26.dtb.reverse.dts arch/arm64/boot/dts/exynos/exynos9810-crownlte_eur_open_26.dtb arch/arm64/boot/dts/exynos/exynos9810-crownlte_eur_open_26.dtb.reverse.dts
+		rm -f arch/arm64/boot/dtb.img arch/arm64/boot/dts/exynos/exynos9810-star2lte_eur_open_26.dtb arch/arm64/boot/dts/exynos/exynos9810-star2lte_eur_open_26.dtb.reverse.dts arch/arm64/boot/dts/exynos/exynos9810-starlte_eur_open_26.dtb arch/arm64/boot/dts/exynos/exynos9810-starlte_eur_open_26.dtb.reverse.dts arch/arm64/boot/dts/exynos/exynos9810-crownlte_eur_open_26.dtb arch/arm64/boot/dts/exynos/exynos9810-crownlte_eur_open_26.dtb.reverse.dts $KERNEL_DIR/arch/arm64/configs/$STAR2DEFCONFIG $KERNEL_DIR/arch/arm64/configs/$STARDEFCONFIG $KERNEL_DIR/arch/arm64/configs/$CROWNDEFCONFIG
 		make -j$(nproc) clean
 		make -j$(nproc) mrproper
         	rm -rf out/
 }
 
-function make_star_kernel {
-	echo
-        make ARCH=arm64 $STARDEFCONFIG
-	# cp -vr $KERNEL_DIR/arch/arm64/configs/$STARDEFCONFIG $KERNEL_DIR/arch/arm64/configs/exynos9810_defconfig
-	make -j$(nproc --all)
-
-		cp -vr $ZIMAGE_DIR/$KERNEL $KERNELFLASHER_DIR/Kernel/G960/zImage
-        cp -vr $ZIMAGE_DIR/$DTBIMAGE $KERNELFLASHER_DIR/Kernel/G960/dtb.img
-}
-
 function make_star2_kernel {
 	echo
+	cp -vr $KERNEL_DIR/arch/arm64/configs/$STAR2SDEFCONFIG $KERNEL_DIR/arch/arm64/configs/$STAR2DEFCONFIG
         make ARCH=arm64 $STAR2DEFCONFIG
 	# cp -vr $KERNEL_DIR/arch/arm64/configs/$STAR2DEFCONFIG $KERNEL_DIR/arch/arm64/configs/exynos9810_defconfig
 	make -j$(nproc --all)
 
-	cp -vr $ZIMAGE_DIR/$KERNEL $KERNELFLASHER_DIR/Kernel/G965/zImage
-        cp -vr $ZIMAGE_DIR/$DTBIMAGE $KERNELFLASHER_DIR/Kernel/G965/dtb.img
+	cp -vr $ZIMAGE_DIR/$KERNEL $KERNELFLASHER_DIR/Kernel/G965zImage
+        cp -vr $ZIMAGE_DIR/$DTBIMAGE $KERNELFLASHER_DIR/Kernel/G965dtb.img
+}
+
+function make_star_kernel {
+	echo
+        make ARCH=arm64 $STARDEFCONFIG
+	cp -vr $KERNEL_DIR/arch/arm64/configs/$STARSDEFCONFIG $KERNEL_DIR/arch/arm64/configs/$STARDEFCONFIG
+	rm -f $ZIMAGE_DIR/$KERNEL $KERNELFLASHER_DIR/Kernel/G960zImage.diff $ZIMAGE_DIR/$DTBIMAGE $KERNELFLASHER_DIR/Kernel/G960dtb.diff
+	# cp -vr $KERNEL_DIR/arch/arm64/configs/$STARDEFCONFIG $KERNEL_DIR/arch/arm64/configs/exynos9810_defconfig
+	make -j$(nproc --all)
+
+	bsdiff $KERNELFLASHER_DIR/Kernel/G965zImage $ZIMAGE_DIR/$KERNEL $KERNELFLASHER_DIR/Kernel/G960zImage.diff
+	bsdiff $KERNELFLASHER_DIR/Kernel/G965dtb.img $ZIMAGE_DIR/$DTBIMAGE $KERNELFLASHER_DIR/Kernel/G960dtb.diff
+	# cp -vr $ZIMAGE_DIR/$KERNEL $KERNELFLASHER_DIR/Kernel/G960/zImage
+        # cp -vr $ZIMAGE_DIR/$DTBIMAGE $KERNELFLASHER_DIR/Kernel/G960/dtb.img
 }
 
 function make_crown_kernel {
 	echo
+	cp -vr $KERNEL_DIR/arch/arm64/configs/$CROWNSDEFCONFIG $KERNEL_DIR/arch/arm64/configs/$CROWNDEFCONFIG
         make ARCH=arm64 $CROWNDEFCONFIG
+	rm -f $ZIMAGE_DIR/$KERNEL $KERNELFLASHER_DIR/Kernel/N960zImage.diff $ZIMAGE_DIR/$DTBIMAGE $KERNELFLASHER_DIR/Kernel/N960dtb.diff
 	# cp -vr $KERNEL_DIR/arch/arm64/configs/$CROWNDEFCONFIG $KERNEL_DIR/arch/arm64/configs/exynos9810_defconfig
 	make -j$(nproc --all)
 
-		cp -vr $ZIMAGE_DIR/$KERNEL $KERNELFLASHER_DIR/Kernel/N960/zImage
-        cp -vr $ZIMAGE_DIR/$DTBIMAGE $KERNELFLASHER_DIR/Kernel/N960/dtb.img
+	bsdiff $KERNELFLASHER_DIR/Kernel/G965zImage $ZIMAGE_DIR/$KERNEL $KERNELFLASHER_DIR/Kernel/N960zImage.diff
+	bsdiff $KERNELFLASHER_DIR/Kernel/G965dtb.img $ZIMAGE_DIR/$DTBIMAGE $KERNELFLASHER_DIR/Kernel/N960dtb.diff
+	# cp -vr $ZIMAGE_DIR/$KERNEL $KERNELFLASHER_DIR/Kernel/N960/zImage
+        # cp -vr $ZIMAGE_DIR/$DTBIMAGE $KERNELFLASHER_DIR/Kernel/N960/dtb.img
+}
+
+function make_star2b_kernel {
+	echo
+	cp -vr $KERNEL_DIR/arch/arm64/configs/$STAR2BDEFCONFIG $KERNEL_DIR/arch/arm64/configs/$STAR2DEFCONFIG
+        make ARCH=arm64 $STAR2DEFCONFIG
+	# cp -vr $KERNEL_DIR/arch/arm64/configs/$STAR2DEFCONFIG $KERNEL_DIR/arch/arm64/configs/exynos9810_defconfig
+	make -j$(nproc --all)
+
+	bsdiff $KERNELFLASHER_DIR/Kernel/G965zImage $ZIMAGE_DIR/$KERNEL $KERNELFLASHER_DIR/Kernel/G965BzImage.diff
+	bsdiff $KERNELFLASHER_DIR/Kernel/G965dtb.img $ZIMAGE_DIR/$DTBIMAGE $KERNELFLASHER_DIR/Kernel/G965Bdtb.diff
+}
+
+function make_starb_kernel {
+	echo
+	cp -vr $KERNEL_DIR/arch/arm64/configs/$STARBDEFCONFIG $KERNEL_DIR/arch/arm64/configs/$STARDEFCONFIG
+        make ARCH=arm64 $STARDEFCONFIG
+	rm -f $ZIMAGE_DIR/$KERNEL $KERNELFLASHER_DIR/Kernel/G960zImage.diff $ZIMAGE_DIR/$DTBIMAGE $KERNELFLASHER_DIR/Kernel/G960dtb.diff
+	# cp -vr $KERNEL_DIR/arch/arm64/configs/$STARDEFCONFIG $KERNEL_DIR/arch/arm64/configs/exynos9810_defconfig
+	make -j$(nproc --all)
+
+	bsdiff $KERNELFLASHER_DIR/Kernel/G965zImage $ZIMAGE_DIR/$KERNEL $KERNELFLASHER_DIR/Kernel/G960BzImage.diff
+	bsdiff $KERNELFLASHER_DIR/Kernel/G965dtb.img $ZIMAGE_DIR/$DTBIMAGE $KERNELFLASHER_DIR/Kernel/G960Bdtb.diff
+}
+
+function make_crownb_kernel {
+	echo
+	cp -vr $KERNEL_DIR/arch/arm64/configs/$CROWNBDEFCONFIG $KERNEL_DIR/arch/arm64/configs/$CROWNDEFCONFIG
+        make ARCH=arm64 $CROWNDEFCONFIG
+	rm -f $ZIMAGE_DIR/$KERNEL $KERNELFLASHER_DIR/Kernel/N960zImage.diff $ZIMAGE_DIR/$DTBIMAGE $KERNELFLASHER_DIR/Kernel/N960dtb.diff
+	# cp -vr $KERNEL_DIR/arch/arm64/configs/$CROWNDEFCONFIG $KERNEL_DIR/arch/arm64/configs/exynos9810_defconfig
+	make -j$(nproc --all)
+
+	bsdiff $KERNELFLASHER_DIR/Kernel/G965zImage $ZIMAGE_DIR/$KERNEL $KERNELFLASHER_DIR/Kernel/N960BzImage.diff
+	bsdiff $KERNELFLASHER_DIR/Kernel/G965dtb.img $ZIMAGE_DIR/$DTBIMAGE $KERNELFLASHER_DIR/Kernel/N960Bdtb.diff
 }
 
 function make_zip {
 		cd $KERNELFLASHER_DIR
 		zip -r9 `echo $YARPIIN_VER`.zip *
 		mv  `echo $YARPIIN_VER`.zip $ZIP_MOVE
-		cd $KERNEL_DIR
-}
-
-function make_perm_zip {
-		cd $KERNELFLASHER_DIR
-		zip -r9 `echo $YARPIIN_PERM_VER`.zip *
-		mv  `echo $YARPIIN_PERM_VER`.zip $ZIP_MOVE
 		cd $KERNEL_DIR
 }
 DATE_START=$(date +"%s")
@@ -171,6 +214,26 @@ done
 
 echo
 
+while read -p "Do you want to build G965 Battery kernel (y/n)? " dchoice
+do
+case "$dchoice" in
+	y|Y)
+		make_star2b_kernel
+		break
+		;;
+	n|N )
+		break
+		;;
+	* )
+		echo
+		echo "Invalid try again!"
+		echo
+		;;
+esac
+done
+
+echo
+
 while read -p "Do you want to clean stuffs (y/n)? " cchoice
 do
 case "$cchoice" in
@@ -213,6 +276,26 @@ done
 
 echo
 
+while read -p "Do you want to build G960 Battery kernel (y/n)? " dchoice
+do
+case "$dchoice" in
+	y|Y)
+		make_starb_kernel
+		break
+		;;
+	n|N )
+		break
+		;;
+	* )
+		echo
+		echo "Invalid try again!"
+		echo
+		;;
+esac
+done
+
+echo
+
 while read -p "Do you want to clean stuffs (y/n)? " cchoice
 do
 case "$cchoice" in
@@ -240,6 +323,26 @@ do
 case "$dchoice" in
 	y|Y)
 		make_crown_kernel
+		break
+		;;
+	n|N )
+		break
+		;;
+	* )
+		echo
+		echo "Invalid try again!"
+		echo
+		;;
+esac
+done
+
+echo
+
+while read -p "Do you want to build N960 Battery kernel (y/n)? " dchoice
+do
+case "$dchoice" in
+	y|Y)
+		make_crownb_kernel
 		break
 		;;
 	n|N )

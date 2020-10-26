@@ -1,7 +1,7 @@
 VERSION = 4
 PATCHLEVEL = 9
 SUBLEVEL = 218
-EXTRAVERSION = -xxmustafacooTR-38-OC
+EXTRAVERSION = -xxmustafacooTR-38
 NAME = Roaring Lionus
 
 # *DOCUMENTATION*
