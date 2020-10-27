@@ -33,7 +33,7 @@ TOOLCHAIN_DIR="$TOOLCHAINS_DIRECTORY"
 
 # Kernel Details
 BASE_YARPIIN_VER="xxmustafacooTR"
-VER="-038"
+VER="-038-AROMA"
 YARPIIN_VER="$BASE_YARPIIN_VER$VER"
 STAR_VER=""
 STAR2_VER=""
@@ -173,13 +173,38 @@ echo "Making Kernel:"
 echo "-----------------"
 echo -e "${restore}"
 
-while read -p "Do you want to clean stuffs (y/n)? " cchoice
+while read -p "Do you want to clean stuffs (y/n)[e(ndzip)/a(llmake)]? " cchoice
 do
 case "$cchoice" in
 	y|Y )
 		clean_all
 		echo
 		echo "All Cleaned now."
+		break
+		;;
+	e|E )
+		make_zip
+		echo
+		echo "Kernel Zipped!"
+		echo
+		exit
+		break
+		;;
+	a|A )
+		clean_all
+		make_crownb_kernel
+		make_crown_kernel
+		clean_all
+		make_starb_kernel
+		make_star_kernel
+		clean_all
+		make_star2b_kernel
+		make_star2_kernel
+		clean_all
+		echo
+		echo "Every Thing Builded and Zipped!"
+		echo
+		exit
 		break
 		;;
 	n|N )

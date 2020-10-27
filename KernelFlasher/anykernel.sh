@@ -38,9 +38,44 @@ set_perm_recursive 0 0 750 750 $ramdisk/init* $ramdisk/sbin;
 ## AnyKernel install
 dump_boot;
 
+CPU=$(cat /tmp/aroma/cpu.prop | cut -d '=' -f2)
+
 # Patch fstab
 mount -o remount,rw /vendor;
 mount -o remount,rw /system;
+
+if [ $CPU = 1 ]; then
+  echo "    write /sys/power/cpuhotplug/governor/dual_freq 2704000" >> /tmp/anykernel/ramdisk/init.services.rc
+  echo "    write /sys/power/cpuhotplug/governor/triple_freq 2496000" >> /tmp/anykernel/ramdisk/init.services.rc
+  echo "    write /sys/power/cpuhotplug/governor/quad_freq 2314000" >> /tmp/anykernel/ramdisk/init.services.rc
+elif [ $CPU = 2 ]; then
+  echo "    write /sys/power/cpuhotplug/governor/dual_freq 2496000" >> /tmp/anykernel/ramdisk/init.services.rc
+  echo "    write /sys/power/cpuhotplug/governor/triple_freq 2314000" >> /tmp/anykernel/ramdisk/init.services.rc
+  echo "    write /sys/power/cpuhotplug/governor/quad_freq 2106000" >> /tmp/anykernel/ramdisk/init.services.rc
+elif [ $CPU = 3 ]; then
+  echo "    write /sys/power/cpuhotplug/governor/dual_freq 2496000" >> /tmp/anykernel/ramdisk/init.services.rc
+  echo "    write /sys/power/cpuhotplug/governor/triple_freq 2106000" >> /tmp/anykernel/ramdisk/init.services.rc
+  echo "    write /sys/power/cpuhotplug/governor/quad_freq 1924000" >> /tmp/anykernel/ramdisk/init.services.rc
+elif [ $CPU = 5 ]; then
+  echo "    write /sys/power/cpuhotplug/governor/dual_freq 2002000" >> /tmp/anykernel/ramdisk/init.services.rc
+  echo "    write /sys/power/cpuhotplug/governor/triple_freq 1924000" >> /tmp/anykernel/ramdisk/init.services.rc
+  echo "    write /sys/power/cpuhotplug/governor/quad_freq 1690000" >> /tmp/anykernel/ramdisk/init.services.rc
+elif [ $CPU = 6 ]; then
+  echo "    write /sys/power/cpuhotplug/governor/dual_freq 1924000" >> /tmp/anykernel/ramdisk/init.services.rc
+  echo "    write /sys/power/cpuhotplug/governor/triple_freq 1794000" >> /tmp/anykernel/ramdisk/init.services.rc
+  echo "    write /sys/power/cpuhotplug/governor/quad_freq 1586000" >> /tmp/anykernel/ramdisk/init.services.rc
+elif [ $CPU = 7 ]; then
+  echo "    write /sys/power/cpuhotplug/governor/dual_freq 1794000" >> /tmp/anykernel/ramdisk/init.services.rc
+  echo "    write /sys/power/cpuhotplug/governor/triple_freq 1586000" >> /tmp/anykernel/ramdisk/init.services.rc
+  echo "    write /sys/power/cpuhotplug/governor/quad_freq 1469000" >> /tmp/anykernel/ramdisk/init.services.rc
+else
+  /tmp/bspatch /tmp/G965.img /tmp/G960.img /tmp/G960.patch
+  /tmp/busybox dd if=/tmp/G960.img of=$BOOTPATH
+fi;
+echo " " >> /tmp/anykernel/ramdisk/init.services.rc
+echo "on property:sys.boot_completed=1" >> /tmp/anykernel/ramdisk/init.services.rc
+echo "    stop proca" >> /tmp/anykernel/ramdisk/init.services.rc
+echo "    stop secure_storage" >> /tmp/anykernel/ramdisk/init.services.rc
 
 if [ -d /system/product/vendor_overlay ]; then
     if [ ! -e /system/product/vendor_overlay/29/etc/fstab.samsungexynos9810~ ]; then
