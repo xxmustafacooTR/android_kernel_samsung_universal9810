@@ -27,13 +27,13 @@ CROWNDEFCONFIG="exynos9810-crownlte_defconfig"
 # Build dirs
 KERNEL_DIR="/home/kali/Android/Kernel/android_kernel_samsung_universal9810"
 RESOURCE_DIR="$KERNEL_DIR/.."
-KERNELFLASHER_DIR="/home/kali/Android/Kernel/Build/KernelFlasher"
+KERNELFLASHER_DIR="$KERNEL_DIR/KernelFlasher"
 TOOLCHAINS_DIRECTORY=/home/kali/Android/Toolchains/
 TOOLCHAIN_DIR="$TOOLCHAINS_DIRECTORY"
 
 # Kernel Details
 BASE_YARPIIN_VER="xxmustafacooTR"
-VER="-038-OC"
+VER="-038"
 YARPIIN_VER="$BASE_YARPIIN_VER$VER"
 STAR_VER=""
 STAR2_VER=""
@@ -117,35 +117,36 @@ function make_star2b_kernel {
 	echo
 	cp -vr $KERNEL_DIR/arch/arm64/configs/$STAR2BDEFCONFIG $KERNEL_DIR/arch/arm64/configs/$STAR2DEFCONFIG
         make ARCH=arm64 $STAR2DEFCONFIG
+	rm -f $ZIMAGE_DIR/$KERNEL $KERNELFLASHER_DIR/Kernel/G965BzImage.diff $ZIMAGE_DIR/$DTBIMAGE $KERNELFLASHER_DIR/Kernel/G965dtb.diff
 	# cp -vr $KERNEL_DIR/arch/arm64/configs/$STAR2DEFCONFIG $KERNEL_DIR/arch/arm64/configs/exynos9810_defconfig
 	make -j$(nproc --all)
 
 	bsdiff $KERNELFLASHER_DIR/Kernel/G965zImage $ZIMAGE_DIR/$KERNEL $KERNELFLASHER_DIR/Kernel/G965BzImage.diff
-	bsdiff $KERNELFLASHER_DIR/Kernel/G965dtb.img $ZIMAGE_DIR/$DTBIMAGE $KERNELFLASHER_DIR/Kernel/G965Bdtb.diff
+	cp -vr $ZIMAGE_DIR/$DTBIMAGE $KERNELFLASHER_DIR/Kernel/G965dtb.img
 }
 
 function make_starb_kernel {
 	echo
 	cp -vr $KERNEL_DIR/arch/arm64/configs/$STARBDEFCONFIG $KERNEL_DIR/arch/arm64/configs/$STARDEFCONFIG
         make ARCH=arm64 $STARDEFCONFIG
-	rm -f $ZIMAGE_DIR/$KERNEL $KERNELFLASHER_DIR/Kernel/G960zImage.diff $ZIMAGE_DIR/$DTBIMAGE $KERNELFLASHER_DIR/Kernel/G960dtb.diff
+	rm -f $ZIMAGE_DIR/$KERNEL $KERNELFLASHER_DIR/Kernel/G960BzImage.diff $ZIMAGE_DIR/$DTBIMAGE $KERNELFLASHER_DIR/Kernel/G960dtb.diff
 	# cp -vr $KERNEL_DIR/arch/arm64/configs/$STARDEFCONFIG $KERNEL_DIR/arch/arm64/configs/exynos9810_defconfig
 	make -j$(nproc --all)
 
 	bsdiff $KERNELFLASHER_DIR/Kernel/G965zImage $ZIMAGE_DIR/$KERNEL $KERNELFLASHER_DIR/Kernel/G960BzImage.diff
-	bsdiff $KERNELFLASHER_DIR/Kernel/G965dtb.img $ZIMAGE_DIR/$DTBIMAGE $KERNELFLASHER_DIR/Kernel/G960Bdtb.diff
+	bsdiff $KERNELFLASHER_DIR/Kernel/G965dtb.img $ZIMAGE_DIR/$DTBIMAGE $KERNELFLASHER_DIR/Kernel/G960dtb.diff
 }
 
 function make_crownb_kernel {
 	echo
 	cp -vr $KERNEL_DIR/arch/arm64/configs/$CROWNBDEFCONFIG $KERNEL_DIR/arch/arm64/configs/$CROWNDEFCONFIG
         make ARCH=arm64 $CROWNDEFCONFIG
-	rm -f $ZIMAGE_DIR/$KERNEL $KERNELFLASHER_DIR/Kernel/N960zImage.diff $ZIMAGE_DIR/$DTBIMAGE $KERNELFLASHER_DIR/Kernel/N960dtb.diff
+	rm -f $ZIMAGE_DIR/$KERNEL $KERNELFLASHER_DIR/Kernel/N960BzImage.diff $ZIMAGE_DIR/$DTBIMAGE $KERNELFLASHER_DIR/Kernel/N960dtb.diff
 	# cp -vr $KERNEL_DIR/arch/arm64/configs/$CROWNDEFCONFIG $KERNEL_DIR/arch/arm64/configs/exynos9810_defconfig
 	make -j$(nproc --all)
 
 	bsdiff $KERNELFLASHER_DIR/Kernel/G965zImage $ZIMAGE_DIR/$KERNEL $KERNELFLASHER_DIR/Kernel/N960BzImage.diff
-	bsdiff $KERNELFLASHER_DIR/Kernel/G965dtb.img $ZIMAGE_DIR/$DTBIMAGE $KERNELFLASHER_DIR/Kernel/N960Bdtb.diff
+	bsdiff $KERNELFLASHER_DIR/Kernel/G965dtb.img $ZIMAGE_DIR/$DTBIMAGE $KERNELFLASHER_DIR/Kernel/N960dtb.diff
 }
 
 function make_zip {
