@@ -273,7 +273,7 @@ do_star2blte() {
     for devicename in $device $product $vendordevice $vendorproduct; do
       if [ "$devicename" == "star2lte" ]; then
         ui_print "Looking for star2lte battery kernel files...";
-        $bspatch $AKHOME/Kernel/G965zImage $AKHOME/zImage $AKHOME/Kernel/G96BzImage.diff
+        $bspatch $AKHOME/Kernel/G965zImage $AKHOME/zImage $AKHOME/Kernel/G965BzImage.diff
         cp $AKHOME/Kernel/G965dtb.img $AKHOME/dtb.img;
         break 2;
       fi;
