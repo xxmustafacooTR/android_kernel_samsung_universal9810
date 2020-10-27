@@ -87,8 +87,8 @@ function make_star2_kernel {
 
 function make_star_kernel {
 	echo
-        make ARCH=arm64 $STARDEFCONFIG
 	cp -vr $KERNEL_DIR/arch/arm64/configs/$STARSDEFCONFIG $KERNEL_DIR/arch/arm64/configs/$STARDEFCONFIG
+	make ARCH=arm64 $STARDEFCONFIG
 	rm -f $ZIMAGE_DIR/$KERNEL $KERNELFLASHER_DIR/Kernel/G960zImage.diff $ZIMAGE_DIR/$DTBIMAGE $KERNELFLASHER_DIR/Kernel/G960dtb.diff
 	# cp -vr $KERNEL_DIR/arch/arm64/configs/$STARDEFCONFIG $KERNEL_DIR/arch/arm64/configs/exynos9810_defconfig
 	make -j$(nproc --all)
