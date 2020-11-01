@@ -69,13 +69,24 @@ elif [ $CPU = 7 ]; then
   echo "    write /sys/power/cpuhotplug/governor/triple_freq 1586000" >> /tmp/anykernel/ramdisk/init.services.rc
   echo "    write /sys/power/cpuhotplug/governor/quad_freq 1469000" >> /tmp/anykernel/ramdisk/init.services.rc
 else
-  /tmp/bspatch /tmp/G965.img /tmp/G960.img /tmp/G960.patch
-  /tmp/busybox dd if=/tmp/G960.img of=$BOOTPATH
+  echo "    write /sys/power/cpuhotplug/governor/dual_freq 2314000" >> /tmp/anykernel/ramdisk/init.services.rc
+  echo "    write /sys/power/cpuhotplug/governor/triple_freq 1794000" >> /tmp/anykernel/ramdisk/init.services.rc
+  echo "    write /sys/power/cpuhotplug/governor/quad_freq 1794000" >> /tmp/anykernel/ramdisk/init.services.rc
 fi;
 echo " " >> /tmp/anykernel/ramdisk/init.services.rc
 echo "on property:sys.boot_completed=1" >> /tmp/anykernel/ramdisk/init.services.rc
 echo "    stop proca" >> /tmp/anykernel/ramdisk/init.services.rc
 echo "    stop secure_storage" >> /tmp/anykernel/ramdisk/init.services.rc
+echo "    start sysinit" >> /tmp/anykernel/ramdisk/init.services.rc
+echo " " >> /tmp/anykernel/ramdisk/init.services.rc
+echo "service sysinit /sbin/sysinit.sh" >> /tmp/anykernel/ramdisk/init.services.rc
+echo "    class late_start" >> /tmp/anykernel/ramdisk/init.services.rc
+echo "    user root" >> /tmp/anykernel/ramdisk/init.services.rc
+echo "    seclabel u:r:init:s0" >> /tmp/anykernel/ramdisk/init.services.rc
+echo "    oneshot" >> /tmp/anykernel/ramdisk/init.services.rc
+echo "    disabled" >> /tmp/anykernel/ramdisk/init.services.rc
+
+cp -af /tmp/anykernel/ramdisk/sysinit.sh /system/sbin/;
 
 if [ -d /system/product/vendor_overlay ]; then
     if [ ! -e /system/product/vendor_overlay/29/etc/fstab.samsungexynos9810~ ]; then
