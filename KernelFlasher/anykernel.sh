@@ -86,8 +86,6 @@ echo "    seclabel u:r:init:s0" >> /tmp/anykernel/ramdisk/init.services.rc
 echo "    oneshot" >> /tmp/anykernel/ramdisk/init.services.rc
 echo "    disabled" >> /tmp/anykernel/ramdisk/init.services.rc
 
-cp -af /tmp/anykernel/ramdisk/sysinit.sh /system/sbin/;
-
 if [ -d /system/product/vendor_overlay ]; then
     if [ ! -e /system/product/vendor_overlay/29/etc/fstab.samsungexynos9810~ ]; then
 	    backup_file /system/product/vendor_overlay/29/etc/fstab.samsungexynos9810;

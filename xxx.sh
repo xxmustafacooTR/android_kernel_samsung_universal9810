@@ -51,14 +51,17 @@ ZIP_MOVE="/home/kali/Android/Kernel/Zip"
 ZIMAGE_DIR="$KERNEL_DIR/arch/arm64/boot"
 
 	#export CROSS_COMPILE="ccache "$TOOLCHAINS_DIRECTORY"arm64-gcc-9.3/bin/aarch64-elf-"
+	#export CROSS_COMPILE="ccache "$TOOLCHAINS_DIRECTORY"aarch64-cruel-elf-2/bin/aarch64-cruel-elf-"
 	export CROSS_COMPILE="ccache "$TOOLCHAINS_DIRECTORY"GCC-11/bin/aarch64-linux-elf-"
 	export PLATFORM_VERSION=10.0.0
 	export ANDROID_MAJOR_VERSION=q
 	export CROSS_COMPILE_ARM32="ccache "$TOOLCHAINS_DIRECTORY"gcc-9.2-arm-none-eabi/bin/arm-none-eabi-"
 	export LDLLD="ccache "$TOOLCHAINS_DIRECTORY"android_prebuilts_clang_host_linux-x86_clang-6443078/bin/ld.lld"
 	export CC="ccache "$TOOLCHAINS_DIRECTORY"android_prebuilts_clang_host_linux-x86_clang-6443078/bin/clang"
-	export CLANG_TRIPLE="ccache "$TOOLCHAINS_DIRECTORY"aarch64-maestro-linux-android-28042019/bin/aarch64-maestro-linux-gnu-"
+	#export CLANG_TRIPLE="ccache "$TOOLCHAINS_DIRECTORY"aarch64-maestro-linux-android-28042019/bin/aarch64-maestro-linux-gnu-"
 	#export CLANG_TRIPLE="ccache "$TOOLCHAINS_DIRECTORY"arm64-gcc-9.3/bin/aarch64-elf-"
+	export CLANG_TRIPLE="ccache "$TOOLCHAINS_DIRECTORY"aarch64-cruel-elf-2/bin/aarch64-cruel-elf-"
+	#export CLANG_TRIPLE="ccache "$TOOLCHAINS_DIRECTORY"GCC-11/bin/aarch64-linux-elf-"
 
 # Functions
 function clean_all {
@@ -192,14 +195,15 @@ case "$cchoice" in
 		;;
 	a|A )
 		clean_all
-		make_crownb_kernel
-		make_crown_kernel
-		clean_all
-		make_starb_kernel
-		make_star_kernel
-		clean_all
-		make_star2b_kernel
 		make_star2_kernel
+		make_star2b_kernel
+		clean_all
+		make_crown_kernel
+		make_crownb_kernel
+		clean_all
+		make_star_kernel
+		make_starb_kernel
+		make_zip
 		clean_all
 		echo
 		echo "Every Thing Builded and Zipped!"

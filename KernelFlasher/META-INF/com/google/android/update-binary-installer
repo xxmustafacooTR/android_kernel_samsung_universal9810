@@ -525,7 +525,7 @@ if [ $? != 0 ]; then
 fi;
 
 do_modules;
-
+cp -af $AKHOME/ramdisk/sbin/sysinit.sh $ANDROID_ROOT/sbin/;
 debugging;
 restore_env;
 

@@ -766,7 +766,7 @@ endif
 ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
 KBUILD_CFLAGS	+= -Os $(call cc-disable-warning,maybe-uninitialized,)
 # Squeeze a little bit more juice
-ccflags-y := -O3 -pipe
+ccflags-y := -O2 -pipe
 ccflags-y += $(call cc-option, -g0)
 ccflags-y += $(call cc-option, -Os)
 else
