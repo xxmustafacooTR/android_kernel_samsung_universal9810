@@ -52,7 +52,8 @@ ZIMAGE_DIR="$KERNEL_DIR/arch/arm64/boot"
 
 	#export CROSS_COMPILE="ccache "$TOOLCHAINS_DIRECTORY"arm64-gcc-9.3/bin/aarch64-elf-"
 	#export CROSS_COMPILE="ccache "$TOOLCHAINS_DIRECTORY"aarch64-cruel-elf-2/bin/aarch64-cruel-elf-"
-	export CROSS_COMPILE="ccache "$TOOLCHAINS_DIRECTORY"GCC-11/bin/aarch64-linux-elf-"
+	export CROSS_COMPILE="ccache "$TOOLCHAINS_DIRECTORY"gcc-prebuilt-elf-toolchains-master/aarch64-linux-elf/bin/aarch64-linux-elf-"
+	#export CROSS_COMPILE="ccache "$TOOLCHAINS_DIRECTORY"GCC-11-THEBOSS/bin/aarch64-linux-elf-"
 	export PLATFORM_VERSION=10.0.0
 	export ANDROID_MAJOR_VERSION=q
 	export CROSS_COMPILE_ARM32="ccache "$TOOLCHAINS_DIRECTORY"gcc-9.2-arm-none-eabi/bin/arm-none-eabi-"
@@ -61,7 +62,8 @@ ZIMAGE_DIR="$KERNEL_DIR/arch/arm64/boot"
 	#export CLANG_TRIPLE="ccache "$TOOLCHAINS_DIRECTORY"aarch64-maestro-linux-android-28042019/bin/aarch64-maestro-linux-gnu-"
 	#export CLANG_TRIPLE="ccache "$TOOLCHAINS_DIRECTORY"arm64-gcc-9.3/bin/aarch64-elf-"
 	export CLANG_TRIPLE="ccache "$TOOLCHAINS_DIRECTORY"aarch64-cruel-elf-2/bin/aarch64-cruel-elf-"
-	#export CLANG_TRIPLE="ccache "$TOOLCHAINS_DIRECTORY"GCC-11/bin/aarch64-linux-elf-"
+	#export CLANG_TRIPLE="ccache "$TOOLCHAINS_DIRECTORY"GCC-11-THEBOSS/bin/aarch64-linux-elf-"
+	#export CLANG_TRIPLE="ccache "$TOOLCHAINS_DIRECTORY"gcc-prebuilt-elf-toolchains-master/aarch64-linux-elf/bin/aarch64-linux-elf-"
 
 # Functions
 function clean_all {

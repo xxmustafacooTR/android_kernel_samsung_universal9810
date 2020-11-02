@@ -5,6 +5,8 @@
 # Licensed under GPLv2
 #
 
+CC := $(CLANG_TRIPLE)gcc
+
 obj-$(CONFIG_EXYNOS_DPP) += dpp.o
 dpp-y := dpp_drv.o
 obj-$(CONFIG_EXYNOS_MIPI_DSIM) += dsim.o

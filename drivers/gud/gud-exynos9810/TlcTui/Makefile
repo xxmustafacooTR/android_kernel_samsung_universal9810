@@ -2,6 +2,8 @@
 # Makefile for the Kinibi trusted UI driver
 #
 
+CC := $(CLANG_TRIPLE)gcc
+
 GUD_ROOT_FOLDER := drivers/gud/gud-exynos9810
 ifeq ($(CONFIG_SOC_EXYNOS9810),y)
 PLATFORM := exynos9810
