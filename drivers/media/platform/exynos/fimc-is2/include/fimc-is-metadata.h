@@ -1845,6 +1845,27 @@ struct camera2_dng_udm {
 	uint32_t gammaYpnt[32];
 };
 
+enum camera_client_index {
+    CAMERA_APP_CATEGORY_NOT_READ           = -1,
+    CAMERA_APP_CATEGORY_NONE               = 0,
+    CAMERA_APP_CATEGORY_FACEBOOK           = 1,
+    CAMERA_APP_CATEGORY_WECHAT             = 2,
+    CAMERA_APP_CATEGORY_SNAPCHAT           = 3,
+    CAMERA_APP_CATEGORY_TWITTER            = 4,
+    CAMERA_APP_CATEGORY_INSTAGRAM          = 5,
+    CAMERA_APP_CATEGORY_3P_VT              = 6,
+    CAMERA_APP_CATEGORY_VAULT              = 7,
+    CAMERA_APP_CATEGORY_FACEBOOK_MASSENGER = 8,
+    CAMERA_APP_CATEGORY_WHATSAPP           = 9,
+    CAMERA_APP_CATEGORY_ULIKE              = 10,
+    CAMERA_APP_CATEGORY_WEIBO              = 11,
+    CAMERA_APP_CATEGORY_MEITU              = 12,
+    CAMERA_APP_CATEGORY_KAKAOBANK          = 13,
+    CAMERA_APP_CATEGORY_CAMCARD            = 14,
+    CAMERA_APP_CATEGORY_CAMCARD_FREE       = 15,
+    CAMERA_APP_CATEGORY_MAX
+};
+
 /** \brief
   User-defined control area.
   \remarks

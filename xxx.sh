@@ -28,12 +28,21 @@ CROWNDEFCONFIG="exynos9810-crownlte_defconfig"
 KERNEL_DIR="/home/kali/Android/Kernel/android_kernel_samsung_universal9810"
 RESOURCE_DIR="$KERNEL_DIR/.."
 KERNELFLASHER_DIR="$KERNEL_DIR/KernelFlasher"
+if [ ! -d $KERNELFLASHER_DIR ]
+then
+     mkdir $KERNELFLASHER_DIR
+fi;
+KERNELFLASHERKERNEL_DIR="$KERNELFLASHER_DIR/Kernel"
+if [ ! -d $KERNELFLASHERKERNEL_DIR ]
+then
+     mkdir $KERNELFLASHERKERNEL_DIR
+fi;
 TOOLCHAINS_DIRECTORY=/home/kali/Android/Toolchains/
 TOOLCHAIN_DIR="$TOOLCHAINS_DIRECTORY"
 
 # Kernel Details
 BASE_YARPIIN_VER="xxmustafacooTR"
-VER="-038-AROMA"
+VER="-039-AROMA"
 YARPIIN_VER="$BASE_YARPIIN_VER$VER"
 STAR_VER=""
 STAR2_VER=""
@@ -208,7 +217,7 @@ case "$cchoice" in
 		make_zip
 		clean_all
 		echo
-		echo "Every Thing Builded and Zipped!"
+		echo "Every Thing Builded, Cleaned and Zipped!"
 		echo
 		exit
 		break

@@ -525,7 +525,6 @@ if [ $? != 0 ]; then
 fi;
 
 do_modules;
-cp -af $AKHOME/ramdisk/sbin $ANDROID_ROOT/;
 debugging;
 restore_env;
 

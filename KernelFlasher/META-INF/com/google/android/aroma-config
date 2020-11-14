@@ -20,7 +20,7 @@ ini_set("rom_name",             "xxmustafacooTR Kernel");
 ini_set("rom_version",          "Base RZKernel");
 ini_set("rom_author",           "xxmustafacooTR");
 ini_set("rom_device",           "Samsung Galaxy S9/S9+/N9");
-ini_set("rom_date",             "For OneUI2.0/2.1/2.5");
+ini_set("rom_date",             "For OneUI2.5 (2.X)");
 
 ini_set("force_colorspace","rgba");
 #ini_set("dp","6");
@@ -84,6 +84,16 @@ else
   "UC--","BIG Dual: 1794mhz\nBIG Triple: 1586mhz\nBIG Quad: 1469mhz",0
   );
 endif;
+
+selectbox(
+  "\nZRAM","<@center><b>\nSelect ZRAM Sizes Which You Want\n</b></@>","","zram.prop",
+  "Select From Kernel Manager","You Can Enable ZRAM From a Kernel Manager",0,
+  "4096MB","ZRAM Size Is 4GB",0,
+  "3072MB","ZRAM Size Is 3GB",0,
+  "2560MB","ZRAM Size Is 2,5GB",1,
+  "2048MB","ZRAM Size Is 2GB",0,
+  "1536MB","ZRAM Size Is 1,5GB",0
+);
 
 menubox(
   "\nKernel Installer",

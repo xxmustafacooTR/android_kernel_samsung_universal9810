@@ -135,11 +135,10 @@ on init
     chmod 0664 /sys/devices/system/cpu/cpufreq/policy4/schedutil/freqvar_upscale_ratio
 
 on boot
-    write /proc/sys/vm/page-cluster 0
-    write /sys/fs/selinux/enforce 1
     write /sys/devices/system/cpu/cpufreq/policy4/schedutil/exp_util 0
     write /dev/cpuset/top-app/cpus 0-7
     write /dev/cpuset/foreground/cpus 0-7
     write /dev/cpuset/background/cpus 1-3
     write /dev/cpuset/restricted/cpus 1-2
     write /dev/cpuset/system-background/cpus 0-3
+    write /sys/kernel/gaming_control/game_packages com.sec.android.app.camera

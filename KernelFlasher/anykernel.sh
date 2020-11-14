@@ -39,6 +39,7 @@ set_perm_recursive 0 0 750 750 $ramdisk/init* $ramdisk/sbin;
 dump_boot;
 
 CPU=$(cat /tmp/aroma/cpu.prop | cut -d '=' -f2)
+ZRAM=$(cat /tmp/aroma/zram.prop | cut -d '=' -f2)
 
 # Patch fstab
 mount -o remount,rw /vendor;
@@ -73,6 +74,13 @@ else
   echo "    write /sys/power/cpuhotplug/governor/triple_freq 1794000" >> /tmp/anykernel/ramdisk/init.services.rc
   echo "    write /sys/power/cpuhotplug/governor/quad_freq 1794000" >> /tmp/anykernel/ramdisk/init.services.rc
 fi;
+if [ $ZRAM != 1 ]; then
+  echo "    write /sys/fs/selinux/enforce 0" >> /tmp/anykernel/ramdisk/init.services.rc
+  echo "    write /sys/block/zram0/comp_algorithm zstd" >> /tmp/anykernel/ramdisk/init.services.rc
+  echo "    write /proc/sys/vm/page-cluster 0" >> /tmp/anykernel/ramdisk/init.services.rc
+  echo "    start swapon_zram" >> /tmp/anykernel/ramdisk/init.services.rc
+fi;
+echo "    write /sys/fs/selinux/enforce 1" >> /tmp/anykernel/ramdisk/init.services.rc
 echo " " >> /tmp/anykernel/ramdisk/init.services.rc
 echo "on property:sys.boot_completed=1" >> /tmp/anykernel/ramdisk/init.services.rc
 echo "    stop proca" >> /tmp/anykernel/ramdisk/init.services.rc
@@ -85,17 +93,31 @@ echo "    user root" >> /tmp/anykernel/ramdisk/init.services.rc
 echo "    seclabel u:r:init:s0" >> /tmp/anykernel/ramdisk/init.services.rc
 echo "    oneshot" >> /tmp/anykernel/ramdisk/init.services.rc
 echo "    disabled" >> /tmp/anykernel/ramdisk/init.services.rc
+echo " " >> /tmp/anykernel/ramdisk/init.services.rc
+if [ $ZRAM = 2 ]; then
+  echo "service swapon_zram /sbin/sswap -s -z -f 4096" >> /tmp/anykernel/ramdisk/init.services.rc
+elif [ $ZRAM = 3 ]; then
+  echo "service swapon_zram /sbin/sswap -s -z -f 3072" >> /tmp/anykernel/ramdisk/init.services.rc
+elif [ $ZRAM = 4 ]; then
+  echo "service swapon_zram /sbin/sswap -s -z -f 2560" >> /tmp/anykernel/ramdisk/init.services.rc
+elif [ $ZRAM = 5 ]; then
+  echo "service swapon_zram /sbin/sswap -s -z -f 2048" >> /tmp/anykernel/ramdisk/init.services.rc
+elif [ $ZRAM = 6 ]; then
+  echo "service swapon_zram /sbin/sswap -s -z -f 1536" >> /tmp/anykernel/ramdisk/init.services.rc
+fi;
+if [ $ZRAM != 1 ]; then
+  echo "    class core" >> /tmp/anykernel/ramdisk/init.services.rc
+  echo "    user root" >> /tmp/anykernel/ramdisk/init.services.rc
+  echo "    group root" >> /tmp/anykernel/ramdisk/init.services.rc
+  echo "    seclabel u:r:sswap:s0" >> /tmp/anykernel/ramdisk/init.services.rc
+  echo "    oneshot" >> /tmp/anykernel/ramdisk/init.services.rc
+  echo " " >> /tmp/anykernel/ramdisk/init.services.rc
+fi;
 
 if [ -d /system/product/vendor_overlay ]; then
-    if [ ! -e /system/product/vendor_overlay/29/etc/fstab.samsungexynos9810~ ]; then
-	    backup_file /system/product/vendor_overlay/29/etc/fstab.samsungexynos9810;
-    fi;
     cp -af /tmp/anykernel/ramdisk/init.services.rc /system/product/vendor_overlay/29/etc/init/;
     cp -af /tmp/anykernel/ramdisk/fstab.samsungexynos9810 /system/product/vendor_overlay/29/etc/;
 else
-    if [ ! -e /vendor/etc/fstab.samsungexynos9810~ ]; then
-	backup_file /vendor/etc/fstab.samsungexynos9810;
-    fi;
     cp -af /tmp/anykernel/ramdisk/init.services.rc /vendor/etc/init/;
     cp -af /tmp/anykernel/ramdisk/fstab.samsungexynos9810 /vendor/etc/;
 fi;
