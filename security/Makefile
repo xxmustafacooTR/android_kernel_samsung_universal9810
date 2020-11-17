@@ -65,7 +65,3 @@ obj-y    += proca/gaf/
 obj-$(CONFIG_SDP) += sdp/
 obj-$(CONFIG_SDP) += sdp/built-in.o
 
-# Squeeze a little bit more juice
-subdir-ccflags-y += -Os
-subdir-ccflags-y += $(call cc-option, -g0)
-subdir-ccflags-y += $(call cc-option, -Os)
