@@ -10,7 +10,11 @@
 #
 # Builded Kernel Files
 #
+/arch/arm64/configs/exynos9810-starlte_defconfig
+/arch/arm64/configs/exynos9810-star2lte_defconfig
+/arch/arm64/configs/exynos9810-crownlte_defconfig
 /KernelFlasher/Kernel/
+/KernelFlasher/Kernel/*
 
 #
 # Normal rules

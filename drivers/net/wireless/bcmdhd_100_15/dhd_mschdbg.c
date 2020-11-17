@@ -3,7 +3,7 @@
  *
  * <<Broadcom-WL-IPTag/Open:>>
  *
- * Copyright (C) 1999-2019, Broadcom.
+ * Copyright (C) 1999-2020, Broadcom.
  *
  *      Unless you and Broadcom execute a separate written software license
  * agreement governing use of this software, this software is licensed to you
@@ -195,7 +195,7 @@ dhd_mschdbg_timeslot_profiler_event_data(int sp, int ver, char *title, char *dat
 		MSCH_EVENT(("0x%08x\n", ntoh32(p->p_timeslot)));
 
 	s = (int)(ntoh32(p->state));
-	if (s > 5) s = 0;
+	if (s < 0 || s > 5) s = 0;
 
 	MSCH_EVENT_HEAD(sn);
 	MSCH_EVENT(("id: %d, state[%d]: %s, chan_ctxt: [0x%08x]\n",

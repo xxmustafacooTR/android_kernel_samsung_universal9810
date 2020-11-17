@@ -1,7 +1,7 @@
 /*
  * Linux cfg80211 driver - Android related functions
  *
- * Copyright (C) 1999-2019, Broadcom.
+ * Copyright (C) 1999-2020, Broadcom.
  *
  *      Unless you and Broadcom execute a separate written software license
  * agreement governing use of this software, this software is licensed to you
@@ -24,7 +24,7 @@
  *
  * <<Broadcom-WL-IPTag/Open:>>
  *
- * $Id: wl_android.c 851171 2019-11-18 12:03:07Z $
+ * $Id: wl_android.c 874925 2020-04-24 08:58:32Z $
  */
 
 #include <linux/module.h>
@@ -1542,17 +1542,19 @@ wl_android_set_band(struct net_device *dev, char *command)
 
 #ifdef CUSTOMER_HW4_PRIVATE_CMD
 #ifdef ROAM_API
+#ifdef WBTEXT
 static bool wl_android_check_wbtext_support(struct net_device *dev)
 {
 	dhd_pub_t *dhdp = wl_cfg80211_get_dhdp(dev);
 	return dhdp->wbtext_support;
 }
+#endif /* WBTEXT */
 
 static bool
 wl_android_check_wbtext_policy(struct net_device *dev)
 {
-	dhd_pub_t *dhdp = wl_cfg80211_get_dhdp(dev);
 #ifdef WBTEXT
+	dhd_pub_t *dhdp = wl_cfg80211_get_dhdp(dev);
 	if (dhdp->wbtext_policy == WL_BSSTRANS_POLICY_PRODUCT_WBTEXT) {
 		return TRUE;
 	}
@@ -3424,6 +3426,12 @@ wl_cfg80211_get_sta_info(struct net_device *dev, char* command, int total_len)
 			iovar_buf, WLC_IOCTL_MAXLEN, NULL);
 		if (ret < 0) {
 			WL_ERR(("Get sta_info ERR %d\n", ret));
+#ifdef CONFIG_BCM43436
+			if (ret == BCME_BADADDR) {
+				bytes_written = BCME_UNSUPPORTED;
+				WL_ERR(("ret code is changed as %d\n", bytes_written));
+			}
+#endif /* CONFIG_BCM43436 */
 #ifdef BIGDATA_SOFTAP
 			goto get_bigdata;
 #else
@@ -5764,7 +5772,7 @@ wl_android_set_roam_vsie_enab(struct net_device *dev, const char *cmd, u32 cmd_l
 {
 	s32 err = BCME_OK;
 	u32 roam_vsie_enable = 0;
-	u32 cmd_str_len = strlen(CMD_ROAM_VSIE_ENAB_SET);
+	u32 cmd_str_len = (u32)strlen(CMD_ROAM_VSIE_ENAB_SET);
 	struct bcm_cfg80211 *cfg = wl_get_cfg(dev);
 
 	/* <CMD><SPACE><VAL> */
@@ -9858,23 +9866,35 @@ wl_handle_private_cmd(struct net_device *net, char *command, u32 cmd_len)
 		 * Usage examples:
 		 * DRIVER COUNTRY US
 		 * DRIVER COUNTRY US/7
+		 * Wrong revinfo should be filtered:
+		 * DRIVER COUNTRY US/-1
 		 */
 		char *country_code = command + strlen(CMD_COUNTRY) + 1;
 		char *rev_info_delim = country_code + 2; /* 2 bytes of country code */
 		int revinfo = -1;
 #if defined(DHD_BLOB_EXISTENCE_CHECK)
 		dhd_pub_t *dhdp = wl_cfg80211_get_dhdp(net);
-
-		if (dhdp->is_blob) {
-			revinfo = 0;
-		} else
 #endif /* DHD_BLOB_EXISTENCE_CHECK */
 		if ((rev_info_delim) &&
 			(strnicmp(rev_info_delim, CMD_COUNTRY_DELIMITER,
 			strlen(CMD_COUNTRY_DELIMITER)) == 0) &&
 			(rev_info_delim + 1)) {
 			revinfo  = bcm_atoi(rev_info_delim + 1);
+		} else {
+			revinfo = 0;
 		}
+
+		if (revinfo < 0) {
+			DHD_ERROR(("%s:failed due to wrong revinfo %d\n", __FUNCTION__, revinfo));
+			return BCME_BADARG;
+		}
+
+#if defined(DHD_BLOB_EXISTENCE_CHECK)
+		if (dhdp->is_blob) {
+			revinfo = 0;
+		}
+#endif /* DHD_BLOB_EXISTENCE_CHECK */
+
 		bytes_written = wl_cfg80211_set_country_code(net, country_code,
 				true, true, revinfo);
 #ifdef CUSTOMER_HW4_PRIVATE_CMD

@@ -1,7 +1,7 @@
 /*
  * Linux cfg80211 Vendor Extension Code
  *
- * Copyright (C) 1999-2019, Broadcom.
+ * Copyright (C) 1999-2020, Broadcom.
  *
  *      Unless you and Broadcom execute a separate written software license
  * agreement governing use of this software, this software is licensed to you
@@ -24,7 +24,7 @@
  *
  * <<Broadcom-WL-IPTag/Open:>>
  *
- * $Id: wl_cfgvendor.c 854674 2019-12-10 03:31:41Z $
+ * $Id: wl_cfgvendor.c 874894 2020-04-24 06:26:39Z $
  */
 
 /*
@@ -410,7 +410,7 @@ wl_cfgvendor_set_country(struct wiphy *wiphy,
 		}
 	}
 	/* country code is unique for dongle..hence using primary interface. */
-	err = wl_cfg80211_set_country_code(primary_ndev, country_code, true, true, -1);
+	err = wl_cfg80211_set_country_code(primary_ndev, country_code, true, true, 0);
 	if (err < 0) {
 		WL_ERR(("Set country failed ret:%d\n", err));
 	}
@@ -1516,6 +1516,7 @@ wl_cfgvendor_set_hal_started(struct wiphy *wiphy,
 			dhd_pub_t *dhd = (dhd_pub_t *)(cfg->pub);
 				int ret;
 #endif /* WL_STA_ASSOC_RAND */
+	RETURN_EIO_IF_NOT_UP(cfg);
 	WL_INFORM(("%s,[DUMP] HAL STARTED\n", __FUNCTION__));
 
 	cfg->hal_started = true;
@@ -3997,6 +3998,13 @@ wl_cfgvendor_nan_parse_discover_args(struct wiphy *wiphy,
 				goto exit;
 			}
 			cmd_data->mac_list.num_mac_addr = nla_get_u16(iter);
+			if (cmd_data->mac_list.num_mac_addr >= NAN_SRF_MAX_MAC) {
+				WL_ERR(("trying to overflow num :%d\n",
+					cmd_data->mac_list.num_mac_addr));
+				cmd_data->mac_list.num_mac_addr = 0;
+				ret = -EINVAL;
+				goto exit;
+			}
 			break;
 		case NAN_ATTRIBUTE_MAC_ADDR_LIST:
 			if ((!cmd_data->mac_list.num_mac_addr) ||
@@ -5668,29 +5676,36 @@ wl_cfgvendor_terminate_dp_rng_sessions(struct bcm_cfg80211 *cfg,
 	uint8 i = 0;
 	int status = BCME_ERROR;
 	nan_ranging_inst_t *ranging_inst = NULL;
+	dhd_pub_t *dhdp = wl_cfg80211_get_dhdp(wdev->netdev);
 
+	*ssn_exists = false;
 	/* Cleanup active Data Paths If any */
 	for (i = 0; i < NAN_MAX_NDP_PEER; i++) {
 		if (cfg->nancfg.ndp_id[i]) {
-			*ssn_exists = true;
 			WL_DBG(("Found entry of ndp id = [%d], end dp associated to it\n",
 					cfg->nancfg.ndp_id[i]));
-			wl_cfgnan_data_path_end_handler(wdev->netdev, cfg,
+			ret = wl_cfgnan_data_path_end_handler(wdev->netdev, cfg,
 					cfg->nancfg.ndp_id[i], &status);
+			if ((ret == BCME_OK) && cfg->nan_enable &&
+				dhdp->up) {
+				*ssn_exists = true;
+			}
 		}
 	}
 
 	/* Cancel ranging sessiosns */
 	for (i = 0; i < NAN_MAX_RANGING_INST; i++) {
 		ranging_inst = &cfg->nan_ranging_info[i];
-		if (ranging_inst->range_id) {
-			*ssn_exists = true;
+		if (ranging_inst->in_use &&
+				(NAN_RANGING_IS_IN_PROG(ranging_inst->range_status))) {
 			ret = wl_cfgnan_cancel_ranging(bcmcfg_to_prmry_ndev(cfg), cfg,
-				ranging_inst->range_id,
-				NAN_RNG_TERM_FLAG_NONE, &status);
+					&ranging_inst->range_id,
+					NAN_RNG_TERM_FLAG_NONE, &status);
 			if (unlikely(ret) || unlikely(status)) {
 				WL_ERR(("nan range cancel failed ret = %d status = %d\n",
-				ret, status));
+					ret, status));
+			} else {
+				*ssn_exists = true;
 			}
 		}
 	}
@@ -5727,6 +5742,7 @@ wl_cfgvendor_nan_stop_handler(struct wiphy *wiphy,
 			*/
 			WL_INFORM_MEM(("Schedule Nan Disable Req with NAN_DISABLE_CMD_DELAY\n"));
 			delay_ms = NAN_DISABLE_CMD_DELAY;
+			DHD_NAN_WAKE_LOCK_TIMEOUT(cfg->pub, NAN_WAKELOCK_TIMEOUT);
 		} else {
 			delay_ms = 0;
 		}
@@ -6327,7 +6343,6 @@ static int wl_cfgvendor_lstats_get_info(struct wiphy *wiphy,
 	int err = 0, i;
 	wifi_radio_stat *radio;
 	wifi_radio_stat_h radio_h;
-	wl_wme_cnt_t *wl_wme_cnt;
 	const wl_cnt_wlc_t *wlc_cnt;
 	scb_val_t scbval;
 	char *output = NULL;
@@ -6389,38 +6404,11 @@ static int wl_cfgvendor_lstats_get_info(struct wiphy *wiphy,
 	output += sizeof(wifi_radio_stat_h);
 	output += (NUM_CHAN * sizeof(wifi_channel_stat));
 
-	err = wldev_iovar_getbuf(bcmcfg_to_prmry_ndev(cfg), "wme_counters", NULL, 0,
-		iovar_buf, WLC_IOCTL_MAXLEN, NULL);
-	if (unlikely(err)) {
-		WL_ERR(("error (%d)\n", err));
-		goto exit;
-	}
-	wl_wme_cnt = (wl_wme_cnt_t *)iovar_buf;
-
 	COMPAT_BZERO_IFACE(wifi_iface_stat, iface);
 	COMPAT_ASSIGN_VALUE(iface, ac[WIFI_AC_VO].ac, WIFI_AC_VO);
-	COMPAT_ASSIGN_VALUE(iface, ac[WIFI_AC_VO].tx_mpdu, wl_wme_cnt->tx[AC_VO].packets);
-	COMPAT_ASSIGN_VALUE(iface, ac[WIFI_AC_VO].rx_mpdu, wl_wme_cnt->rx[AC_VO].packets);
-	COMPAT_ASSIGN_VALUE(iface, ac[WIFI_AC_VO].mpdu_lost,
-		wl_wme_cnt->tx_failed[WIFI_AC_VO].packets);
-
 	COMPAT_ASSIGN_VALUE(iface, ac[WIFI_AC_VI].ac, WIFI_AC_VI);
-	COMPAT_ASSIGN_VALUE(iface, ac[WIFI_AC_VI].tx_mpdu, wl_wme_cnt->tx[AC_VI].packets);
-	COMPAT_ASSIGN_VALUE(iface, ac[WIFI_AC_VI].rx_mpdu, wl_wme_cnt->rx[AC_VI].packets);
-	COMPAT_ASSIGN_VALUE(iface, ac[WIFI_AC_VI].mpdu_lost,
-		wl_wme_cnt->tx_failed[WIFI_AC_VI].packets);
-
 	COMPAT_ASSIGN_VALUE(iface, ac[WIFI_AC_BE].ac, WIFI_AC_BE);
-	COMPAT_ASSIGN_VALUE(iface, ac[WIFI_AC_BE].tx_mpdu, wl_wme_cnt->tx[AC_BE].packets);
-	COMPAT_ASSIGN_VALUE(iface, ac[WIFI_AC_BE].rx_mpdu, wl_wme_cnt->rx[AC_BE].packets);
-	COMPAT_ASSIGN_VALUE(iface, ac[WIFI_AC_BE].mpdu_lost,
-		wl_wme_cnt->tx_failed[WIFI_AC_BE].packets);
-
 	COMPAT_ASSIGN_VALUE(iface, ac[WIFI_AC_BK].ac, WIFI_AC_BK);
-	COMPAT_ASSIGN_VALUE(iface, ac[WIFI_AC_BK].tx_mpdu, wl_wme_cnt->tx[AC_BK].packets);
-	COMPAT_ASSIGN_VALUE(iface, ac[WIFI_AC_BK].rx_mpdu, wl_wme_cnt->rx[AC_BK].packets);
-	COMPAT_ASSIGN_VALUE(iface, ac[WIFI_AC_BK].mpdu_lost,
-		wl_wme_cnt->tx_failed[WIFI_AC_BK].packets);
 
 	err = wldev_iovar_getbuf(bcmcfg_to_prmry_ndev(cfg), "counters", NULL, 0,
 		iovar_buf, WLC_IOCTL_MAXLEN, NULL);
@@ -6466,10 +6454,18 @@ static int wl_cfgvendor_lstats_get_info(struct wiphy *wiphy,
 				if_stats->version));
 			goto exit;
 		}
+		COMPAT_ASSIGN_VALUE(iface, ac[WIFI_AC_BE].tx_mpdu,
+			(uint32)(if_stats->txfrmsnt - if_stats->txmulti));
+		COMPAT_ASSIGN_VALUE(iface, ac[WIFI_AC_BE].rx_mpdu, (uint32)if_stats->rxframe);
+		COMPAT_ASSIGN_VALUE(iface, ac[WIFI_AC_BE].mpdu_lost, (uint32)if_stats->txfail);
 		COMPAT_ASSIGN_VALUE(iface, ac[WIFI_AC_BE].retries, (uint32)if_stats->txretrans);
 	} else
 #endif /* !DISABLE_IF_COUNTERS */
 	{
+		COMPAT_ASSIGN_VALUE(iface, ac[WIFI_AC_BE].tx_mpdu,
+			(wlc_cnt->txfrmsnt - wlc_cnt->txmulti));
+		COMPAT_ASSIGN_VALUE(iface, ac[WIFI_AC_BE].rx_mpdu, wlc_cnt->rxframe);
+		COMPAT_ASSIGN_VALUE(iface, ac[WIFI_AC_BE].mpdu_lost, wlc_cnt->txfail);
 		COMPAT_ASSIGN_VALUE(iface, ac[WIFI_AC_BE].retries, wlc_cnt->txretrans);
 	}
 
@@ -6548,19 +6544,48 @@ exit:
 
 #ifdef DHD_LOG_DUMP
 static int
-wl_cfgvendor_get_buf_data(const struct nlattr *iter, struct buf_data **buf)
+wl_cfgvendor_get_buf_data(const struct nlattr *iter, struct buf_data *buf)
 {
 	int ret = BCME_OK;
 
-	if (nla_len(iter) != sizeof(struct buf_data)) {
-		WL_ERR(("Invalid len : %d\n", nla_len(iter)));
-		ret = BCME_BADLEN;
+#ifdef CONFIG_COMPAT
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 6, 0))
+	if (in_compat_syscall()) {
+#else
+	if (is_compat_task()) {
+#endif /* LINUX_VER >= 4.6 */
+		struct compat_buf_data *compat_buf = (struct compat_buf_data *)nla_data(iter);
+
+		if (nla_len(iter) != sizeof(struct compat_buf_data)) {
+			WL_ERR(("Invalid len : %d\n", nla_len(iter)));
+			ret = BCME_BADLEN;
+		}
+
+		buf->ver = compat_buf->ver;
+		buf->len = compat_buf->len;
+		buf->buf_threshold = compat_buf->buf_threshold;
+		buf->data_buf[0] = (const void *)compat_ptr(compat_buf->data_buf);
 	}
-	(*buf) = (struct buf_data *)nla_data(iter);
-	if (!(*buf) || (((*buf)->len) <= 0) || !((*buf)->data_buf[0])) {
+	else
+#endif /* CONFIG_COMPAT */
+	{
+		if (nla_len(iter) != sizeof(struct buf_data)) {
+			WL_ERR(("Invalid len : %d\n", nla_len(iter)));
+			ret = BCME_BADLEN;
+		}
+
+		ret = memcpy_s(buf, sizeof(struct buf_data), (void *)nla_data(iter), nla_len(iter));
+		if (ret) {
+			WL_ERR(("Can't get buf data\n"));
+			goto exit;
+		}
+	}
+
+	if ((buf->len <= 0) || !buf->data_buf[0]) {
 		WL_ERR(("Invalid buffer\n"));
 		ret = BCME_ERROR;
 	}
+exit:
 	return ret;
 }
 
@@ -6574,6 +6599,7 @@ wl_cfgvendor_dbg_file_dump(struct wiphy *wiphy,
 	struct sk_buff *skb = NULL;
 	struct bcm_cfg80211 *cfg = wiphy_priv(wiphy);
 	struct buf_data *buf;
+	struct buf_data data_from_hal = {0};
 	int pos = 0;
 
 	/* Alloc the SKB for vendor_event */
@@ -6584,9 +6610,10 @@ wl_cfgvendor_dbg_file_dump(struct wiphy *wiphy,
 		goto exit;
 	}
 	WL_ERR(("%s\n", __FUNCTION__));
+	buf = &data_from_hal;
 	nla_for_each_attr(iter, data, len, rem) {
 		type = nla_type(iter);
-		ret = wl_cfgvendor_get_buf_data(iter, &buf);
+		ret = wl_cfgvendor_get_buf_data(iter, buf);
 		if (ret)
 			goto exit;
 		switch (type) {
@@ -7955,13 +7982,15 @@ static int wl_cfgvendor_set_pmk(struct wiphy *wiphy,
 		type = nla_type(iter);
 		switch (type) {
 			case BRCM_ATTR_DRIVER_KEY_PMK:
-				if (nla_len(iter) > sizeof(pmk.key)) {
+				pmk.flags = 0;
+				pmk.key_len = htod16(nla_len(iter));
+				ret = memcpy_s(pmk.key, sizeof(pmk.key),
+					(uint8 *)nla_data(iter), nla_len(iter));
+				if (ret) {
+					WL_ERR(("Failed to copy pmk: %d\n", ret));
 					ret = -EINVAL;
 					goto exit;
 				}
-				pmk.flags = 0;
-				pmk.key_len = htod16(nla_len(iter));
-				bcopy((uint8 *)nla_data(iter), pmk.key, len);
 				break;
 			default:
 				WL_ERR(("Unknown type: %d\n", type));
