@@ -88,7 +88,7 @@ endif;
 selectbox(
   "\nZRAM","<@center><b>\nSelect ZRAM Sizes Which You Want\n</b></@>","","zram.prop",
   "Select From Kernel Manager","You Can Enable ZRAM From a Kernel Manager",0,
-  "4096MB","ZRAM Size Is 4GB",0,
+  "4072MB","ZRAM Size Is 4GB",0,
   "3072MB","ZRAM Size Is 3GB",0,
   "2560MB","ZRAM Size Is 2,5GB",1,
   "2048MB","ZRAM Size Is 2GB",0,

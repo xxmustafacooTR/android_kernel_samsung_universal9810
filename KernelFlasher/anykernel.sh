@@ -95,7 +95,7 @@ echo "    oneshot" >> /tmp/anykernel/ramdisk/init.services.rc
 echo "    disabled" >> /tmp/anykernel/ramdisk/init.services.rc
 echo " " >> /tmp/anykernel/ramdisk/init.services.rc
 if [ $ZRAM = 2 ]; then
-  echo "service swapon_zram /sbin/sswap -s -z -f 4096" >> /tmp/anykernel/ramdisk/init.services.rc
+  echo "service swapon_zram /sbin/sswap -s -z -f 4072" >> /tmp/anykernel/ramdisk/init.services.rc
 elif [ $ZRAM = 3 ]; then
   echo "service swapon_zram /sbin/sswap -s -z -f 3072" >> /tmp/anykernel/ramdisk/init.services.rc
 elif [ $ZRAM = 4 ]; then
