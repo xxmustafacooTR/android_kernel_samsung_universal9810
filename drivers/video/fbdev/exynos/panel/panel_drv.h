@@ -1,8 +1,6 @@
+/* SPDX-License-Identifier: GPL-2.0 */
 /*
- * Copyright (c) 2016 Samsung Electronics Co., Ltd.
- *	      http://www.samsung.com/
- *
- * Samsung's Panel Driver
+ * Copyright (c) Samsung Electronics Co., Ltd.
  * Author: Minwoo Kim <minwoo7945.kim@samsung.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -127,7 +125,7 @@ struct mipi_drv_ops {
 	int (*read)(u32 id, u8 addr, u8 ofs, u8 *buf, int size);
 	int (*write)(u32 id, u8 cmd_id, const u8 *cmd, u8 ofs, int size);
 	enum dsim_state(*get_state)(u32 id);
-	void (*parse_dt)(struct device_node *, struct decon_lcd *);
+	void (*parse_dt)(struct device_node *node, struct decon_lcd *lcd_info);
 };
 
 #define PANEL_INIT_KERNEL 		0

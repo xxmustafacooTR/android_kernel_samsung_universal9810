@@ -1,9 +1,6 @@
+/* SPDX-License-Identifier: GPL-2.0 */
 /*
- * linux/drivers/video/fbdev/exynos/panel/panel.h
- *
- * Header file for Samsung Common LCD Driver.
- *
- * Copyright (c) 2016 Samsung Electronics
+ * Copyright (c) Samsung Electronics Co., Ltd.
  * Gwanghui Lee <gwanghui.lee@samsung.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -79,14 +76,6 @@ enum {
 
 struct maptbl;
 struct mdnie_info;
-
-struct common_panel_ops {
-	int (*tx_cmds)(struct panel_info *, const void *, int);
-	int (*rx_cmds)(struct panel_info *, u8 *, const void *, int);
-#if CONFIG_OF
-	int (*parse_dt)(const struct device_node *);
-#endif
-};
 
 /*
  * [command types]

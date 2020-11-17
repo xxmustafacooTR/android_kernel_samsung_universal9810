@@ -1,9 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
- * linux/drivers/video/fbdev/exynos/panel/panel_poc.c
- *
- * Samsung Common LCD Driver.
- *
- * Copyright (c) 2017 Samsung Electronics
+ * Copyright (c) Samsung Electronics Co., Ltd.
  * Gwanghui Lee <gwanghui.lee@samsung.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -302,12 +299,10 @@ int poc_write_data(struct panel_device *panel, u8 *data, u32 addr, u32 size)
 		}
 
 		poc_info->wdata = data[i];
-		if (i == 0 || i == (size - 1) || (poc_addr & 0xFF) == 0 || (poc_addr & 0xFF) == 0xFF) {
+		if (i == 0 || i == (size - 1) || (poc_addr & 0xFF) == 0 || (poc_addr & 0xFF) == 0xFF)
 			ret = panel_do_poc_seqtbl_by_index_nolock(poc_dev, POC_WRITE_DAT_STT_END_SEQ);
-		}
-		else {
+		else
 			ret = panel_do_poc_seqtbl_by_index_nolock(poc_dev, POC_WRITE_DAT_SEQ);
-		}
 
 		if (unlikely(ret < 0)) {
 			pr_err("%s, failed to write poc-wr-img seq\n", __func__);

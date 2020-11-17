@@ -1,8 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
- * Copyright (c) 2016 Samsung Electronics Co., Ltd.
- *	      http://www.samsung.com/
- *
- * Samsung's Panel Driver
+ * Copyright (c) Samsung Electronics Co., Ltd.
  * Author: Minwoo Kim <minwoo7945.kim@samsung.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -61,7 +59,7 @@ static char *panel_state_names[] = {
 	"LPM",		/* LPM */
 };
 
-static int boot_panel_id = 0;
+static int boot_panel_id;
 int panel_log_level = 6;
 #ifdef CONFIG_SUPPORT_PANEL_SWAP
 static int connect_panel = PANEL_CONNECT;
@@ -99,7 +97,6 @@ int get_lcd_info(char *arg)
 	else
 		return -EINVAL;
 }
-
 EXPORT_SYMBOL(get_lcd_info);
 
 void clear_disp_det_pend(struct panel_device *panel)
@@ -112,8 +109,6 @@ void clear_disp_det_pend(struct panel_device *panel)
 		pend_disp_det = pend_disp_det & ~(pad->pend_bit_disp_det);
 		writel(pend_disp_det, pad->pend_reg_disp_det);
 	}
-
-	return;
 }
 
 #define SSD_CURRENT_DOZE	8000
@@ -153,9 +148,9 @@ int __set_panel_power(struct panel_device *panel, int power)
 			}
 		}
 #ifndef CONFIG_OLD_DISP_TIMING
-		usleep_range(10000, 10000);
+		usleep_range(10000, 10000 + 10);
 		gpio_direction_output(pad->gpio_reset, 1);
-		usleep_range(5000, 5000);
+		usleep_range(5000, 5000 + 10);
 #endif
 	} else {
 		gpio_direction_output(pad->gpio_reset, 0);
@@ -188,9 +183,8 @@ int __panel_seq_display_on(struct panel_device *panel)
 	int ret = 0;
 
 	ret = panel_do_seqtbl_by_index(panel, PANEL_DISPLAY_ON_SEQ);
-	if (unlikely(ret < 0)) {
+	if (unlikely(ret < 0))
 		panel_err("PANEL:ERR:%s, failed to write init seqtbl\n", __func__);
-	}
 	return ret;
 }
 
@@ -200,13 +194,12 @@ int __panel_seq_display_off(struct panel_device *panel)
 	int ret;
 
 	ret = panel_do_seqtbl_by_index(panel, PANEL_DISPLAY_OFF_SEQ);
-	if (unlikely(ret < 0)) {
+	if (unlikely(ret < 0))
 		panel_err("PANEL:ERR:%s, failed to write init seqtbl\n", __func__);
-	}
 	return ret;
 }
 
-#define PANEL_DISP_DET_HIGH 	1
+#define PANEL_DISP_DET_HIGH	 	1
 #define PANEL_DISP_DET_LOW		0
 
 static int __panel_seq_res_init(struct panel_device *panel)
@@ -267,7 +260,7 @@ static int __panel_seq_init(struct panel_device *panel)
 
 check_disp_det:
 	if (gpio_get_value(disp_det) == PANEL_DISP_DET_LOW) {
-		usleep_range(100, 100);
+		usleep_range(100, 100 + 10);
 		if (retry--)
 			goto check_disp_det;
 		goto do_exit;
@@ -399,7 +392,7 @@ static void __delay_normal_alpm(struct panel_device *panel)
 		goto exit_delay;
 
 	delaycmd = (struct delayinfo *)seqtbl->cmdtbl[0];
-	if(delaycmd == NULL) {
+	if (delaycmd == NULL) {
 		panel_info("PANEL:INFO:%s: no delay\n", __func__);
 		goto exit_delay;
 	}
@@ -414,7 +407,7 @@ static void __delay_normal_alpm(struct panel_device *panel)
 			goto exit_delay;
 
 		delay = delaycmd->usec - gap;
-		usleep_range(delay, delay);
+		usleep_range(delay, delay + 10);
 	}
 	panel_info("PANEL:INFO:%stotal elapsed time : %d\n", __func__,
 		(int)ktime_to_us(ktime_sub(ktime_get(), panel->ktime_panel_on)));
@@ -503,27 +496,24 @@ static int __panel_seq_active_clock(struct panel_device *panel, int send_img)
 
 			if (act_info->update_img == IMG_UPDATE_NEED) {
 				ret = panel_do_seqtbl_by_index(panel, PANEL_ACTIVE_CLK_IMG_SEQ);
-				if (unlikely(ret < 0)) {
+				if (unlikely(ret < 0))
 					panel_err("PANEL:ERR:%s, failed to write init seqtbl\n", __func__);
-				}
 				act_info->update_img = IMG_UPDATE_DONE;
 			}
 		}
 		usleep_range(5, 5);
 
 		ret = panel_do_seqtbl_by_index(panel, PANEL_ACTIVE_CLK_CTRL_SEQ);
-		if (unlikely(ret < 0)) {
+		if (unlikely(ret < 0))
 			panel_err("PANEL:ERR:%s, failed to write init seqtbl\n", __func__);
-		}
 	}
 
 	if (blink_info->en) {
 		panel_dbg("PANEL:DBG:%s:active blink was enabed\n", __func__);
 
 		ret = panel_do_seqtbl_by_index(panel, PANEL_ACTIVE_CLK_CTRL_SEQ);
-		if (unlikely(ret < 0)) {
+		if (unlikely(ret < 0))
 			panel_err("PANEL:ERR:%s, failed to write init seqtbl\n", __func__);
-		}
 	}
 	return ret;
 }
@@ -534,9 +524,8 @@ static int __panel_seq_dump(struct panel_device *panel)
 	int ret;
 
 	ret = panel_do_seqtbl_by_index(panel, PANEL_DUMP_SEQ);
-	if (unlikely(ret < 0)) {
+	if (unlikely(ret < 0))
 		panel_err("PANEL:ERR:%s, failed to write dump seqtbl\n", __func__);
-	}
 
 	return ret;
 }
@@ -1311,7 +1300,7 @@ retry_sleep_out:
 		if (ret) {
 			if (--retry >= 0 && ret == -EAGAIN) {
 				panel_power_off(panel);
-				usleep_range(100000, 100000);
+				usleep_range(100000, 100000 + 10);
 				goto retry_sleep_out;
 			} else {
 #ifdef CONFIG_SUPPORT_PANEL_SWAP
@@ -1548,9 +1537,8 @@ int panel_set_dsu(struct panel_device *panel, struct dsu_info *dsu)
 	lcd_info->dsc_slice_h = dt_lcd_mres->res_info[actual_mode].dsc_height;
 
 	ret = panel_do_seqtbl_by_index(panel, PANEL_DSU_SEQ);
-	if (unlikely(ret < 0)) {
+	if (unlikely(ret < 0))
 		panel_err("PANEL:ERR:%s, failed to write init seqtbl\n", __func__);
-	}
 
 	return 0;
 
@@ -1634,9 +1622,10 @@ static int panel_ioctl_set_power(struct panel_device *panel, void *arg)
 static int panel_ioctl_set_reset(struct panel_device *panel)
 {
 	struct panel_pad *pad = &panel->pad;
-	usleep_range(10000, 10000);
+
+	usleep_range(10000, 10000 + 10);
 	gpio_direction_output(pad->gpio_reset, 1);
-	usleep_range(5000, 5000);
+	usleep_range(5000, 5000 + 10);
 	pr_info("%s reset panel (%s)\n", __func__, gpio_get_value(pad->gpio_reset) ? "high" : "low");
 
 	return 0;
@@ -1718,7 +1707,7 @@ static int panel_set_finger_layer(struct panel_device *panel, void *arg)
 	mutex_lock(&panel_bl->lock);
 	mutex_lock(&panel->op_lock);
 
-	if(*cmd == 0) {
+	if (*cmd == 0) {
 		panel_info("PANEL:INFO:%s:disable finger layer\n", __func__);
 		panel_bl->finger_layer = false;
 		panel_bl->subdev[PANEL_BL_SUBDEV_TYPE_DISP].brightness = panel_bl->saved_br;
@@ -1730,9 +1719,8 @@ static int panel_set_finger_layer(struct panel_device *panel, void *arg)
 	}
 
 	ret = panel_bl_set_brightness(panel_bl, PANEL_BL_SUBDEV_TYPE_DISP, 1);
-	if (ret) {
+	if (ret)
 		pr_err("%s : fail to set brightness\n", __func__);
-	}
 
 	panel_info("- %s\n", __func__);
 
@@ -1949,9 +1937,10 @@ static int panel_drv_set_gpios(struct panel_device *panel)
 	return 0;
 }
 
-static inline int panel_get_gpio(struct device *dev ,char *name)
+static inline int panel_get_gpio(struct device *dev, char *name)
 {
 	int ret = 0;
+
 	ret = of_gpio_named_count(dev->of_node, name);
 	if (ret != 1) {
 		panel_err("PANEL:ERR:%s:can't find gpio named : %s\n",
@@ -1982,7 +1971,7 @@ static int panel_parse_gpio(struct panel_device *panel)
 	for (i = 0; i < PANEL_GPIO_MAX; i++) {
 		ret = panel_get_gpio(dev, gpio_lists[i]);
 		if (ret <= 0)
-			 ret = 0;
+			ret = 0;
 		gpio_result[i] = ret;
 	}
 	pad->gpio_reset = gpio_result[PANEL_GPIO_RESET];
@@ -1997,8 +1986,7 @@ static int panel_parse_gpio(struct panel_device *panel)
 		pend_disp_det = of_get_child_by_name(dev->of_node, "pend,disp-det");
 		if (!pend_disp_det) {
 			panel_warn("PANEL:WARN:%s:No DT node for te_eint\n", __func__);
-		}
-		else {
+		} else {
 			pad->pend_reg_disp_det = of_iomap(pend_disp_det, 0);
 			if (!pad->pend_reg_disp_det) {
 				panel_err("PANEL:ERR:%s:failed to get disp pend reg\n", __func__);
@@ -2006,7 +1994,7 @@ static int panel_parse_gpio(struct panel_device *panel)
 			}
 			of_property_read_u32(pend_disp_det, "pend-bit",
 				&pad->pend_bit_disp_det);
-			panel_info("PANEL:INFO:%s:pend bit disp_det %x\n",\
+			panel_info("PANEL:INFO:%s:pend bit disp_det %x\n",
 				__func__, pad->pend_bit_disp_det);
 			panel_info("PANEL:INFO:%s:disp_det pend : %x\n",
 				__func__, readl(pad->pend_reg_disp_det));
@@ -2116,9 +2104,8 @@ int panel_register_isr(struct panel_device *panel)
 	int ret = 0;
 	struct panel_pad *pad = &panel->pad;
 
-	if (panel->state.connect_panel == PANEL_DISCONNECT) {
+	if (panel->state.connect_panel == PANEL_DISCONNECT)
 		return 0;
-	}
 
 	clear_disp_det_pend(panel);
 	if (pad->gpio_disp_det) {
@@ -2333,8 +2320,8 @@ static int panel_parse_panel_lookup(struct panel_device *panel)
 
 	sz_lut = of_property_count_u32_elems(np, "panel-lut");
 	if ((sz_lut % 3) || (sz_lut >= MAX_PANEL_LUT)) {
-		panel_warn("PANEL:WARN:%s:sz_lut(%d) should be multiple of 3"
-				" and less than MAX_PANEL_LUT\n", __func__, sz_lut);
+		panel_warn("PANEL:WARN:%s:sz_lut(%d) should be multiple of 3 and less than MAX_PANEL_LUT\n",
+			__func__, sz_lut);
 		return -EINVAL;
 	}
 
@@ -2423,8 +2410,6 @@ void disp_det_handler(struct work_struct *data)
 	default:
 		break;
 	}
-
-	return;
 }
 
 static int panel_fb_notifier(struct notifier_block *self, unsigned long event, void *data)
@@ -2708,7 +2693,7 @@ static int __init get_boot_panel_id(char *arg)
 
 early_param("lcdtype", get_boot_panel_id);
 
-static int __init panel_drv_init (void)
+static int __init panel_drv_init(void)
 {
 	return platform_driver_register(&panel_driver);
 }
