@@ -4832,12 +4832,6 @@
 			abox = <&abox>;
 		};
 
-		abox_debug: abox_debug@0 {
-			compatible = "samsung,abox-debug";
-			memory-region = <&abox_rmem>;
-			reg = <0x0 0x0 0x0>;
-		};
-
 		abox_vss: abox_vss@0 {
 			compatible = "samsung,abox-vss";
 			magic_offset = <0x600000>;
@@ -6137,11 +6131,9 @@
 		mailbox = <&mailbox_vts>;
 		#sound-dai-cells = <1>;
 		interrupt-parent = <&mailbox_vts>;
-		interrupts = <16>, <17>, <18>, <19>, <20>, <21>, <22>, <23>, <24>, <25>;
+		interrupts = <16>, <17>, <18>, <19>, <20>, <21>;
 		interrupt-names = "error", "boot_completed", "ipc_received", "voice_triggered",
-				"trigger_period_elapsed", "record_period_elapsed",
-				"debuglog_bufzero", "debuglog_bufone",
-				"audio_dump", "log_dump";
+				"trigger_period_elapsed", "record_period_elapsed";
 	};
 
 	vts_dma0: vts_dma0 {
