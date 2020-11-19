@@ -57,8 +57,8 @@ agreebox(
 
 menubox(
   "\nCPU and Bus frequencies","<@center><b>\nOverclock or Battery for the CPU and BUS\n</b></@>","","bus.prop",
-  "Performance","BIG Single: 2886mhz\nLITTLE: 2002mhz",1,
-  "Battery Life","BIG Single: 2704mhz\nLITTLE: 1794mhz",0
+  "Performance","BIG Single: 2886mhz\nLITTLE: 2002mhz\n50HZ Tick Rate\n32ms PELT",1,
+  "Battery Life","BIG Single: 2704mhz\nLITTLE: 1794mhz\n300HZ Tick Rate\n10ms PELT",0
 );
 
 if prop("bus.prop", "selected")==1 then

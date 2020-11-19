@@ -15,6 +15,22 @@ choice
 	 environment leading to NR_CPUS * HZ number of timer interrupts
 	 per second.
 
+	config HZ_50
+		bool "50 HZ"
+	help
+	  50 Hz is the lowest non-problematic tick rate which theoretically
+	  it should provide the best power efficiency at the cost of mildly
+	  performance penalty, we are still below than 16ms which is where
+	  render frames gets signaled so this value should be safe to use.
+
+	  While 100hz presents just merely around 10ms resolution, 50hz 
+	  presents around 15ms resolution.
+
+	  This should be giving fairness and balance between throughput 
+	  and latency while reducing unnecessary energy consumption and 
+	  avoiding reduced performance on CPU cores due to too many timer 
+	  interrupts occurring across all cores.
+
 
 	config HZ_100
 		bool "100 HZ"
@@ -49,6 +65,7 @@ endchoice
 
 config HZ
 	int
+	default 50 if HZ_50
 	default 100 if HZ_100
 	default 250 if HZ_250
 	default 300 if HZ_300
