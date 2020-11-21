@@ -10,7 +10,7 @@
  *
  */
 
-#include "cal_bts8895.h"
+#include "cal_bts9810.h"
 #include <linux/soc/samsung/exynos-soc.h>
 
 #define LOG(x, ...)				\
