@@ -126,7 +126,11 @@ config MMU
 	def_bool y
 
 config DEBUG_RODATA
-	def_bool y
+	bool "Make kernel text and rodata read-only"
+	help
+	  If this is set, kernel text and rodata will be made read-only. This
+	  is to help catch accidental or malicious attempts to change the
+	  If in doubt, say Y
 
 config ARM64_PAGE_SHIFT
 	int
