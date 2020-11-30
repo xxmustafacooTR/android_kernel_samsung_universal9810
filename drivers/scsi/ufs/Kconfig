@@ -182,9 +182,18 @@ config SCSI_UFS_EXYNOS_SMU
 
 	  If unsure, say N.
 
+config SCSI_UFSHCD_HPB
+	tristate "Compile HPB Host-aware Performance Booster"
+	default n
+	---help---
+	  This selects the HPB Host-aware Performance Booster.
+
+	  If you have a controller with this interface, say Y or M here.
+
+	  If unsure, say N.
+
 config SCSI_UFSHCD_HPB_ACTIVATE
 	int "Activate HPB Host-aware Performance Booster"
-	depends on SCSI_UFSHCD
-	default 1
+	default 0
 	help
 	  Activate or deactive UFSHPB v1.3.5 test driver

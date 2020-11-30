@@ -1042,7 +1042,9 @@ static void ufshcd_ungate_work(struct work_struct *work)
 		spin_unlock_irqrestore(hba->host->host_lock, flags);
 	}
 
+#ifdef CONFIG_SCSI_UFSHCD_HPB
 	ufshcd_enable_irq(hba);
+#endif
 
 	/* Exit from hibern8 */
 	if (ufshcd_can_hibern8_during_gating(hba)) {
@@ -1195,7 +1197,9 @@ static void ufshcd_gate_work(struct work_struct *work)
 		ufshcd_set_link_hibern8(hba);
 	}
 
+#ifdef CONFIG_SCSI_UFSHCD_HPB
 	ufshcd_disable_irq(hba);
+#endif
 
 #if defined(CONFIG_PM_DEVFREQ)
 	if (ufshcd_is_clkscaling_enabled(hba)) {
@@ -1957,15 +1961,19 @@ static int ufshcd_comp_scsi_upiu(struct ufs_hba *hba, struct ufshcd_lrb *lrbp)
 		lrbp->command_type = UTP_CMD_TYPE_UFS_STORAGE;
 
 	if (likely(lrbp->cmd)) {
+#ifdef CONFIG_SCSI_UFSHCD_HPB
 		if (hba->ufshpb_state == HPB_PRESENT &&
 					hba->issue_ioctl == true)
 				lrbp->lun = 0x7F;
+#endif
 		ufshcd_prepare_req_desc_hdr(lrbp, &upiu_flags,
 						lrbp->cmd->sc_data_direction);
 		ufshcd_prepare_utp_scsi_cmd_upiu(lrbp, upiu_flags);
+#ifdef CONFIG_SCSI_UFSHCD_HPB
 		if (hba->ufshpb_state == HPB_PRESENT &&
 					hba->issue_ioctl == false)
 				ufshpb_prep_fn(hba, lrbp);
+#endif
 	} else {
 		ret = -EINVAL;
 	}
@@ -2642,6 +2650,7 @@ out:
 	return err;
 }
 
+#ifdef CONFIG_SCSI_UFSHCD_HPB
 /**
  * ufshcd_query_descriptor - API function for sending descriptor requests
  * hba: per-adapter instance
@@ -2677,6 +2686,7 @@ int ufshcd_query_descriptor(struct ufs_hba *hba,
 	return err;
 }
 EXPORT_SYMBOL(ufshcd_query_descriptor);
+#endif
 
 /**
  * ufshcd_query_descriptor_retry - API function for sending descriptor
@@ -4543,14 +4553,18 @@ static int ufshcd_change_queue_depth(struct scsi_device *sdev, int depth)
 static int ufshcd_slave_configure(struct scsi_device *sdev)
 {
 	struct request_queue *q = sdev->request_queue;
+#ifdef CONFIG_SCSI_UFSHCD_HPB
 	struct ufs_hba *hba = shost_priv(sdev->host);
+#endif
 
 	blk_queue_update_dma_pad(q, PRDT_DATA_BYTE_COUNT_PAD - 1);
 	blk_queue_max_segment_size(q, PRDT_DATA_BYTE_COUNT_MAX);
 	blk_queue_update_dma_alignment(q, PAGE_SIZE - 1);
 
+#ifdef CONFIG_SCSI_UFSHCD_HPB
 	if (sdev->lun < UFS_UPIU_MAX_GENERAL_LUN)
 		hba->sdev_ufs_lu[sdev->lun] = sdev;
+#endif
 	return 0;
 }
 
@@ -4712,9 +4726,11 @@ ufshcd_transfer_rsp_status(struct ufs_hba *hba, struct ufshcd_lrb *lrbp)
 			}
 
 			break;
+#ifdef CONFIG_SCSI_UFSHCD_HPB
 			if (hba->ufshpb_state == HPB_PRESENT &&
 					scsi_status == SAM_STAT_GOOD)
 				ufshpb_rsp_upiu(hba, lrbp);
+#endif
 		case UPIU_TRANSACTION_REJECT_UPIU:
 			/* TODO: handle Reject UPIU Response */
 			result = DID_ERROR << 16;
@@ -5858,15 +5874,19 @@ static int ufshcd_eh_device_reset_handler(struct scsi_cmnd *cmd)
 		}
 	}
 	spin_lock_irqsave(host->host_lock, flags);
+#ifdef CONFIG_SCSI_UFSHCD_HPB
 	if (hba->ufshpb_state == HPB_PRESENT)
 		hba->ufshpb_state = HPB_RESET;
+#endif
 	ufshcd_transfer_req_compl(hba, DID_RESET);
 	spin_unlock_irqrestore(host->host_lock, flags);
 out:
 	if (!err) {
 		dev_info(hba->dev, "%s: LU reset succeeded\n", __func__);
+#ifdef CONFIG_SCSI_UFSHCD_HPB
 		queue_delayed_work(system_power_efficient_wq, 
 			&hba->ufshpb_init_work,	msecs_to_jiffies(10));
+#endif
 		err = SUCCESS;
 	} else {
 		dev_err(hba->dev, "%s: failed with err %d\n", __func__, err);
@@ -6784,8 +6804,10 @@ retry:
 			ret = 0;
 		}
 
+#ifdef CONFIG_SCSI_UFSHCD_HPB
 		queue_delayed_work(system_power_efficient_wq, 
 			&hba->ufshpb_init_work, msecs_to_jiffies(0));
+#endif
 
 		pm_runtime_put_sync(hba->dev);
 	}
@@ -6911,6 +6933,7 @@ static enum blk_eh_timer_return ufshcd_eh_timed_out(struct scsi_cmnd *scmd)
 	return found ? BLK_EH_NOT_HANDLED : BLK_EH_RESET_TIMER;
 }
 
+#ifdef CONFIG_SCSI_UFSHCD_HPB
 static int ufshcd_query_desc_for_ufshpb(struct ufs_hba *hba, int lun,
 		struct ufs_ioctl_query_data *ioctl_data, void __user *buffer)
 {
@@ -7024,6 +7047,7 @@ out_release_mem:
 out:
 	return err;
 }
+#endif
 
 /**
  * ufshcd_query_ioctl - perform user read queries
@@ -7065,6 +7089,7 @@ static int ufshcd_query_ioctl(struct ufs_hba *hba, u8 lun, void __user *buffer)
 		goto out_release_mem;
 	}
 
+#ifdef CONFIG_SCSI_UFSHCD_HPB
 	if (UPIU_QUERY_OPCODE_HIGH(ioctl_data->opcode) ==
 					UPIU_QUERY_OPCODE_HIGH_HPB) {
 		err = ufshcd_query_desc_for_ufshpb(hba, lun,
@@ -7072,6 +7097,7 @@ static int ufshcd_query_ioctl(struct ufs_hba *hba, u8 lun, void __user *buffer)
 		kfree(ioctl_data);
 		goto out;
 	}
+#endif
 
 	/* verify legal parameters & send query */
 	switch (ioctl_data->opcode) {
@@ -8544,7 +8570,9 @@ ufshcd_exit_latency_hist(struct ufs_hba *hba)
  */
 void ufshcd_remove(struct ufs_hba *hba)
 {
+#ifdef CONFIG_SCSI_UFSHCD_HPB
 	ufshpb_release(hba, HPB_NEED_INIT);
+#endif
 	scsi_remove_host(hba->host);
 	/* disable interrupts */
 	ufshcd_disable_intr(hba, hba->intr_mask);
@@ -9191,15 +9219,19 @@ int ufshcd_init(struct ufs_hba *hba, void __iomem *mmio_base, unsigned int irq)
 	 */
 	ufshcd_set_ufs_dev_poweroff(hba);
 
+#ifdef CONFIG_SCSI_UFSHCD_HPB
 	/* initialize hpb structures */
 	ufshcd_init_hpb(hba);
+#endif
 
 	async_schedule(ufshcd_async_scan, hba);
 
 	/*create sysfs related with ufs*/
 	ufshcd_add_sysfs_nodes(hba);
 
+#ifdef CONFIG_SCSI_UFSHCD_HPB
 	device_enable_async_suspend(dev);
+#endif
 
 	return 0;
 
