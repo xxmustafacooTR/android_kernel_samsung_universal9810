@@ -94,8 +94,8 @@ static int gpu_dvfs_governor_default(struct exynos_context *platform, int utiliz
 	if ((platform->step > gpu_dvfs_get_level(platform->gpu_max_clock)) &&
 			(utilization > platform->table[platform->step].max_threshold)) {
 		platform->step--;
-		if (platform->table[platform->step].clock > platform->gpu_max_clock_limit)
-			platform->step = gpu_dvfs_get_level(platform->gpu_max_clock_limit);
+		if (platform->table[platform->step].clock > platform->gpu_max_clock)
+			platform->step = gpu_dvfs_get_level(platform->gpu_max_clock);
 		platform->down_requirement = platform->table[platform->step].down_staycount;
 	} else if ((platform->step < gpu_dvfs_get_level(platform->gpu_min_clock)) && (utilization < platform->table[platform->step].min_threshold)) {
 		platform->down_requirement--;
@@ -117,7 +117,7 @@ static int gpu_dvfs_governor_interactive(struct exynos_context *platform, int ut
 	DVFS_ASSERT(platform);
 
 	if ((platform->step > gpu_dvfs_get_level(platform->gpu_max_clock) ||
-	    (platform->using_max_limit_clock && platform->step > gpu_dvfs_get_level(platform->gpu_max_clock_limit)))
+	    (platform->using_max_limit_clock && platform->step > gpu_dvfs_get_level(platform->gpu_max_clock)))
 			&& (utilization > platform->table[platform->step].max_threshold ||
 			     utilization > platform->interactive.highspeed_load)) {
 		int highspeed_level = gpu_dvfs_get_level(platform->interactive.highspeed_clock);
@@ -133,8 +133,8 @@ static int gpu_dvfs_governor_interactive(struct exynos_context *platform, int ut
 			platform->step--;
 			platform->interactive.delay_count = 0;
 		}
-		if (platform->table[platform->step].clock > platform->gpu_max_clock_limit)
-			platform->step = gpu_dvfs_get_level(platform->gpu_max_clock_limit);
+		if (platform->table[platform->step].clock > platform->gpu_max_clock)
+			platform->step = gpu_dvfs_get_level(platform->gpu_max_clock);
 		/*
 		 * Allow hispeed_freq to scale down slower
 		 * Time taken for scaling down is down_staycount * platform->polling_speed
@@ -158,7 +158,7 @@ static int gpu_dvfs_governor_interactive(struct exynos_context *platform, int ut
 		platform->down_requirement = platform->table[platform->step].down_staycount;
 	}
 
-	DVFS_ASSERT(((platform->using_max_limit_clock && (platform->step >= gpu_dvfs_get_level(platform->gpu_max_clock_limit))) ||
+	DVFS_ASSERT(((platform->using_max_limit_clock && (platform->step >= gpu_dvfs_get_level(platform->gpu_max_clock))) ||
 			((!platform->using_max_limit_clock && (platform->step >= gpu_dvfs_get_level(platform->gpu_max_clock)))))
 			&& (platform->step <= gpu_dvfs_get_level(platform->gpu_min_clock)));
 

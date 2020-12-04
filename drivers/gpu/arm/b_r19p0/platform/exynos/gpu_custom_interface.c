@@ -221,7 +221,7 @@ static int gpu_get_asv_table(struct exynos_context *platform, char *buf, size_t 
 
 	cnt += snprintf(buf+cnt, buf_size-cnt, "GPU, vol, min, max, down_stay, mif, cpu0, cpu1\n");
 
-	for (i = gpu_dvfs_get_level(platform->gpu_max_clock); i <= gpu_dvfs_get_level(platform->gpu_min_clock); i++) {
+	for (i = gpu_dvfs_get_level(platform->gpu_max_clock_limit); i <= gpu_dvfs_get_level(platform->gpu_min_clock); i++) {
 		cnt += snprintf(buf+cnt, buf_size-cnt, "%d, %7d, %2d, %3d, %d, %7d, %7d, %7d\n",
 		platform->table[i].clock, platform->table[i].voltage, platform->table[i].min_threshold,
 		platform->table[i].max_threshold, platform->table[i].down_staycount, platform->table[i].mem_freq,
@@ -261,7 +261,7 @@ static ssize_t show_volt_table(struct device *dev, struct device_attribute *attr
 	if (!platform)
 		return -ENODEV;
 
-	max = gpu_dvfs_get_level(platform->gpu_max_clock);
+	max = gpu_dvfs_get_level(platform->gpu_max_clock_limit);
 	min = gpu_dvfs_get_level(platform->gpu_min_clock);
 	pr_len = (size_t)((PAGE_SIZE - 2) / (min-max));
 
@@ -277,7 +277,7 @@ static ssize_t show_volt_table(struct device *dev, struct device_attribute *attr
 static ssize_t set_volt_table(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
 	struct exynos_context *platform = (struct exynos_context *)pkbdev->platform_context;
-	int max = gpu_dvfs_get_level(platform->gpu_max_clock);
+	int max = gpu_dvfs_get_level(platform->gpu_max_clock_limit);
 	int min = gpu_dvfs_get_level(platform->gpu_min_clock);
 	int i, tokens, rest, target;
 	int t[min - max];
@@ -329,7 +329,7 @@ static int gpu_get_dvfs_table(struct exynos_context *platform, char *buf, size_t
 	if (buf == NULL)
 		return 0;
 
-	for (i = gpu_dvfs_get_level(platform->gpu_max_clock); i <= gpu_dvfs_get_level(platform->gpu_min_clock); i++)
+	for (i = gpu_dvfs_get_level(platform->gpu_max_clock_limit); i <= gpu_dvfs_get_level(platform->gpu_min_clock); i++)
 		cnt += snprintf(buf+cnt, buf_size-cnt, " %d", platform->table[i].clock);
 
 	cnt += snprintf(buf+cnt, buf_size-cnt, "\n");
@@ -369,7 +369,7 @@ static ssize_t show_time_in_state(struct device *dev, struct device_attribute *a
 
 	gpu_dvfs_update_time_in_state(gpu_control_is_power_on(pkbdev) * platform->cur_clock);
 
-	for (i = gpu_dvfs_get_level(platform->gpu_min_clock); i >= gpu_dvfs_get_level(platform->gpu_max_clock); i--) {
+	for (i = gpu_dvfs_get_level(platform->gpu_min_clock); i >= gpu_dvfs_get_level(platform->gpu_max_clock_limit); i--) {
 		ret += snprintf(buf+ret, PAGE_SIZE-ret, "%d %llu\n",
 				platform->table[i].clock,
 				platform->table[i].time);
@@ -1051,8 +1051,8 @@ static ssize_t set_min_lock_dvfs(struct device *dev, struct device_attribute *at
 			return -ENOENT;
 		}
 
-		if (clock > platform->gpu_max_clock_limit)
-			clock = platform->gpu_max_clock_limit;
+		if (clock > platform->gpu_max_clock)
+			clock = platform->gpu_max_clock;
 
 		if (clock == platform->gpu_min_clock)
 			gpu_dvfs_clock_lock(GPU_DVFS_MIN_UNLOCK, SYSFS_LOCK, 0);
@@ -1074,7 +1074,7 @@ static ssize_t show_down_staycount(struct device *dev, struct device_attribute *
 		return -ENODEV;
 
 	spin_lock_irqsave(&platform->gpu_dvfs_spinlock, flags);
-	for (i = gpu_dvfs_get_level(platform->gpu_max_clock); i <= gpu_dvfs_get_level(platform->gpu_min_clock); i++)
+	for (i = gpu_dvfs_get_level(platform->gpu_max_clock_limit); i <= gpu_dvfs_get_level(platform->gpu_min_clock); i++)
 		ret += snprintf(buf+ret, PAGE_SIZE-ret, "Clock %d - %d\n",
 			platform->table[i].clock, platform->table[i].down_staycount);
 	spin_unlock_irqrestore(&platform->gpu_dvfs_spinlock, flags);
@@ -1202,8 +1202,8 @@ static ssize_t set_highspeed_clock(struct device *dev, struct device_attribute *
 		return -ENOENT;
 	}
 
-	if (highspeed_clock > platform->gpu_max_clock_limit)
-		highspeed_clock = platform->gpu_max_clock_limit;
+	if (highspeed_clock > platform->gpu_max_clock)
+		highspeed_clock = platform->gpu_max_clock;
 
 	spin_lock_irqsave(&platform->gpu_dvfs_spinlock, flags);
 	platform->interactive.highspeed_clock = highspeed_clock;
@@ -1882,6 +1882,27 @@ static ssize_t show_kernel_sysfs_gpu_info(struct kobject *kobj, struct kobj_attr
 	return ret;
 }
 
+static ssize_t show_kernel_sysfs_gpu_asv_table(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+	ssize_t ret = 0;
+	struct exynos_context *platform = (struct exynos_context *)pkbdev->platform_context;
+
+	if (!platform)
+		return -ENODEV;
+
+	ret += gpu_get_asv_table(platform, buf+ret, (size_t)PAGE_SIZE-ret);
+
+	if (ret < PAGE_SIZE - 1) {
+		ret += snprintf(buf+ret, PAGE_SIZE-ret, "\n");
+	} else {
+		buf[PAGE_SIZE-2] = '\n';
+		buf[PAGE_SIZE-1] = '\0';
+		ret = PAGE_SIZE-1;
+	}
+
+	return ret;
+}
+
 static ssize_t show_kernel_sysfs_max_lock_dvfs(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
 	ssize_t ret = 0;
@@ -2044,6 +2065,117 @@ static ssize_t set_kernel_sysfs_min_lock_dvfs(struct kobject *kobj, struct kobj_
 
 	return count;
 }
+
+static ssize_t show_kernel_sysfs_user_max_clock(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+	struct exynos_context *platform = (struct exynos_context *)pkbdev->platform_context;
+
+	sprintf(buf, "%s[gpu_max_clock]   \t[%d]\n\n", buf, platform->gpu_max_clock);
+	return strlen(buf);
+}
+
+static ssize_t set_kernel_sysfs_user_max_clock(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	int clock = 0;
+	struct exynos_context *platform = (struct exynos_context *)pkbdev->platform_context;
+
+	if (!platform)
+		return -ENODEV;
+
+	if (sscanf(buf, "%d", &clock)) {
+
+		if (clock == 260000 || clock == 299000 || clock == 338000 || clock == 385000 || clock == 455000
+				|| clock == 546000 || clock == 572000 || clock == 598000) {
+
+			platform->gpu_max_clock = clock;
+		} else {
+			pr_warning("[GPU:] Invaild input\n");
+			return -EINVAL;
+		}
+
+	}
+
+	return count;
+}
+
+static ssize_t show_kernel_sysfs_user_min_clock(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+	struct exynos_context *platform = (struct exynos_context *)pkbdev->platform_context;
+
+	sprintf(buf, "%s[gpu_min_clock]   \t[%d]\n\n", buf, platform->gpu_min_clock);
+	return strlen(buf);
+}
+
+static ssize_t set_kernel_sysfs_user_min_clock(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	int clock = 0;
+	struct exynos_context *platform = (struct exynos_context *)pkbdev->platform_context;
+
+	if (!platform)
+		return -ENODEV;
+
+	if (sscanf(buf, "%d", &clock)) {
+
+		if (clock == 260000 || clock == 299000 || clock == 338000 || clock == 385000 || clock == 455000
+				|| clock == 546000 || clock == 572000 || clock == 598000) {
+
+			platform->gpu_min_clock = clock;
+		} else {
+			pr_warning("[GPU:] Invaild input\n");
+			return -EINVAL;
+		}
+
+	}
+
+	return count;
+}
+
+static ssize_t show_kernel_sysfs_gpu_volt(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+	ssize_t ret = 0;
+	struct exynos_context *platform = (struct exynos_context *)pkbdev->platform_context;
+
+	if (!platform)
+		return -ENODEV;
+
+	ret += snprintf(buf+ret, PAGE_SIZE-ret, "%d", gpu_get_cur_voltage(platform));
+
+	if (ret < PAGE_SIZE - 1) {
+		ret += snprintf(buf+ret, PAGE_SIZE-ret, "\n");
+	} else {
+		buf[PAGE_SIZE-2] = '\n';
+		buf[PAGE_SIZE-1] = '\0';
+		ret = PAGE_SIZE-1;
+	}
+
+	return ret;
+}
+
+static ssize_t show_kernel_sysfs_gpu_time_in_state(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+	ssize_t ret = 0;
+	int i;
+	struct exynos_context *platform = (struct exynos_context *)pkbdev->platform_context;
+
+	if (!platform)
+		return -ENODEV;
+
+	gpu_dvfs_update_time_in_state(gpu_control_is_power_on(pkbdev) * platform->cur_clock);
+
+	for (i = gpu_dvfs_get_level(platform->gpu_min_clock); i >= gpu_dvfs_get_level(platform->gpu_max_clock_limit); i--) {
+		ret += snprintf(buf+ret, PAGE_SIZE-ret, "%d %llu\n",
+				platform->table[i].clock,
+				platform->table[i].time);
+	}
+
+	if (ret >= PAGE_SIZE - 1) {
+		buf[PAGE_SIZE-2] = '\n';
+		buf[PAGE_SIZE-1] = '\0';
+		ret = PAGE_SIZE-1;
+	}
+
+	return ret;
+}
 #endif /* #ifdef CONFIG_MALI_DVFS */
 
 static ssize_t show_kernel_sysfs_utilization(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
@@ -2114,7 +2246,7 @@ static ssize_t show_kernel_sysfs_freq_table(struct kobject *kobj, struct kobj_at
 	if (!platform)
 		return -ENODEV;
 
-	for (i = gpu_dvfs_get_level(platform->gpu_min_clock); i >= gpu_dvfs_get_level(platform->gpu_max_clock); i--) {
+	for (i = gpu_dvfs_get_level(platform->gpu_min_clock); i >= gpu_dvfs_get_level(platform->gpu_max_clock_limit); i--) {
 		ret += snprintf(buf+ret, PAGE_SIZE-ret, "%d ", platform->table[i].clock);
 	}
 
@@ -2195,7 +2327,7 @@ static ssize_t set_kernel_sysfs_governor(struct kobject *kobj, struct kobj_attri
 
 static ssize_t show_kernel_sysfs_gpu_model(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
-	/* COPY from mali_kbase_core_linux.c : 2594 line, last updated: 20161017, r2p0-03rel0 */
+	/* COPY from mali_kbase_core_linux.c : 2606 line, r19p0 */
 	static const struct gpu_product_id_name {
 		unsigned id;
 		char *name;
@@ -2211,7 +2343,17 @@ static ssize_t show_kernel_sysfs_gpu_model(struct kobject *kobj, struct kobj_att
 		{ .id = GPU_ID2_PRODUCT_TMIX >> GPU_ID_VERSION_PRODUCT_ID_SHIFT,
 		  .name = "Mali-G71" },
 		{ .id = GPU_ID2_PRODUCT_THEX >> GPU_ID_VERSION_PRODUCT_ID_SHIFT,
-		  .name = "Mali-THEx" },
+		  .name = "Mali-G72" },
+		{ .id = GPU_ID2_PRODUCT_TSIX >> GPU_ID_VERSION_PRODUCT_ID_SHIFT,
+		  .name = "Mali-G51" },
+		{ .id = GPU_ID2_PRODUCT_TNOX >> GPU_ID_VERSION_PRODUCT_ID_SHIFT,
+		  .name = "Mali-G76" },
+		{ .id = GPU_ID2_PRODUCT_TDVX >> GPU_ID_VERSION_PRODUCT_ID_SHIFT,
+		  .name = "Mali-G31" },
+		{ .id = GPU_ID2_PRODUCT_TGOX >> GPU_ID_VERSION_PRODUCT_ID_SHIFT,
+		  .name = "Mali-G52" },
+		{ .id = GPU_ID2_PRODUCT_TTRX >> GPU_ID_VERSION_PRODUCT_ID_SHIFT,
+		  .name = "Mali-G77" },
 	};
 	const char *product_name = "(Unknown Mali GPU)";
 	struct kbase_device *kbdev;
@@ -2290,6 +2432,9 @@ static struct kobj_attribute gpu_temp_attribute =
 	__ATTR(gpu_tmu, S_IRUGO, show_kernel_sysfs_gpu_temp, NULL);
 #endif
 
+static struct kobj_attribute gpu_asv_table_attribute =
+	__ATTR(gpu_asv_table, S_IRUGO, show_kernel_sysfs_gpu_asv_table, NULL);
+
 #ifdef CONFIG_MALI_DVFS
 static struct kobj_attribute gpu_info_attribute =
 	__ATTR(gpu_info, S_IRUGO, show_kernel_sysfs_gpu_info, NULL);
@@ -2299,6 +2444,12 @@ static struct kobj_attribute gpu_max_lock_attribute =
 
 static struct kobj_attribute gpu_min_lock_attribute =
 	__ATTR(gpu_min_clock, S_IRUGO|S_IWUSR, show_kernel_sysfs_min_lock_dvfs, set_kernel_sysfs_min_lock_dvfs);
+
+static struct kobj_attribute user_max_clock_attribute =
+	__ATTR(user_max_clock, S_IRUGO|S_IWUSR, show_kernel_sysfs_user_max_clock, set_kernel_sysfs_user_max_clock);
+
+static struct kobj_attribute user_min_clock_attribute =
+	__ATTR(user_min_clock, S_IRUGO|S_IWUSR, show_kernel_sysfs_user_min_clock, set_kernel_sysfs_user_min_clock);
 #endif /* #ifdef CONFIG_MALI_DVFS */
 
 static struct kobj_attribute gpu_busy_attribute =
@@ -2309,6 +2460,9 @@ static struct kobj_attribute gpu_clock_attribute =
 
 static struct kobj_attribute gpu_freq_table_attribute =
 	__ATTR(gpu_freq_table, S_IRUGO, show_kernel_sysfs_freq_table, NULL);
+
+static struct kobj_attribute gpu_time_in_state_attribute =
+	__ATTR(gpu_time_in_state, S_IRUGO, show_kernel_sysfs_gpu_time_in_state, NULL);
 
 #ifdef CONFIG_MALI_DVFS
 static struct kobj_attribute gpu_governor_attribute =
@@ -2321,6 +2475,9 @@ static struct kobj_attribute gpu_available_governor_attribute =
 static struct kobj_attribute gpu_model_attribute =
 	__ATTR(gpu_model, S_IRUGO, show_kernel_sysfs_gpu_model, NULL);
 
+static struct kobj_attribute gpu_volt_attribute =
+	__ATTR(gpu_volt, S_IRUGO, show_kernel_sysfs_gpu_volt, NULL);
+
 
 static struct attribute *attrs[] = {
 #ifdef CONFIG_MALI_DVFS
@@ -2328,17 +2485,22 @@ static struct attribute *attrs[] = {
 	&gpu_temp_attribute.attr,
 #endif
 	&gpu_info_attribute.attr,
+	&gpu_asv_table_attribute.attr,
 	&gpu_max_lock_attribute.attr,
 	&gpu_min_lock_attribute.attr,
 #endif /* #ifdef CONFIG_MALI_DVFS */
 	&gpu_busy_attribute.attr,
 	&gpu_clock_attribute.attr,
 	&gpu_freq_table_attribute.attr,
+	&user_max_clock_attribute.attr,
+	&user_min_clock_attribute.attr,
 #ifdef CONFIG_MALI_DVFS
 	&gpu_governor_attribute.attr,
 	&gpu_available_governor_attribute.attr,
 #endif /* #ifdef CONFIG_MALI_DVFS */
 	&gpu_model_attribute.attr,
+	&gpu_volt_attribute.attr,
+	&gpu_time_in_state_attribute.attr,
 	NULL,
 };
 
