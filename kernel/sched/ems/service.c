@@ -137,8 +137,8 @@ select_prefer_cpu(struct task_struct *p, int coregroup_count, struct cpumask *pr
 				break;
 
 			capacity_orig = capacity_orig_of_sse(cpu, p->sse);
-,
-			wake_util_with = ml_task_attached_cpu_util(cpu, p);,
+
+			wake_util_with = ml_task_attached_cpu_util(cpu, p);
 
 			if (idle_cpu(cpu)) {
 				int idle_idx = idle_get_state_idx(cpu_rq(cpu));

@@ -6641,11 +6641,13 @@ static inline long
 schedtune_task_margin(struct task_struct *p)
 {
 	int boost = schedtune_task_boost(p);
+	unsigned long util;
 
 	if (boost == 0)
 		return 0;
 
 	util = task_util_est(p);
+
 	return schedtune_margin(SCHED_CAPACITY_SCALE, util, boost);
 }
 
