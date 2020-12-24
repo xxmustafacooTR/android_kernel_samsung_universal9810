@@ -15,7 +15,7 @@
 #include "ems.h"
 #include "../sched.h"
 
-static struct task_band *lookup_band(struct task_struct *p)
+struct task_band *lookup_band(struct task_struct *p)
 {
 	struct task_band *band;
 

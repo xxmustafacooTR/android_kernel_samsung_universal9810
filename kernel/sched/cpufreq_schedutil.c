@@ -265,16 +265,10 @@ static unsigned int get_next_freq(struct sugov_policy *sg_policy,
 	RV_DECLARE(rv);
 #endif
 
-	if (sg_policy->is_panel_blank)
-		freq = (freq + (freq >> 4)) * util / max;
-#ifdef CONFIG_BATTERY_SAVER
-	else if (is_battery_saver_on())
-		freq = (freq + (freq >> 3)) * util / max;
-#endif
-	else if (sg_policy->tunables->exp_util)
-		freq = (freq + (freq >> 2)) * int_sqrt(util * 100 / max) / 10;
+	if (sg_policy->tunables->exp_util)
+		freq = freq * int_sqrt(util * 100 / max) / 10;
 	else
-		freq = (freq + (freq >> 1)) * util / max;
+		freq = freq * util / max;
 
 #ifdef CONFIG_SCHED_KAIR_GLUE
 	legacy_freq = freq;
@@ -367,6 +361,12 @@ static void sugov_get_util(unsigned long *util, unsigned long *max, u64 time)
 		*util = *util + rt;
 
 	*util = freqvar_boost_vector(cpu, *util);
+#ifdef CONFIG_BATTERY_SAVER
+	if (is_battery_saver_on())
+		*util = *util + (*util >> 4);
+	else
+#endif
+	*util = *util + (*util >> 2);
 	*util = min(*util, max_cap);
 	*max = max_cap;
 
