@@ -27,7 +27,7 @@ extern int select_energy_cpu(struct task_struct *p, int prev_cpu, int sd_flag);
 extern int select_best_cpu(struct task_struct *p, int prev_cpu, int sd_flag, int sync);
 extern unsigned int calculate_energy(struct task_struct *p, int target_cpu);
 extern int alloc_bands(void);
-extern int band_play_cpu(struct task_struct *p);
+extern int band_play_cpu(struct task_struct *p, int sync);
 
 extern int need_ontime_migration_trigger(int cpu, struct task_struct *p);
 

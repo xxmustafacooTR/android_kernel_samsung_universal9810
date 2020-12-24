@@ -176,7 +176,7 @@ int exynos_wakeup_balance(struct task_struct *p, int prev_cpu, int sd_flag, int 
 	 * and assigns them to a specific cpu or cluster. If the attribute "band"
 	 * of schedtune.cgroup is set to '1', task band operate on this cgroup.
 	 */
-	target_cpu = band_play_cpu(p);
+	target_cpu = band_play_cpu(p, sync);
 	if (cpu_selected(target_cpu)) {
 		strcpy(state, "task band");
 		goto out;
