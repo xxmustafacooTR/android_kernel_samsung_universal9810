@@ -421,6 +421,21 @@
 				};
 			};
 
+			band {
+				#define BAND_SCHEDULE_ONE_STAGE	1
+				#define BAND_SCHEDULE_ALL_STAGE	2
+				schedule0 {
+					stage = "4-5";
+					crowd = <50>;
+					type = <BAND_SCHEDULE_ONE_STAGE>;
+				};
+				schedule1 {
+					stage = "4-7";
+					crowd = <100>;
+					type = <BAND_SCHEDULE_ALL_STAGE>;
+				};
+			};
+
 			prefer-perf-service {
 				prefer-perf0 {
 					boost = <1>;
