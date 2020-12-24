@@ -49,9 +49,6 @@ static int select_proper_cpu(struct task_struct *p)
 			unsigned long spare_cap;
 
 			new_util = max(new_util, ml_boosted_task_util(p));
-			/* Skip over-capacity cpu */
-			if (new_util * capacity_margin > capacity_orig * SCHED_CAPACITY_SCALE)
-				continue;
 
 			if (idle_cpu(cpu)) {
 				int idle_idx = idle_get_state_idx(cpu_rq(cpu));
@@ -72,6 +69,10 @@ static int select_proper_cpu(struct task_struct *p)
 				best_idle_cpu = cpu;
 				continue;
 			}
+
+			/* Skip over-capacity cpu */
+			if (new_util * capacity_margin > capacity_orig * SCHED_CAPACITY_SCALE)
+				continue;
 
 			/* Find maximum spare capacity CPU */
 			spare_cap = capacity_orig - new_util;
