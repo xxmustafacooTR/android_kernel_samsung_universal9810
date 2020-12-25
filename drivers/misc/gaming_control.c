@@ -44,6 +44,7 @@ static unsigned int min_mif_freq = 1794000;
 static unsigned int max_little_freq = 0;
 static unsigned int min_big_freq = 0;
 static unsigned int max_big_freq = 0;
+static unsigned int force_unlock = 0;
 
 char games_list[GAME_LIST_LENGTH] = {0};
 int games_pid[NUM_SUPPORTED_RUNNING_GAMES] = {
@@ -55,7 +56,10 @@ static bool gaming_mode = false;
 // returns whether gaming mode is enabled or disabled
 bool is_game_boost_enabled(void)
 {
-	return gaming_mode;
+	if(force_unlock > 0)
+		return true;
+	else
+		return gaming_mode;
 }
 
 static void set_gaming_mode(bool mode)
@@ -197,7 +201,7 @@ static ssize_t game_packages_store(struct kobject *kobj,
 	return count;
 }
 
-/* Show maximum freq */
+/* Show freq */
 #define show_freq(type)						\
 static ssize_t type##_show(struct kobject *kobj,		\
 		struct kobj_attribute *attr, char *buf)		\
@@ -209,8 +213,9 @@ show_freq(min_mif_freq);
 show_freq(max_little_freq);
 show_freq(min_big_freq);
 show_freq(max_big_freq);
+show_freq(force_unlock);
 
-/* Store maximum freq */
+/* Store freq */
 #define store_freq(type)							\
 static ssize_t type##_store(struct kobject *kobj,				\
 		struct kobj_attribute *attr, const char *buf, size_t count)	\
@@ -227,6 +232,7 @@ store_freq(min_mif_freq);
 store_freq(max_little_freq);
 store_freq(min_big_freq);
 store_freq(max_big_freq);
+store_freq(force_unlock);
 
 static ssize_t version_show(struct kobject *kobj,
 		struct kobj_attribute *attr, char *buf)
@@ -252,6 +258,9 @@ static struct kobj_attribute min_big_freq_attribute =
 static struct kobj_attribute max_big_freq_attribute =
 	__ATTR(big_freq_max, 0644, max_big_freq_show, max_big_freq_store);
 
+static struct kobj_attribute force_unlock_attribute =
+	__ATTR(force_unlock, 0644, force_unlock_show, force_unlock_store);
+
 static struct attribute *gaming_control_attributes[] = {
 	&game_packages_attribute.attr,
 	&version_attribute.attr,
@@ -259,6 +268,7 @@ static struct attribute *gaming_control_attributes[] = {
 	&max_little_freq_attribute.attr,
 	&min_big_freq_attribute.attr,
 	&max_big_freq_attribute.attr,
+	&force_unlock_attribute.attr,
 	NULL
 };
 
