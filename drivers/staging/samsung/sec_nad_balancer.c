@@ -115,6 +115,27 @@ static int parse_qos_data(struct device *dev,
 					cqos->dual_tables[i].freq = freq_item;
 				}
 			}
+			if ((cqos->big_turbo_enable & NAD_BALANCER_MODE_TRIPLE) == NAD_BALANCER_MODE_TRIPLE) {
+				if (of_property_read_u32(cnp, "qos,t_table_size", &cqos->triple_table_size)) {
+					dev_err(dev, "Failed to get t_table_size : check configurations\n");
+					return -EINVAL;
+				}
+				if (!cqos->triple_tables) {
+					cqos->triple_tables = devm_kzalloc(dev, sizeof(struct freq_table) * cqos->triple_table_size,
+						    GFP_KERNEL);
+					if (!cqos->triple_tables) {
+						dev_err(dev, "Failed to allocate memory of triple_freq_table\n");
+						return -ENOMEM;
+					}
+				}
+				for (i = 0; i < cqos->triple_table_size; i++) {
+					if (of_property_read_u32_index(cnp, "qos,t_table", i, &freq_item)) {
+						dev_err(dev, "Fail to read t_table [%d]\n", i);
+						return -EINVAL;
+					}
+					cqos->triple_tables[i].freq = freq_item;
+				}
+			}
 			if ((cqos->big_turbo_enable & NAD_BALANCER_MODE_QUAD) == NAD_BALANCER_MODE_QUAD) {
 				if (of_property_read_u32(cnp, "qos,q_table_size", &cqos->quad_table_size)) {
 					dev_err(dev, "Failed to get q_table_size : check configurations\n");
@@ -345,6 +366,8 @@ static int on_run(void *data)
 				idx = prandom_u32() % pqos->single_table_size;
 			else if (pqos->current_mode == NAD_BALANCER_MODE_DUAL)
 				idx = prandom_u32() % pqos->dual_table_size;
+			else if (pqos->current_mode == NAD_BALANCER_MODE_TRIPLE)
+				idx = prandom_u32() % pqos->triple_table_size;
 			else if (pqos->current_mode == NAD_BALANCER_MODE_QUAD)
 				idx = prandom_u32() % pqos->quad_table_size;
 		} else {
@@ -382,6 +405,12 @@ static int on_run(void *data)
 						UPDATE_PM_QOS(&pqos->big_qos, policy ?
 							PM_QOS_CLUSTER1_FREQ_MAX : PM_QOS_CLUSTER1_FREQ_MIN,
 							pqos->dual_tables[idx].freq);
+
+					} else if (pqos->current_mode == NAD_BALANCER_MODE_TRIPLE) {
+						//pr_info("triple\n");
+						UPDATE_PM_QOS(&pqos->big_qos, policy ?
+							PM_QOS_CLUSTER1_FREQ_MAX : PM_QOS_CLUSTER1_FREQ_MIN,
+							pqos->triple_tables[idx].freq);
 					
 					} else if (pqos->current_mode == NAD_BALANCER_MODE_QUAD) {
 						//pr_info("quad\n");
@@ -491,7 +520,7 @@ static ssize_t store_nad_balancer(struct device *dev,
 				  info->pdata->qos_items[i].desc, nad_cmd[i + 2]);
 #endif
 
-			info->pdata->qos_items[i].thread = kthread_run(on_run, pqos, "nad_balancer_qos_thread");
+			info->pdata->qos_items[i].thread = kthread_run_perf_critical(on_run, pqos, "nad_balancer_qos_thread");
 			if (IS_ERR_OR_NULL(info->pdata->qos_items[i].thread)) {
 				NAD_PRINT("Failed in creation of thread.\n");
 				return count;
@@ -499,7 +528,7 @@ static ssize_t store_nad_balancer(struct device *dev,
 		}
 
 		/* Trigger delayed workqueue */
-		schedule_delayed_work(&info->sec_nad_balancer_work, HZ * expire_time);
+		queue_delayed_work(system_power_efficient_wq, &info->sec_nad_balancer_work, HZ * expire_time);
 	}
 	return count;
 }
@@ -578,11 +607,12 @@ static ssize_t store_nad_big_turbo_mode(struct device *dev,
                 return 0;
         }
 
-	if (!((mode == NAD_BALANCER_MODE_SINGLE) || (mode == NAD_BALANCER_MODE_DUAL)
+	if (!((mode == NAD_BALANCER_MODE_SINGLE) || (mode == NAD_BALANCER_MODE_DUAL) || (mode == NAD_BALANCER_MODE_TRIPLE)
 		|| (mode == NAD_BALANCER_MODE_QUAD))) {
 		pr_err("nad balancer big rutbo only support below mode\n");
 		pr_err("1. single\n");
 		pr_err("2. dual\n");
+		pr_err("1. triple\n");
 		pr_err("4. quad\n");
 		return 0;
 	}
@@ -777,3 +807,4 @@ module_exit(sec_nad_balancer_exit);
 MODULE_DESCRIPTION("Samsung NAD balancer Driver");
 MODULE_AUTHOR("Samsung Electronics");
 MODULE_LICENSE("GPL");
+

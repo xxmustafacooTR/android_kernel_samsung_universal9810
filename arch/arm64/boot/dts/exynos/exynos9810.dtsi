@@ -5023,11 +5023,11 @@
 		dual_change_ms = <25>;
 		triple_change_ms = <20>;
 		quad_change_ms = <15>;
-		big_heavy_thr = <640>;
-		lit_heavy_thr = <200>;
-		big_idle_thr = <113>;
-		lit_idle_thr = <59>;
-		ldsum_heavy_thr = <850>;
+		big_heavy_thr = <600>;
+		lit_heavy_thr = <150>;
+		big_idle_thr = <110>;
+		lit_idle_thr = <50>;
+		ldsum_heavy_thr = <800>;
 		ldsum_enabled = <0>;
 		skip_lit_enabled = <0>;
 		cl_busy_ratio = <65>;

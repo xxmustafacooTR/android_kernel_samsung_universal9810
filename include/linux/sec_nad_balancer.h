@@ -49,6 +49,7 @@
 
 #define NAD_BALANCER_MODE_SINGLE	(1)
 #define NAD_BALANCER_MODE_DUAL		(2)
+#define NAD_BALANCER_MODE_TRIPLE	(3)
 #define NAD_BALANCER_MODE_QUAD		(4)
 
 struct device *sec_nad_balancer;
@@ -68,14 +69,16 @@ struct nad_balancer_pm_qos {
 	int delay_time;
 	int table_size;
 
-	/* big turbo support - single / dual / quad */
+	/* big turbo support - single / dual / triple / quad */
 	struct freq_table *single_tables;
 	struct freq_table *dual_tables;
+	struct freq_table *triple_tables;
 	struct freq_table *quad_tables;
 	int current_mode;
 	int big_turbo_enable;
 	int single_table_size;
 	int dual_table_size;
+	int triple_table_size;
 	int quad_table_size;
 
 	int policy;
@@ -130,3 +133,4 @@ if (pm_qos_request_active(req)) \
 })
 #endif
 #endif
+
