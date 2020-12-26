@@ -1255,7 +1255,7 @@ int set_speaker_gain(int gain)
 
 	moro_speaker_value = gain;
 
-	if(gain<12)
+	if(gain<16)
 		goto spkgain;
 
 // MAX98512_R0035_AMP_VOL_CTRL
@@ -1298,7 +1298,7 @@ int set_earpiece_gain(int gain)
 
 	moro_earpiece_value = gain;
 
-	if(gain<12)
+	if(gain<16)
 		goto eargain;
 
 // MAX98512_R0035_AMP_VOL_CTRL
