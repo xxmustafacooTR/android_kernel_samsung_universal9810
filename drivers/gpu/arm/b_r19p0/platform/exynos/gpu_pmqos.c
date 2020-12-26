@@ -22,6 +22,10 @@
 #include "mali_kbase_platform.h"
 #include "gpu_dvfs_handler.h"
 
+#ifdef CONFIG_GAMING_CONTROL
+#include <linux/gaming_control.h>
+#endif
+
 #if defined(PM_QOS_CLUSTER2_FREQ_MAX_DEFAULT_VALUE)
 #define PM_QOS_CPU_CLUSTER_NUM 3
 #else
