@@ -703,6 +703,9 @@ static bool exynos_hpgov_change_quad(void)
 	heavy_cnt = exynos_hpgov_get_imbal_cpus(LIT) +
 			exynos_hpgov_get_imbal_cpus(BIG);
 
+	if ((heavy_cnt > SINGLE) || !heavy_cnt)
+		return true;
+
 	if ((heavy_cnt > DUAL) || !heavy_cnt)
 		return true;
 
@@ -714,16 +717,18 @@ static bool exynos_hpgov_change_quad(void)
 
 static bool exynos_hpgov_change_triple(void)
 {
-	int heavy_cnt;
+	int big_heavy_cnt, lit_heavy_cnt;
 
 	/* If system is busy, doesn't change boost mode */
 	if (exynos_hpgov_system_busy())
 		return false;
 
-	heavy_cnt = exynos_hpgov_get_imbal_cpus(LIT) +
-			exynos_hpgov_get_imbal_cpus(BIG);
+	lit_heavy_cnt = exynos_hpgov_get_imbal_cpus(LIT);
+	big_heavy_cnt = exynos_hpgov_get_imbal_cpus(BIG);
 
-	if ((heavy_cnt > DUAL) || !heavy_cnt)
+	if ((big_heavy_cnt == TRIPLE && !lit_heavy_cnt) ||
+		(big_heavy_cnt == DUAL && lit_heavy_cnt == DUAL) ||
+		(big_heavy_cnt == SINGLE && lit_heavy_cnt == SINGLE))
 		return true;
 
 	return false;

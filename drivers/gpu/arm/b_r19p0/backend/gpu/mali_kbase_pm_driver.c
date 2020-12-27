@@ -50,7 +50,7 @@ bool corestack_driver_control = true;
 #else
 bool corestack_driver_control; /* Default value of 0/false */
 #endif
-module_param(corestack_driver_control, bool, 0444);
+module_param(corestack_driver_control, bool, 0644);
 MODULE_PARM_DESC(corestack_driver_control,
 		"Let the driver power on/off the GPU core stack independently "
 		"without involving the Power Domain Controller. This should "
@@ -63,7 +63,7 @@ bool platform_power_down_only = true;
 #else
 bool platform_power_down_only; /* Default value of 0/false */
 #endif
-module_param(platform_power_down_only, bool, 0444);
+module_param(platform_power_down_only, bool, 0644);
 MODULE_PARM_DESC(platform_power_down_only,
 		"Disable power down of individual cores.");
 

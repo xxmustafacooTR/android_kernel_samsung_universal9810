@@ -5307,12 +5307,12 @@
 					type = "active";
 				};
 				big_switch_on: big-switch-on {
-					temperature = <75000>; /* millicelsius */
+					temperature = <95000>; /* millicelsius */
 					hysteresis = <2000>; /* millicelsius */
 					type = "active";
 				};
 				big_control_temp: big-control-temp {
-					temperature = <90000>; /* millicelsius */
+					temperature = <95000>; /* millicelsius */
 					hysteresis = <5000>; /* millicelsius */
 					type = "passive";
 				};
@@ -5364,17 +5364,17 @@
 					type = "active";
 				};
 				little_alert1: little-alert1 {
-					temperature = <88000>; /* millicelsius */
+					temperature = <95000>; /* millicelsius */
 					hysteresis = <5000>; /* millicelsius */
 					type = "active";
 				};
 				little_alert2: little-alert2 {
-					temperature = <91000>; /* millicelsius */
+					temperature = <95000>; /* millicelsius */
 					hysteresis = <5000>; /* millicelsius */
 					type = "active";
 				};
 				little_alert3: little-alert3 {
-					temperature = <83000>; /* millicelsius */
+					temperature = <95000>; /* millicelsius */
 					hysteresis = <5000>; /* millicelsius */
 					type = "active";
 				};
@@ -5464,17 +5464,17 @@
 					type = "active";
 				};
 				gpu_switch_on: gpu-switch-on {
-					temperature = <88000>; /* millicelsius */
+					temperature = <95000>; /* millicelsius */
 					hysteresis = <2000>; /* millicelsius */
 					type = "active";
 				};
 				gpu_control_temp: gpu-control-temp {
-					temperature = <93000>; /* millicelsius */
+					temperature = <95000>; /* millicelsius */
 					hysteresis = <5000>; /* millicelsius */
 					type = "passive";
 				};
 				gpu_alert0: gpu-alert0 {
-					temperature = <96000>; /* millicelsius */
+					temperature = <97000>; /* millicelsius */
 					hysteresis = <5000>; /* millicelsius */
 					type = "active";
 				};
@@ -5521,12 +5521,12 @@
 					type = "active";
 				};
 				isp_alert1: isp-alert1 {
-					temperature = <91000>; /* millicelsius */
+					temperature = <95000>; /* millicelsius */
 					hysteresis = <5000>; /* millicelsius */
 					type = "active";
 				};
 				isp_alert2: isp-alert2 {
-					temperature = <96000>; /* millicelsius */
+					temperature = <97000>; /* millicelsius */
 					hysteresis = <5000>; /* millicelsius */
 					type = "active";
 				};

@@ -65,6 +65,10 @@
 #include <linux/sec_sysfs.h>
 #endif
 
+#ifdef CONFIG_GAMING_CONTROL
+#include <linux/gaming_control.h>
+#endif
+
 /* Exynos generic registers */
 #define EXYNOS_TMU_REG_TRIMINFO7_0(p)	(((p) - 0) * 4)
 #define EXYNOS_TMU_REG_TRIMINFO15_8(p)	(((p) - 8) * 4 + 0x400)
@@ -868,14 +872,19 @@ static int exynos9810_tmu_read(struct exynos_tmu_data *data)
 	exynos_acpm_tmu_set_read_temp(data->tzd->id, &temp, &stat);
 #endif
 	if (data->hotplug_enable) {
-		if ((stat == 2) && !cpufreq_limited) {
-			pm_qos_update_request(&thermal_cpu_limit_request,
-					data->limited_frequency);
-			cpufreq_limited = true;
-		} else if ((stat == 0 || stat == 1) && cpufreq_limited) {
+#ifdef CONFIG_GAMING_CONTROL
+		// Don't throttle it while game controller working
+		if ((stat == 0 || stat == 1 || is_game_boost_enabled()) && cpufreq_limited) {
+#else
+		if ((stat == 0 || stat == 1) && cpufreq_limited) {
+#endif
 			pm_qos_update_request(&thermal_cpu_limit_request,
 					PM_QOS_CLUSTER1_FREQ_MAX_DEFAULT_VALUE);
 			cpufreq_limited = false;
+		} else if ((stat == 2) && !cpufreq_limited) {
+			pm_qos_update_request(&thermal_cpu_limit_request,
+					data->limited_frequency);
+			cpufreq_limited = true;
 		}
 	}
 
@@ -1161,7 +1170,12 @@ static int exynos_throttle_cpu_hotplug(void *p, int temp)
 	temp = temp / MCELSIUS;
 
 	if (is_cpu_hotplugged_out) {
+#ifdef CONFIG_GAMING_CONTROL
+		// Don't throttle it while game controller working
+		if (is_game_boost_enabled() || temp < data->hotplug_in_threshold) {
+#else
 		if (temp < data->hotplug_in_threshold) {
+#endif
 			/*
 			 * If current temperature is lower than low threshold,
 			 * call cluster1_cores_hotplug(false) for hotplugged out cpus.
@@ -1171,7 +1185,12 @@ static int exynos_throttle_cpu_hotplug(void *p, int temp)
 			is_cpu_hotplugged_out = false;
 		}
 	} else {
+#ifdef CONFIG_GAMING_CONTROL
+		// Don't throttle it while game controller working
+		if (!is_game_boost_enabled() && temp >= data->hotplug_out_threshold) {
+#else
 		if (temp >= data->hotplug_out_threshold) {
+#endif
 			/*
 			 * If current temperature is higher than high threshold,
 			 * call cluster1_cores_hotplug(true) to hold temperature down.

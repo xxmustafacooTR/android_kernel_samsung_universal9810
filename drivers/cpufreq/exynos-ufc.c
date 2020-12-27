@@ -23,6 +23,10 @@
 #include <linux/devfreq_boost.h>
 #endif
 
+#ifdef CONFIG_GAMING_CONTROL
+#include <linux/gaming_control.h>
+#endif
+
 #include <soc/samsung/exynos-cpu_hotplug.h>
 
 #include "exynos-acme.h"
@@ -528,10 +532,26 @@ static void cpufreq_max_limit_update(int input_freq)
 static ssize_t store_cpufreq_max_limit(struct kobject *kobj, struct kobj_attribute *attr,
 					const char *buf, size_t count)
 {
+#ifdef CONFIG_GAMING_CONTROL
+	struct list_head *domains = get_domain_list();
+	struct exynos_cpufreq_domain *domain;
+#endif
 	int input;
 
 	if (dvfs_disable)
 		return count;
+
+#ifdef CONFIG_GAMING_CONTROL
+	if (is_game_boost_enabled()) {
+		list_for_each_entry_reverse(domain, domains, list) {
+			enable_domain_cpus(domain);
+			pm_qos_update_request(&domain->user_max_qos_req,
+						domain->max_freq);
+		}
+
+		return count;
+	}
+#endif
 
 	if (!sscanf(buf, "%8d", &input))
 		return -EINVAL;
@@ -591,6 +611,9 @@ static ssize_t store_throttle_limit(struct kobject *kobj, struct kobj_attribute 
 static ssize_t show_dvfs_disable(struct kobject *kobj,
 				struct kobj_attribute *attr, char *buf)
 {
+	if (is_game_boost_enabled())
+		return 1;
+
 	return snprintf(buf, 10, "%d\n", dvfs_disable);
 }
 
@@ -601,7 +624,7 @@ static ssize_t store_dvfs_disable(struct kobject *kobj, struct kobj_attribute *a
 	struct exynos_cpufreq_domain *domain;
 	int input;
 
-	if (sscanf(buf, "%8d", &input) < 1)
+	if (sscanf(buf, "%8d", &input) < 1) 
 		return -EINVAL;
 
 	if (input > 0) {

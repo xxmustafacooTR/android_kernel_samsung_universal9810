@@ -41,7 +41,7 @@ struct pm_qos_request gaming_control_min_big_qos;
 struct pm_qos_request gaming_control_max_big_qos;
 struct pm_qos_request gaming_control_max_little_qos;
 static unsigned int min_mif_freq = 1794000;
-static unsigned int max_little_freq = 0;
+static unsigned int max_little_freq = 1456000;
 static unsigned int min_big_freq = 0;
 static unsigned int max_big_freq = 0;
 static unsigned int force_unlock = 0;
@@ -64,16 +64,20 @@ bool is_game_boost_enabled(void)
 
 static void set_gaming_mode(bool mode)
 {
-#ifdef CONFIG_BATTERY_SAVER
-	if (mode && !(is_battery_saver_on())) {
-#else
 	if (mode) {
-#endif
+#ifdef CONFIG_BATTERY_SAVER
+		if (min_mif_freq && !is_battery_saver_on())
+#else
 		if (min_mif_freq)
+#endif
 			pm_qos_update_request(&gaming_control_min_mif_qos, min_mif_freq);
 		if (max_little_freq)
 			pm_qos_update_request(&gaming_control_max_little_qos, max_little_freq);
+#ifdef CONFIG_BATTERY_SAVER
+		if (min_big_freq && !is_battery_saver_on())
+#else
 		if (min_big_freq)
+#endif
 			pm_qos_update_request(&gaming_control_min_big_qos, min_big_freq);
 		if (max_big_freq)
 			pm_qos_update_request(&gaming_control_max_big_qos, max_big_freq);
