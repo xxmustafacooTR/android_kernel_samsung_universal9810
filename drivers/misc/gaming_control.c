@@ -41,7 +41,11 @@ struct pm_qos_request gaming_control_min_big_qos;
 struct pm_qos_request gaming_control_max_big_qos;
 struct pm_qos_request gaming_control_max_little_qos;
 static unsigned int min_mif_freq = 1794000;
+#ifdef CONFIG_PCIEASPM_PERFORMANCE
+static unsigned int max_little_freq = 1794000;
+#else
 static unsigned int max_little_freq = 1456000;
+#endif
 static unsigned int min_big_freq = 0;
 static unsigned int max_big_freq = 0;
 static unsigned int force_unlock = 0;
