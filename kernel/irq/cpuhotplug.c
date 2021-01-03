@@ -32,7 +32,7 @@ static bool migrate_one_irq(struct irq_desc *desc)
 		return false;
 
 	cpumask_copy(&available_cpus, affinity);
-	cpumask_andnot(&available_cpus, &available_cpus, cpu_isolated_mask);
+	cpumask_andnot(&available_cpus, &available_cpus, cpu_isolated_map);
 	affinity = &available_cpus;
 
 	if (cpumask_any_and(affinity, cpu_online_mask) >= nr_cpu_ids) {
@@ -51,7 +51,7 @@ static bool migrate_one_irq(struct irq_desc *desc)
 		 * (3) online CPU
 		 */
 		cpumask_andnot(&available_cpus, cpu_online_mask,
-							cpu_isolated_mask);
+							cpu_isolated_map);
 		if (cpumask_intersects(&available_cpus, default_affinity))
 			cpumask_and(&available_cpus, &available_cpus,
 							default_affinity);
