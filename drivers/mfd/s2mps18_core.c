@@ -271,7 +271,7 @@ static int of_s2mps18_dt(struct device *dev,
 	if (status == NULL)
 		return -EINVAL;
 	if (strlen > 0) {
-		if (!strcmp(status, "enabled") || !strcmp(status, "okay"))
+		if (!strncmp(status, "enabled", sizeof(status)) || !strncmp(status, "okay", sizeof(status)))
 			pdata->wakeup = true;
 		else
 			pdata->wakeup = false;
@@ -292,7 +292,7 @@ static int of_s2mps18_dt(struct device *dev,
 	if (status == NULL)
 		return -EINVAL;
 	if (strlen > 0) {
-		if (!strcmp(status, "enabled") || !strcmp(status, "okay"))
+		if (!strncmp(status, "enabled", sizeof(status)) || !strncmp(status, "okay", sizeof(status)))
 			pdata->wtsr_smpl->wtsr_en = true;
 		else
 			pdata->wtsr_smpl->wtsr_en = false;
@@ -302,7 +302,7 @@ static int of_s2mps18_dt(struct device *dev,
 	if (status == NULL)
 		return -EINVAL;
 	if (strlen > 0) {
-		if (!strcmp(status, "enabled") || !strcmp(status, "okay"))
+		if (!strncmp(status, "enabled", sizeof(status)) || !strncmp(status, "okay", sizeof(status)))
 			pdata->wtsr_smpl->smpl_en = true;
 		else
 			pdata->wtsr_smpl->smpl_en = false;
