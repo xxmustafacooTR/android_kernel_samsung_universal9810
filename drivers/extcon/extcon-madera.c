@@ -63,8 +63,8 @@
 
 static const unsigned int madera_cable[] = {
 	EXTCON_MECHANICAL,
-	EXTCON_JACK_MICROPHONE,
 	EXTCON_JACK_HEADPHONE,
+	EXTCON_JACK_MICROPHONE,
 	EXTCON_NONE,
 };
 
