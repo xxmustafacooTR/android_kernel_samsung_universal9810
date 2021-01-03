@@ -272,8 +272,13 @@ int ion_heap_init_deferred_free(struct ion_heap *heap)
 
 	INIT_LIST_HEAD(&heap->free_list);
 	init_waitqueue_head(&heap->waitqueue);
+#ifndef CONFIG_ION_DEFER_FREE_NO_SCHED_IDLE
+	heap->task = kthread_run_low_power(ion_heap_deferred_free, heap,
+				 "%s", heap->name);
+#else
 	heap->task = kthread_run(ion_heap_deferred_free, heap,
 				 "%s", heap->name);
+#endif
 	if (IS_ERR(heap->task)) {
 		pr_err("%s: creating thread for deferred free failed\n",
 		       __func__);

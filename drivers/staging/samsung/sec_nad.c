@@ -17,7 +17,7 @@
 #include <linux/fs.h>
 
 #define NAD_PRINT(format, ...) printk("[NAD] " format, ##__VA_ARGS__)
-#define NAD_DEBUG
+//#define NAD_DEBUG
 
 #if defined(CONFIG_SEC_FACTORY)
 static void sec_nad_param_update(struct work_struct *work)
