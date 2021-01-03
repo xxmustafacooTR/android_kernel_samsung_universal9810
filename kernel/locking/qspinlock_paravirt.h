@@ -70,7 +70,7 @@ struct pv_node {
 static inline bool pv_queued_spin_steal_lock(struct qspinlock *lock)
 {
 	if (!(atomic_read(&lock->val) & _Q_LOCKED_PENDING_MASK) &&
-	    (cmpxchg(&lock->locked, 0, _Q_LOCKED_VAL) == 0)) {
+	     (cmpxchg_acquire(&lock->locked, 0, _Q_LOCKED_VAL) == 0)) {
 		qstat_inc(qstat_pv_lock_stealing, true);
 		return true;
 	}
@@ -90,14 +90,14 @@ static __always_inline void set_pending(struct qspinlock *lock)
 
 /*
  * The pending bit check in pv_queued_spin_steal_lock() isn't a memory
- * barrier. Therefore, an atomic cmpxchg() is used to acquire the lock
- * just to be sure that it will get it.
+ * barrier. Therefore, an atomic cmpxchg_acquire() is used to acquire the
+ * lock just to be sure that it will get it.
  */
 static __always_inline int trylock_clear_pending(struct qspinlock *lock)
 {
 	return !READ_ONCE(lock->locked) &&
-	       (cmpxchg(&lock->locked_pending, _Q_PENDING_VAL, _Q_LOCKED_VAL)
-			== _Q_PENDING_VAL);
+	       (cmpxchg_acquire(&lock->locked_pending, _Q_PENDING_VAL,
+				_Q_LOCKED_VAL) == _Q_PENDING_VAL);
 }
 #else /* _Q_PENDING_BITS == 8 */
 static __always_inline void set_pending(struct qspinlock *lock)
@@ -120,7 +120,7 @@ static __always_inline int trylock_clear_pending(struct qspinlock *lock)
 		 */
 		old = val;
 		new = (val & ~_Q_PENDING_MASK) | _Q_LOCKED_VAL;
-		val = atomic_cmpxchg(&lock->val, old, new);
+		val = atomic_cmpxchg_acquire(&lock->val, old, new);
 
 		if (val == old)
 			return 1;
@@ -342,8 +342,18 @@ static void pv_kick_node(struct qspinlock *lock, struct mcs_spinlock *node)
 	 * observe its next->locked value and advance itself.
 	 *
 	 * Matches with smp_store_mb() and cmpxchg() in pv_wait_node()
+	 *
+	 * The write to next->locked in arch_mcs_spin_unlock_contended()
+	 * must be ordered before the read of pn->state in the cmpxchg()
+	 * below for the code to work correctly. To guarantee full ordering
+	 * irrespective of the success or failure of the cmpxchg(),
+	 * a relaxed version with explicit barrier is used. The control
+	 * dependency will order the reading of pn->state before any
+	 * subsequent writes.
 	 */
-	if (cmpxchg(&pn->state, vcpu_halted, vcpu_hashed) != vcpu_halted)
+	smp_mb__before_atomic();
+	if (cmpxchg_relaxed(&pn->state, vcpu_halted, vcpu_hashed)
+	    != vcpu_halted)
 		return;
 
 	/*
