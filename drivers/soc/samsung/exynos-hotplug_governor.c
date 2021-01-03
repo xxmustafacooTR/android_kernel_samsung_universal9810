@@ -436,13 +436,13 @@ static void __exynos_hpgov_set_disable(void)
 
 static void __exynos_hpgov_set_enable(void)
 	{
-		struct sched_param param;
-	
+		struct sched_param param = { .sched_priority = 4 };
+
 		exynos_hpgov.mode = QUAD;
 		exynos_hpgov.user_mode = DISABLE;
 		exynos_hpgov.req_cpu_min = PM_QOS_CPU_ONLINE_MAX_DEFAULT_VALUE;
 		exynos_hpgov.cur_cpu_min = PM_QOS_CPU_ONLINE_MAX_DEFAULT_VALUE;
-	
+
 		/* create hp task */
 		exynos_hpgov.task = kthread_run_perf_critical(exynos_hpgov_do_update_governor,
 				&exynos_hpgov.data, "exynos_hpgov");
@@ -454,13 +454,13 @@ static void __exynos_hpgov_set_enable(void)
 			return;
 		}
 
-		param.sched_priority = 4;
+		set_user_nice(exynos_hpgov.task, MIN_NICE);
 		sched_setscheduler_nocheck(exynos_hpgov.task, SCHED_NORMAL, &param);
 		set_cpus_allowed_ptr(exynos_hpgov.task, cpu_coregroup_mask(0));
-	
+
 		if (exynos_hpgov.task)
 			wake_up_process(exynos_hpgov.task);
-	
+
 		pr_info("HP_GOV: Start hotplug governor\n");
 	}
 	
