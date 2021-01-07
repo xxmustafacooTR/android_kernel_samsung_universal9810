@@ -15,6 +15,13 @@ choice
 	 environment leading to NR_CPUS * HZ number of timer interrupts
 	 per second.
 
+	config HZ_25
+		bool "25 HZ"
+	help
+	  25 Hz is a typical choice for servers, SMP and NUMA systems
+	  with lots of processors that may show reduced performance if
+	  too many timer interrupts are occurring.
+
 	config HZ_50
 		bool "50 HZ"
 	help
@@ -65,6 +72,7 @@ endchoice
 
 config HZ
 	int
+	default 25 if HZ_25
 	default 50 if HZ_50
 	default 100 if HZ_100
 	default 250 if HZ_250
