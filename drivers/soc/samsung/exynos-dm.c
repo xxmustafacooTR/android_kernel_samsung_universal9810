@@ -196,9 +196,10 @@ static ssize_t show_voltage_table_##type_name						\
 	struct exynos_dm_device *dm = platform_get_drvdata(pdev);			\
 	ssize_t count = 0;								\
 	unsigned int cal_id, table_size;						\
-	unsigned int *volt_table;								\
-	unsigned long *rate_table;								\
-	int num_lvl, index;												\
+	unsigned int *volt_table;							\
+	unsigned long *rate_table;							\
+	int num_lvl, index;								\
+	int i;										\
 											\
 	if (!dm->dm_data[dm_type].available) {						\
 		count += snprintf(buf + count, PAGE_SIZE,				\
@@ -206,54 +207,54 @@ static ssize_t show_voltage_table_##type_name						\
 		return count;								\
 	}										\
 											\
-	cal_id = dm->dm_data[dm_type].cal_id;			\
+	cal_id = dm->dm_data[dm_type].cal_id;						\
 											\
-	table_size = cal_dfs_get_lv_num(cal_id);		\
+	table_size = cal_dfs_get_lv_num(cal_id);					\
 											\
-	rate_table = kzalloc(sizeof(unsigned int) * table_size, GFP_KERNEL);	\
+	rate_table = kzalloc(sizeof(unsigned int) * table_size, GFP_KERNEL);		\
 	if (!rate_table) {								\
 		count += snprintf(buf + count, PAGE_SIZE,				\
-				"Out of memory\n");			\
+				"Out of memory\n");					\
 		return count;								\
-	}												\
-													\
-	volt_table = kzalloc(sizeof(unsigned int) * table_size, GFP_KERNEL);	\
+	}										\
+											\
+	volt_table = kzalloc(sizeof(unsigned int) * table_size, GFP_KERNEL);		\
 	if (!volt_table) {								\
 		count += snprintf(buf + count, PAGE_SIZE,				\
-				"Out of memory\n");			\
-		goto free_rate_table;								\
-	}												\
-												\
-	num_lvl = cal_dfs_get_rate_table(cal_id, rate_table);			\
-	if (num_lvl <= 0) {									\
-		count += snprintf(buf + count, PAGE_SIZE,				\
-				"No rate table entries (%d)\n", num_lvl);			\
-		goto free_tables;								\
-	}												\
+				"Out of memory\n");					\
+		goto free_rate_table;							\
+	}										\
 											\
-	num_lvl = cal_dfs_get_asv_table(cal_id, volt_table);			\
-	if (num_lvl <= 0) {									\
+	num_lvl = cal_dfs_get_rate_table(cal_id, rate_table);				\
+	if (num_lvl <= 0) {								\
 		count += snprintf(buf + count, PAGE_SIZE,				\
-				"No volt table entries (%d)\n", num_lvl);			\
-		goto free_tables;								\
-	}												\
+				"No rate table entries (%d)\n", num_lvl);		\
+		goto free_tables;							\
+	}										\
+											\
+	num_lvl = cal_dfs_get_asv_table(cal_id, volt_table);				\
+	if (num_lvl <= 0) {								\
+		count += snprintf(buf + count, PAGE_SIZE,				\
+				"No volt table entries (%d)\n", num_lvl);		\
+		goto free_tables;							\
+	}										\
 											\
 	count += snprintf(buf + count, PAGE_SIZE, "dm_type: %s\n",			\
 				dm->dm_data[dm_type].dm_type_name);			\
 											\
-	for (index = 0; index < table_size; index++) {			\
-		count += snprintf(buf + count, PAGE_SIZE,					\
-			"%lu MHz: %u uV\n", rate_table[index] / 1000, volt_table[index]);			\
-	}											\
+	for (index = 0; index < table_size; index++) {					\
+		count += snprintf(buf + count, PAGE_SIZE,				\
+			"%lu MHz: %u uV\n", rate_table[index] / 1000, volt_table[index]);	\
+	}										\
 											\
-free_tables:											\
-	kfree(rate_table);											\
+free_tables:										\
+	kfree(rate_table);								\
 	kfree(volt_table);								\
 	return count;									\
 											\
-free_rate_table:											\
-	kfree(rate_table);											\
-	return count;											\
+free_rate_table:									\
+	kfree(rate_table);								\
+	return count;									\
 }
 
 show_constraint_tables(DM_CPU_CL0, dm_cpu_cl0);
