@@ -128,8 +128,8 @@ int gpu_pm_qos_command(struct exynos_context *platform, gpu_pmqos_state state)
 		pm_qos_update_request(&exynos5_g3d_cpu_cluster0_min_qos, platform->table[platform->step].cpu_little_min_freq);
 
 #ifdef CONFIG_GAMING_CONTROL
-	// Don't run it while game controller working
-	if (is_game_boost_enabled() && !platform->boost_is_enabled && platform->env_data.utilization > 65)
+	// Run it while game controller working
+	if (is_game_boost_enabled() || (!platform->boost_is_enabled && platform->env_data.utilization > 65))
 #else
 		if (!platform->boost_is_enabled && platform->env_data.utilization > 65)
 #endif
@@ -138,8 +138,8 @@ int gpu_pm_qos_command(struct exynos_context *platform, gpu_pmqos_state state)
 		pm_qos_update_request(&exynos5_g3d_cpu_cluster1_min_qos, platform->table[platform->step].cpu_middle_min_freq);
 
 #ifdef CONFIG_GAMING_CONTROL
-	// Don't run it while game controller working
-	if (is_game_boost_enabled() && !platform->boost_is_enabled && platform->env_data.utilization > 65)
+	// Run it while game controller working
+	if (is_game_boost_enabled() || (!platform->boost_is_enabled && platform->env_data.utilization > 65))
 #else
 		if (!platform->boost_is_enabled && platform->env_data.utilization > 65)
 #endif
