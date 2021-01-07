@@ -31,6 +31,8 @@
 
 #include "exynos-acme.h"
 
+#define SUSTAINABLE_FREQ 1794000
+
 /*********************************************************************
  *                          SYSFS INTERFACES                         *
  *********************************************************************/
@@ -532,29 +534,16 @@ static void cpufreq_max_limit_update(int input_freq)
 static ssize_t store_cpufreq_max_limit(struct kobject *kobj, struct kobj_attribute *attr,
 					const char *buf, size_t count)
 {
-#ifdef CONFIG_GAMING_CONTROL
-	struct list_head *domains = get_domain_list();
-	struct exynos_cpufreq_domain *domain;
-#endif
 	int input;
 
 	if (dvfs_disable)
 		return count;
 
-#ifdef CONFIG_GAMING_CONTROL
-	if (is_game_boost_enabled()) {
-		list_for_each_entry_reverse(domain, domains, list) {
-			enable_domain_cpus(domain);
-			pm_qos_update_request(&domain->user_max_qos_req,
-						domain->max_freq);
-		}
-
-		return count;
-	}
-#endif
-
 	if (!sscanf(buf, "%8d", &input))
 		return -EINVAL;
+
+	if (input < SUSTAINABLE_FREQ && input != -1)
+		input = SUSTAINABLE_FREQ;
 
 	last_max_limit = input;
 	cpufreq_max_limit_update(input);
