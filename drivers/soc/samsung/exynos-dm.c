@@ -26,6 +26,7 @@
 static struct list_head *get_min_constraint_list(struct exynos_dm_data *dm_data);
 static struct list_head *get_max_constraint_list(struct exynos_dm_data *dm_data);
 static void get_governor_min_freq(struct exynos_dm_data *dm_data, u32 *gov_min_freq);
+static void get_governor_max_freq(struct exynos_dm_data *dm_data, u32 *gov_max_freq);
 static void get_min_max_freq(struct exynos_dm_data *dm_data, u32 *min_freq, u32 *max_freq);
 static void update_min_max_freq(struct exynos_dm_data *dm_data, u32 min_freq, u32 max_freq);
 static void get_policy_min_max_freq(struct exynos_dm_data *dm_data, u32 *min_freq, u32 *max_freq);
@@ -152,7 +153,7 @@ static ssize_t show_dm_policy_##type_name						\
 	struct platform_device *pdev = container_of(dev, struct platform_device, dev);	\
 	struct exynos_dm_device *dm = platform_get_drvdata(pdev);			\
 	ssize_t count = 0;								\
-	u32 gov_min_freq, min_freq, max_freq;						\
+	u32 gov_min_freq, gov_max_freq, min_freq, max_freq;				\
 	u32 policy_min_freq, policy_max_freq, cur_freq, target_freq;			\
 											\
 	if (!dm->dm_data[dm_type].available) {						\
@@ -165,6 +166,7 @@ static ssize_t show_dm_policy_##type_name						\
 				dm->dm_data[dm_type].dm_type_name);			\
 											\
 	get_governor_min_freq(&dm->dm_data[dm_type], &gov_min_freq);			\
+	get_governor_max_freq(&dm->dm_data[dm_type], &gov_max_freq);			\
 	get_min_max_freq(&dm->dm_data[dm_type], &min_freq, &max_freq);			\
 	get_policy_min_max_freq(&dm->dm_data[dm_type],					\
 				&policy_min_freq, &policy_max_freq);			\
@@ -173,6 +175,8 @@ static ssize_t show_dm_policy_##type_name						\
 											\
 	count += snprintf(buf + count, PAGE_SIZE,					\
 			"governor_min_freq = %u\n", gov_min_freq);			\
+	count += snprintf(buf + count, PAGE_SIZE,					\
+			"governor_max_freq = %u\n", gov_max_freq);			\
 	count += snprintf(buf + count, PAGE_SIZE,					\
 			"policy_min_freq = %u, policy_max_freq = %u\n",			\
 			policy_min_freq, policy_max_freq);				\
@@ -518,6 +522,7 @@ int exynos_dm_data_init(enum exynos_dm_type dm_type,
 	}
 
 	exynos_dm->dm_data[dm_type].gov_min_freq = min_freq;
+	exynos_dm->dm_data[dm_type].gov_max_freq = max_freq;
 	exynos_dm->dm_data[dm_type].policy_min_freq = min_freq;
 	exynos_dm->dm_data[dm_type].policy_max_freq = max_freq;
 	exynos_dm->dm_data[dm_type].cur_freq = cur_freq;
@@ -984,6 +989,7 @@ static int dm_data_updater(enum exynos_dm_type dm_type)
 	}
 
 	min_freq = max(min_freq, dm->gov_min_freq); //MIN freq should be checked with gov_min_freq
+	max_freq = min(max_freq, dm->gov_max_freq); //MAX freq should be checked with gov_max_freq ---> added
 	update_min_max_freq(dm, min_freq, max_freq);
 
 	return 0;
@@ -1195,6 +1201,11 @@ static void get_governor_min_freq(struct exynos_dm_data *dm_data, u32 *gov_min_f
 	*gov_min_freq = dm_data->gov_min_freq;
 }
 
+static void get_governor_max_freq(struct exynos_dm_data *dm_data, u32 *gov_max_freq)
+{
+	*gov_max_freq = dm_data->gov_max_freq;
+}
+
 static void get_min_max_freq(struct exynos_dm_data *dm_data, u32 *min_freq, u32 *max_freq)
 {
 	*min_freq = dm_data->min_freq;
@@ -1209,8 +1220,10 @@ static void update_min_max_freq(struct exynos_dm_data *dm_data, u32 min_freq, u3
 
 static void get_policy_min_max_freq(struct exynos_dm_data *dm_data, u32 *min_freq, u32 *max_freq)
 {
-	*min_freq = dm_data->policy_min_freq;
-	*max_freq = dm_data->policy_max_freq;
+	// *min_freq = dm_data->policy_min_freq;
+	// *max_freq = dm_data->policy_max_freq;
+	*min_freq = dm_data->min_freq;
+	*max_freq = dm_data->max_freq;
 }
 
 static void update_policy_min_max_freq(struct exynos_dm_data *dm_data, u32 min_freq, u32 max_freq)

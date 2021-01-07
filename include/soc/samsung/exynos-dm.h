@@ -105,6 +105,7 @@ struct exynos_dm_data {
 	u32				target_freq;
 
 	u32				gov_min_freq;
+	u32				gov_max_freq;
 
 	u32				policy_min_freq;
 	u32				policy_max_freq;
