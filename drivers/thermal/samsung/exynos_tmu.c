@@ -1422,11 +1422,13 @@ static int exynos_tmu_parse_ect(struct exynos_tmu_data *data)
 		__tz->ntrips = __tz->num_tbps = function->num_of_range;
 		pr_info("Trip count parsed from ECT : %d, zone : %s", function->num_of_range, tz->type);
 
+		/* Remove restriction of max cpufreq */
+        	/* Little CPU*/
 		if (function->range_list[i].max_frequency == 1950000)
-			function->range_list[i].max_frequency = 2002000;
-
+			function->range_list[i].max_frequency = -1;
+		/* Big CPU*/
 		if (function->range_list[i].max_frequency == 2860000)
-			function->range_list[i].max_frequency = 2886000;
+			function->range_list[i].max_frequency = -1;
 
 		for (i = 0; i < function->num_of_range; ++i) {
 			temperature = function->range_list[i].lower_bound_temperature;
