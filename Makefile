@@ -784,6 +784,10 @@ KBUILD_CFLAGS	+= -mllvm -polly \
 		   -mllvm -polly-vectorizer=stripmine \
 		   -mllvm -polly-invariant-load-hoisting
 endif
+else ifeq ($(cc-name),gcc)
+ifdef CONFIG_GCC_GRAPHITE
+KBUILD_CFLAGS   += -fgraphite-identity
+endif
 endif
 
 KBUILD_CFLAGS += $(call cc-ifversion, -lt, 0409, \
