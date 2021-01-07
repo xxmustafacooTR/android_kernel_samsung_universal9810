@@ -1,9 +1,9 @@
-ccflags-y += -O3 -pipe
-
 #
 # Exynos SoC Specific drivers
 #
 ccflags-y := $(KBUILD_FP_SENSOR_CFLAGS)
+
+ccflags-y += $(call cc-disable-warning, unused-variable)
 
 obj-$(CONFIG_EXYNOS_PMU)	+= exynos-pmu.o
 obj-$(CONFIG_EXYNOS_PM_DOMAINS) += pm_domains.o
