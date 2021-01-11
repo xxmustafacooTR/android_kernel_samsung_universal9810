@@ -764,14 +764,13 @@ export DISABLE_CFI
 endif
 
 ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
-KBUILD_CFLAGS	+= -Os $(call cc-disable-warning,maybe-uninitialized,)
 # Squeeze a little bit more juice
-ccflags-y := -O2 -pipe
-ccflags-y += $(call cc-option, -g0)
-ccflags-y += $(call cc-option, -Os)
+ccflags-y := -O2
 else
 KBUILD_CFLAGS   += -Ofast -pipe $(call cc-disable-warning,maybe-uninitialized,)
 endif
+
+ccflags-y += $(call cc-option, -g0)
 
 ifeq ($(cc-name),clang)
 ifdef CONFIG_LLVM_POLLY
