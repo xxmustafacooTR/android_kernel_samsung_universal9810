@@ -303,8 +303,14 @@ CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
 
 HOSTCC       = gcc
 HOSTCXX      = g++
+ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
 HOSTCFLAGS   := -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer -std=gnu89
 HOSTCXXFLAGS = -O2
+else
+HOSTCFLAGS   := -Wall -Wmissing-prototypes -Wstrict-prototypes -Ofast -fomit-frame-pointer -std=gnu89
+HOSTCXXFLAGS = -Ofast
+endif
+
 
 # Decide whether to build built-in, modular, or both.
 # Normally, just do built-in.
@@ -764,8 +770,7 @@ export DISABLE_CFI
 endif
 
 ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
-# Squeeze a little bit more juice
-ccflags-y := -O2
+KBUILD_CFLAGS   += -O2 $(call cc-disable-warning,maybe-uninitialized,)
 else
 KBUILD_CFLAGS   += -Ofast -pipe $(call cc-disable-warning,maybe-uninitialized,)
 endif
