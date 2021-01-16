@@ -6,6 +6,17 @@
 # NOTE! Please use 'git ls-files -i --exclude-standard'
 # command after changing this file, to see if there are
 # any tracked files which get ignored after the change.
+
+#
+# Builded Kernel Files
+#
+/KernelFlasher/Kernel/
+/KernelFlasher/Kernel/*
+/arch/arm64/boot/dtb.img
+/drivers/gator_5.27/gator_src_md5.h
+/firmware/five/ffffffff000000000000000000000072.tlbin
+/scripts/dtbtool_exynos/dtbtool
+
 #
 # Normal rules
 #
