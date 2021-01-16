@@ -68,7 +68,7 @@ void hal_tui_exit(void);
  * table (allocbuffer[0].pa).
  */
 uint32_t hal_tui_alloc(
-	struct tui_alloc_buffer_t allocbuffer[MAX_DCI_BUFFER_NUMBER],
+	struct tui_alloc_buffer_t allocbuffer[],
 	size_t allocsize, uint32_t number);
 
 /**
