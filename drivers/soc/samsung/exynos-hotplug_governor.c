@@ -1026,7 +1026,7 @@ static void hpgov_boot_enable(struct work_struct *work);
 static DECLARE_DELAYED_WORK(hpgov_boot_work, hpgov_boot_enable);
 static void hpgov_boot_enable(struct work_struct *work)
 {
-	//exynos_hpgov_set_enable(true);
+	exynos_hpgov_set_enable(true);
 }
 
 static int exynos_hp_gov_pm_suspend_notifier(struct notifier_block *notifier,
