@@ -176,10 +176,15 @@ static void sugov_update_commit(struct sugov_policy *sg_policy, u64 time,
 
 #ifdef CONFIG_FREQVAR_TUNE
 unsigned long freqvar_boost_vector(int cpu, unsigned long util);
+unsigned long freqvar_tipping_point(int cpu, unsigned long util);
 #else
 static inline unsigned long freqvar_boost_vector(int cpu, unsigned long util)
 {
 	return util;
+}
+static inline unsigned long freqvar_tipping_point(int cpu, unsigned long util)
+{
+	return util + (util >> 2);
 }
 #endif
 
@@ -256,7 +261,7 @@ static void sugov_get_util(unsigned long *util, unsigned long *max, u64 time)
 		*util = *util + rt;
 
 	*util = freqvar_boost_vector(cpu, *util);
-	*util = *util + (*util >> 2);
+	*util = freqvar_tipping_point(cpu, *util);
 	*util = min(*util, max_cap);
 	*max = max_cap;
 
