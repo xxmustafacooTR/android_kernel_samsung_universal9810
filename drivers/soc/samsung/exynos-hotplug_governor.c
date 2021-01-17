@@ -1139,7 +1139,7 @@ static int __init exynos_hpgov_parse_dt(void)
 		goto exit;
 	exynos_hpgov.maxfreq_table[QUAD] = min(freq, max_freq);
 
-	exynos_hpgov.maxfreq_table[DISABLE] = exynos_hpgov.maxfreq_table[SINGLE];
+	exynos_hpgov.maxfreq_table[DISABLE] = exynos_hpgov.maxfreq_table[DUAL];
 
 	for (i = 0; i <= QUAD; i++)
 		pr_info("HP_GOV: mode %d: max_freq = %d\n",
