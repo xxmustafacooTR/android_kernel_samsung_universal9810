@@ -22,9 +22,83 @@ unsigned long task_util(struct task_struct *p)
 		return p->se.avg.util_avg;
 }
 
+extern int capacity_margin;
 static int select_proper_cpu(struct task_struct *p)
 {
-	return -1;
+		unsigned long best_idle_util = ULONG_MAX;
+	unsigned long target_capacity = 0;
+	unsigned long max_spare_cap = 0;
+	int best_idle_cstate = INT_MAX;
+	int best_active_cpu = -1;
+	int best_idle_cpu = -1;
+	int cpu, cpu_cl;
+	int target_cpu;
+	struct task_struct *curr;
+
+	for_each_cpu(cpu_cl, cpu_active_mask) {
+		struct cpumask mask;
+
+		if (cpu_cl != cpumask_first(cpu_coregroup_mask(cpu_cl)))
+			continue;
+
+		cpumask_and(&mask, cpu_coregroup_mask(cpu_cl), tsk_cpus_allowed(p));
+
+		for_each_cpu_and(cpu, &mask, cpu_active_mask) {
+			unsigned long capacity_orig = capacity_orig_of(cpu);
+			unsigned long new_util = ml_task_attached_cpu_util(cpu, p);
+			unsigned long spare_cap;
+
+			new_util = max(new_util, ml_boosted_task_util(p));
+			/* Skip over-capacity cpu */
+			if (new_util * capacity_margin > capacity_orig * SCHED_CAPACITY_SCALE)
+				continue;
+
+			if (idle_cpu(cpu)) {
+				int idle_idx = idle_get_state_idx(cpu_rq(cpu));
+
+				/* find shallowest idle state cpu */
+				if (capacity_orig >= target_capacity &&
+				    idle_idx > best_idle_cstate)
+					continue;
+
+				if (idle_idx == best_idle_cstate &&
+				    new_util >= best_idle_util)
+					continue;
+
+				/* Keep track of best idle CPU */
+				target_capacity = capacity_orig;
+				best_idle_cstate = idle_idx;
+				best_idle_util = new_util;
+				best_idle_cpu = cpu;
+				continue;
+			}
+
+			/* Find maximum spare capacity CPU */
+			spare_cap = capacity_orig - new_util;
+			if (spare_cap > max_spare_cap) {
+			    target_capacity = capacity_orig;
+			    max_spare_cap = spare_cap;
+			    best_active_cpu = cpu;
+			}
+		}
+
+		/*
+		 * Try to pack tasks to smallest cluster as possible to save energy
+		 */
+		if (cpu_selected(best_active_cpu) || cpu_selected(best_idle_cpu))
+			break;
+	}
+
+	if (best_active_cpu != -1 && best_idle_cpu != -1) {
+		curr = READ_ONCE(cpu_rq(best_active_cpu)->curr);
+		if (curr && schedtune_prefer_perf(curr) > 0) {
+			return best_idle_cpu;
+		}
+	}
+
+	target_cpu = cpu_selected(best_active_cpu) ? best_active_cpu : best_idle_cpu;
+
+	return cpu_selected(target_cpu) ? target_cpu : task_cpu(p);
 }
 
 extern void sync_entity_load_avg(struct sched_entity *se);
