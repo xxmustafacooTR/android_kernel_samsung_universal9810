@@ -1470,8 +1470,6 @@ int fg_alert_init(struct i2c_client *client, int soc)
 			"%s: TALRT_THRESHOLD_REG is not valid (0x%x)\n",
 			__func__, read_data);
 
-	/*mdelay(100);*/
-
 	/* Enable SOC alerts */
 	if (fg_i2c_read(client, CONFIG_REG, config_data, 2) < 0) {
 		dev_err(&client->dev,

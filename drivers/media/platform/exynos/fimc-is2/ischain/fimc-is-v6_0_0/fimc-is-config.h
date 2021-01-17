@@ -69,6 +69,7 @@
 
 #define USE_ONE_BINARY
 #define USE_RTA_BINARY
+#define USE_DDK_SHUT_DOWN_FUNC
 #define ENABLE_IRQ_MULTI_TARGET
 #define FIMC_IS_ONLINE_CPU_MIN	4
 /* #define USE_MCUCTL */

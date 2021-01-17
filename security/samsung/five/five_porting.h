@@ -43,6 +43,18 @@
 #define inode_unlock(inode)	mutex_unlock(&(inode)->i_mutex)
 #endif
 
+#if LINUX_VERSION_CODE > KERNEL_VERSION(4, 19, 115)
+/* It is added for initialization purposes.
+ * For developing LSM, please, use DEFINE_LSM
+ */
+#define security_initcall(fn) late_initcall(fn)
+#endif
+
+#if LINUX_VERSION_CODE > KERNEL_VERSION(4, 20, 17)
+/* This file was added in v5.0.0 */
+#include <uapi/linux/mount.h>
+#endif
+
 #if LINUX_VERSION_CODE > KERNEL_VERSION(4, 14, 20)
 /* kmemcheck is gone.
  * Since Kernel 4.14.21 SLAB_NOTRACK isn't present in Kernel.
@@ -82,6 +94,16 @@ static inline ssize_t __vfs_getxattr(struct dentry *dentry, struct inode *inode,
 
 	return inode->i_op->getxattr(dentry, name, value, size);
 }
+#endif
+
+#if defined(CONFIG_ANDROID) && LINUX_VERSION_CODE < KERNEL_VERSION(5, 4, 0)
+/*
+ * __vfs_getxattr was changed in Android Kernel v5.4
+ * https://android.googlesource.com/kernel/common/+/3484eba91d6b529cc606486a2db79513f3db6c67
+ */
+#define XATTR_NOSECURITY 0x4	/* get value, do not involve security check */
+#define __vfs_getxattr(dentry, inode, name, value, size, flags) \
+		__vfs_getxattr(dentry, inode, name, value, size)
 #endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 4, 0)
@@ -153,7 +175,19 @@ inode_query_iversion(struct inode *inode)
 #include <linux/iversion.h>
 #endif
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 8, 0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 4, 8)
+static inline struct dentry *file_dentry(const struct file *file)
+{
+	return file->f_path.dentry;
+}
+#endif
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 5, 2)
+static inline struct dentry *d_real_comp(struct dentry *dentry)
+{
+	return dentry;
+}
+#elif LINUX_VERSION_CODE < KERNEL_VERSION(4, 8, 0)
 static inline struct dentry *d_real_comp(struct dentry *dentry)
 {
 	return d_real(dentry);
@@ -175,7 +209,10 @@ static inline struct dentry *d_real_comp(struct dentry *dentry)
 }
 #endif
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 4, 16)
+/* d_real_inode was added in v4.4.16, removed in v4.5.0 and added again in v4.6.5 */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 4, 16) || \
+	(LINUX_VERSION_CODE > KERNEL_VERSION(4, 5, 0) && \
+	LINUX_VERSION_CODE < KERNEL_VERSION(4, 6, 5))
 static inline struct inode *d_real_inode(struct dentry *dentry)
 {
 	return d_backing_inode(d_real_comp(dentry));

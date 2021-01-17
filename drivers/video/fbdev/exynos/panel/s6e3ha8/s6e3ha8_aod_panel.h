@@ -454,6 +454,9 @@ static DEFINE_STATIC_PACKET(s6e3ha8_aod_init_side_ram, DSI_PKT_TYPE_WR, S6E3HA8_
 
 
 // --------------------- Image for analog clock ---------------------
+
+static DEFINE_PANEL_MDELAY(s6e3ha8_aod_init_side_ram_delay, 34);
+
 static char S6E3HA8_AOD_ANALOG_SD_PATH[] = {
 	0x75,
 	0x01,
@@ -464,6 +467,7 @@ static DEFINE_STATIC_PACKET(s6e3ha8_aod_analog_img, DSI_PKT_TYPE_WR_SR, STAR_ANA
 static void *s6e3ha8_aod_analog_img_cmdtbl[] = {
 	&KEYINFO(s6e3ha8_aod_level2_key_enable),
 	&PKTINFO(s6e3ha8_aod_init_side_ram),
+	&DLYINFO(s6e3ha8_aod_init_side_ram_delay),
 	&PKTINFO(s6e3ha8_aod_analog_sd_path),
 	&PKTINFO(s6e3ha8_aod_analog_img),
 	&KEYINFO(s6e3ha8_aod_level2_key_disable),
@@ -838,7 +842,7 @@ static struct seqinfo s6e3ha8_aod_seqtbl[MAX_AOD_SEQ] = {
 	[ICON_GRID_OFF_SEQ] = SEQINFO_INIT("icon_grid_off", s6e3ha8_aod_icon_grid_off_cmdtbl),
 	[SET_TIME_SEQ] = SEQINFO_INIT("SET_TIME", s6e3ha8_aod_set_time_cmdtbl),
 #ifdef SUPPORT_NORMAL_SELFMOVE
-	[ENABLE_SELFMOVE_SEQ] = SEQINFO_INIT("enable_self_move", s6e3ha8_enable_selfmove),
+	[ENABLE_SELFMOVE_SEQ] = SEQINFO_INIT("enable_self_move", s6e3ha8_enable_selfmove),
 	[DISABLE_SELFMOVE_SEQ] = SEQINFO_INIT("disable_self", s6e3ha8_disable_selfmove),
 #endif
 };

@@ -1,14 +1,11 @@
+/* SPDX-License-Identifier: GPL-2.0 */
 /*
- * linux/drivers/video/fbdev/exynos/panel/s6e3ha6/self_clk_default_niddle.h
- *
- * Header file for S6E3HA6 Dimming Driver
- *
- * Copyright (c) 2016 Samsung Electronics
+ * Copyright (c) Samsung Electronics Co., Ltd.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
-*/
+ */
 
 #ifndef __LIVE_CLK_IMGE_DEFAULT_H__
 #define __LIVE_CLK_IMGE_DEFAULT_H__

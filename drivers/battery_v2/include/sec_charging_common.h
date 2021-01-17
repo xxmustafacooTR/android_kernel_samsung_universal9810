@@ -67,8 +67,11 @@ enum power_supply_ext_property {
 	POWER_SUPPLY_EXT_PROP_CHGINSEL,
 	POWER_SUPPLY_EXT_PROP_OVERHEAT_HICCUP,
 	POWER_SUPPLY_EXT_PROP_MONITOR_WORK,
+	POWER_SUPPLY_EXT_PROP_PAD_VOLT_CTRL,
 	POWER_SUPPLY_EXT_PROP_MST_STATUS,
 	POWER_SUPPLY_EXT_PROP_JIG_GPIO,
+	POWER_SUPPLY_EXT_PROP_WPC_EN,
+	POWER_SUPPLY_EXT_PROP_WPC_EN_MST,
 };
 
 enum sec_battery_usb_conf {
@@ -88,6 +91,7 @@ enum sec_battery_rp_curr {
 enum power_supply_ext_health {
 	POWER_SUPPLY_HEALTH_VSYS_OVP = POWER_SUPPLY_HEALTH_MAX,
 	POWER_SUPPLY_HEALTH_VBAT_OVP,
+	POWER_SUPPLY_HEALTH_WPC_EN,
 };
 
 enum sec_battery_cable {
@@ -327,6 +331,14 @@ enum sec_battery_measure_input {
 	SEC_BATTERY_IIN_MA = 0,
 	SEC_BATTERY_IIN_UA,
 	SEC_BATTERY_VBYP,
+};
+
+enum sec_battery_wpc_en_ctrl {
+	WPC_EN_SYSFS = 0x1,
+	WPC_EN_CCIC = 0x2,
+	WPC_EN_CHARGING = 0x4,
+	WPC_EN_TX = 0x8,
+	WPC_EN_MST = 0x10,
 };
 
 #define SEC_BAT_ERROR_CAUSE_NONE		0x0000
@@ -1144,7 +1156,7 @@ static inline struct power_supply *get_power_supply_by_name(char *name)
 		cable_type == SEC_BATTERY_CABLE_NONE || \
 		cable_type == SEC_BATTERY_CABLE_OTG || \
 		cable_type == SEC_BATTERY_CABLE_POWER_SHARING)
-
+	
 #define is_slate_mode(battery) ((battery->current_event & SEC_BAT_CURRENT_EVENT_SLATE) \
 			== SEC_BAT_CURRENT_EVENT_SLATE)
 #endif /* __SEC_CHARGING_COMMON_H */

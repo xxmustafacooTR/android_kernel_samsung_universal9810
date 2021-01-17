@@ -803,6 +803,9 @@ enum aa_scene_mode {
 	AA_SCENE_MODE_FAST_AE           = 134,
 	AA_SCENE_MODE_ILLUMINANCE       = 135,
 	AA_SCENE_MODE_SUPER_NIGHT       = 136,
+	AA_SCENE_MODE_BOKEH_VIDEO       = 137,
+	AA_SCENE_MODE_SINGLETAKE        = 138,
+	AA_SCENE_MODE_DIRECTORS_VIEW    = 139,
 };
 
 enum aa_effect_mode {
@@ -1067,7 +1070,8 @@ struct camera2_aa_ctl {
 	uint32_t			vendor_captureHint;
 	int32_t				vendor_captureEV;
 	uint32_t			vendor_ssrmHint;
-	uint32_t			vendor_reserved[5];
+	uint32_t			vendor_personalPresetIndex;
+	uint32_t			vendor_reserved[4];
 };
 
 struct camera2_aa_dm {
@@ -1843,6 +1847,27 @@ struct camera2_dng_udm {
 	uint32_t pedestal[3];
 	uint32_t gammaXpnt[32];
 	uint32_t gammaYpnt[32];
+};
+
+enum camera_client_index {
+    CAMERA_APP_CATEGORY_NOT_READ           = -1,
+    CAMERA_APP_CATEGORY_NONE               = 0,
+    CAMERA_APP_CATEGORY_FACEBOOK           = 1,
+    CAMERA_APP_CATEGORY_WECHAT             = 2,
+    CAMERA_APP_CATEGORY_SNAPCHAT           = 3,
+    CAMERA_APP_CATEGORY_TWITTER            = 4,
+    CAMERA_APP_CATEGORY_INSTAGRAM          = 5,
+    CAMERA_APP_CATEGORY_3P_VT              = 6,
+    CAMERA_APP_CATEGORY_VAULT              = 7,
+    CAMERA_APP_CATEGORY_FACEBOOK_MASSENGER = 8,
+    CAMERA_APP_CATEGORY_WHATSAPP           = 9,
+    CAMERA_APP_CATEGORY_ULIKE              = 10,
+    CAMERA_APP_CATEGORY_WEIBO              = 11,
+    CAMERA_APP_CATEGORY_MEITU              = 12,
+    CAMERA_APP_CATEGORY_KAKAOBANK          = 13,
+    CAMERA_APP_CATEGORY_CAMCARD            = 14,
+    CAMERA_APP_CATEGORY_CAMCARD_FREE       = 15,
+    CAMERA_APP_CATEGORY_MAX
 };
 
 /** \brief

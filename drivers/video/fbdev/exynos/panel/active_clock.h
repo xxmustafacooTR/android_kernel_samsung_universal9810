@@ -1,8 +1,6 @@
+/* SPDX-License-Identifier: GPL-2.0 */
 /*
- * Copyright (c) 2016 Samsung Electronics Co., Ltd.
- *	      http://www.samsung.com/
- *
- * Samsung's Live Clock Driver
+ * Copyright (c) Samsung Electronics Co., Ltd.
  * Author: Minwoo Kim <minwoo7945.kim@samsung.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -92,7 +90,7 @@ struct ioctl_self_drawer {
 	u32 sd_raduis;
 };
 
-#define IOCTL_ACT_CLK 	_IOW('A', 100, struct ioctl_act_clk)
+#define IOCTL_ACT_CLK _IOW('A', 100, struct ioctl_act_clk)
 #define IOCTL_BLINK_CLK _IOW('A', 101, struct ioctl_blink_clock)
 #define IOCTL_SELF_DRAWER_CLK _IOW('A', 102, struct ioctl_self_drawer)
 

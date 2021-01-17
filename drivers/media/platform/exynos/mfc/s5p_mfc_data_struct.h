@@ -1208,6 +1208,12 @@ struct s5p_mfc_dec {
 	struct mfc_user_shared_handle sh_handle;
 	struct s5p_mfc_buf *assigned_dpb[MFC_MAX_DPBS];
 
+	struct dma_buf *assigned_dmabufs[MFC_MAX_DPBS][2][MFC_MAX_PLANES];
+	struct dma_buf_attachment *assigned_attach[MFC_MAX_DPBS][2][MFC_MAX_PLANES];
+	dma_addr_t assigned_addr[MFC_MAX_DPBS][2][MFC_MAX_PLANES];
+	int assigned_refcnt[MFC_MAX_DPBS];
+	struct mutex dpb_mutex;
+
 	int has_multiframe;
 	int is_dpb_full;
 

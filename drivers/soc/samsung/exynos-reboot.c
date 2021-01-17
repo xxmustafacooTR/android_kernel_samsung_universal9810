@@ -78,9 +78,10 @@ int soc_has_big(void)
 #define BIG_CPU0_RESET			(0x3C0C)
 #define BIG_NONCPU_ETC_RESET		(0x3C8C)
 #define LITTLE_CPU0_ETC_RESET			(0x3C4C)
-#define SWRESET				(0x0400)
-#define RESET_SEQUENCER_CONFIGURATION	(0x0500)
-#define PS_HOLD_CONTROL			(0x330C)
+#define SWRESET					(0x0400)
+#define RESET_SEQUENCER_CONFIGURATION		(0x0500)
+#define PS_HOLD_CONTROL				(0x330C)
+#define EXYNOS_PMU_SYSIP_DAT0			(0x0810)
 
 /* defines for BIG reset */
 #define PEND_BIG				(1 << 1)
@@ -232,11 +233,12 @@ void big_reset_control(int en)
 	}
 #endif
 }
-#define PMU_SYSIP_DAT0		0x810
-#define INFORM_NONE		0x0
-#define INFORM_RAMDUMP		0xd
-#define INFORM_FASTBOOT		0xFC
-#define INFORM_RECOVERY		0xf
+#define REBOOT_MODE_NORMAL		0x00
+#define REBOOT_MODE_CHARGE		0x0A
+/* Reboot into fastboot mode */
+#define REBOOT_MODE_FASTBOOT		0xFC
+/* Reboot into recovery */
+#define REBOOT_MODE_RECOVERY		0xFF
 
 #if !defined(CONFIG_SEC_REBOOT)
 #ifdef CONFIG_OF
@@ -259,6 +261,7 @@ static void exynos_power_off(void)
 
 static void exynos_reboot(enum reboot_mode mode, const char *cmd)
 {
+	void __iomem *addr;
 	u32 soc_id;
 
 	if (!exynos_pmu_base)
@@ -266,15 +269,19 @@ static void exynos_reboot(enum reboot_mode mode, const char *cmd)
 #ifdef CONFIG_EXYNOS_ACPM
 	exynos_acpm_reboot();
 #endif
-	writel(INFORM_NONE, exynos_pmu_base + PMU_SYSIP_DAT0);
+	printk("[%s] reboot cmd: %s\n", __func__, cmd);
+
+	addr = exynos_pmu_base + EXYNOS_PMU_SYSIP_DAT0;
 
 	if (cmd) {
-		if (!strcmp((char *)cmd, "recovery"))
-			writel(INFORM_RECOVERY, exynos_pmu_base + PMU_SYSIP_DAT0);
-		else if(!strcmp(cmd, "ramdump"))
-			writel(INFORM_RAMDUMP, exynos_pmu_base + PMU_SYSIP_DAT0);
-		else if (!strcmp(cmd, "bootloader"))
-			writel(INFORM_FASTBOOT, exynos_pmu_base + PMU_SYSIP_DAT0);
+		if (!strcmp((char *)cmd, "charge")) {
+			__raw_writel(REBOOT_MODE_CHARGE, addr);
+		} else if (!strcmp(cmd, "bootloader") || !strcmp(cmd, "bl") ||
+				!strcmp((char *)cmd, "fastboot") || !strcmp(cmd, "fb")) {
+			__raw_writel(REBOOT_MODE_FASTBOOT, addr);
+		} else if (!strcmp(cmd, "recovery")) {
+			__raw_writel(REBOOT_MODE_RECOVERY, addr);
+		}
 	}
 
 	/* Check by each SoC */
@@ -343,3 +350,4 @@ static int __init exynos_reboot_init(void)
 	return init_fn(np);
 }
 subsys_initcall(exynos_reboot_init);
+

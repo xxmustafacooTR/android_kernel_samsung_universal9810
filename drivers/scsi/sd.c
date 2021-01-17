@@ -3211,7 +3211,9 @@ static void sd_probe_async(void *data, async_cookie_t cookie)
 				if (!part)
 					break;
 				if (!strncmp(part->info->volname, "SYSTEM", 6) ||
-						!strncmp(part->info->volname, "system", 6)) {
+						!strncmp(part->info->volname, "system", 6) ||
+						!strncmp(part->info->volname, "SUPER", 5) ||
+						!strncmp(part->info->volname, "super", 5)) {
 					sdp->host->ufs_system_start = part->start_sect;
 					sdp->host->ufs_system_end = (part->start_sect + part->nr_sects);
 					sdp->host->ufs_sys_log_en = true;

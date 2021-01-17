@@ -334,12 +334,6 @@ int s5p_mfc_set_dec_stream_buffer(struct s5p_mfc_ctx *ctx, struct s5p_mfc_buf *m
 	MFC_WRITEL(start_num_byte, S5P_FIMV_D_CPB_BUFFER_OFFSET);
 	ctx->last_src_addr = addr;
 
-	if (mfc_buf)
-		MFC_TRACE_CTX("Set src[%d] fd: %d, %#llx\n",
-				mfc_buf->vb.vb2_buf.index,
-				mfc_buf->vb.vb2_buf.planes[0].m.fd,
-				addr);
-
 	mfc_debug_leave();
 	return 0;
 }

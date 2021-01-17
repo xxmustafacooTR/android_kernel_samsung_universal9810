@@ -454,6 +454,9 @@ int fimc_is_itf_power_down_wrap(struct fimc_is_interface *interface, u32 instanc
 {
 	int ret = 0;
 	struct fimc_is_core *core;
+#ifdef USE_DDK_SHUT_DOWN_FUNC
+	void *data = NULL;
+#endif
 
 	dbg_hw(2, "%s\n", __func__);
 
@@ -464,6 +467,16 @@ int fimc_is_itf_power_down_wrap(struct fimc_is_interface *interface, u32 instanc
 	}
 
 	fimc_is_itf_sudden_stop_wrap(&core->ischain[instance], instance);
+
+#ifdef USE_DDK_SHUT_DOWN_FUNC
+#ifdef ENABLE_FPSIMD_FOR_USER
+	fpsimd_get();
+	((ddk_shut_down_func_t)DDK_SHUT_DOWN_FUNC_ADDR)(data);
+	fpsimd_put();
+#else
+	((ddk_shut_down_func_t)DDK_SHUT_DOWN_FUNC_ADDR)(data);
+#endif
+#endif
 
 	return ret;
 }

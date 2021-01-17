@@ -807,7 +807,7 @@ static int max77705_set_otg(struct max77705_charger_data *charger, int enable)
 		enable > 0 ? "on" : "off");
 	if (charger->otg_on == enable ||lpcharge)
 		return 0;
-
+		
 	ret = max77705_check_wcin_before_otg_on(charger);
 	pr_info("%s: wc_state = %d\n", __func__, ret);
 	if (ret < 0)
@@ -851,7 +851,7 @@ static int max77705_set_otg(struct max77705_charger_data *charger, int enable)
 		max77705_update_reg(charger->i2c, MAX77705_CHG_REG_CNFG_00,
 			0, CHG_CNFG_00_OTG_CTRL);
 
-		mdelay(50);
+		msleep(50);
 
 		/* enable charger interrupt */
 		max77705_write_reg(charger->i2c,
@@ -1496,7 +1496,7 @@ static int max77705_chg_set_property(struct power_supply *psy,
 					    MAX77705_CHG_REG_CNFG_00, 0,
 					    CHG_CNFG_00_BOOST_MASK);
 
-			mdelay(50);
+			msleep(50);
 
 			/* enable charger interrupt */
 			max77705_write_reg(charger->i2c,
@@ -1541,6 +1541,11 @@ static int max77705_chg_set_property(struct power_supply *psy,
 		case POWER_SUPPLY_EXT_PROP_CHGINSEL:
 			max77705_change_charge_path(charger,
 				val->intval, charger->cable_type);
+			break;
+		case POWER_SUPPLY_EXT_PROP_PAD_VOLT_CTRL:
+			wake_unlock(&charger->wc_current_wake_lock);
+			cancel_delayed_work(&charger->wc_current_work);
+			max77705_set_input_current(charger, val->intval);
 			break;
 		default:
 			return -EINVAL;
@@ -1754,7 +1759,7 @@ static void wpc_detect_work(struct work_struct *work)
 				psy_do_property(charger->pdata->wireless_charger_name,
 					set, POWER_SUPPLY_PROP_STATUS, value);
 			}
-			mdelay(50);
+			msleep(50);
 		} while (!wcin_state && !wcin_dtls && wcin_cnt < 2);
 	}
 
@@ -2702,3 +2707,4 @@ module_exit(max77705_charger_exit);
 MODULE_DESCRIPTION("Samsung MAX77705 Charger Driver");
 MODULE_AUTHOR("Samsung Electronics");
 MODULE_LICENSE("GPL");
+
