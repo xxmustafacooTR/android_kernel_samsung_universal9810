@@ -4997,7 +4997,7 @@
 			device_type = "freqvar-tune";
 			shared-cpus = "0-3";
 
-			boost_table = < 100 598000 60 715000 30 832000 20 949000 10 1053000 0 >;
+			boost_table = < 200 598000 160 715000 130 832000 120 949000 110 1053000 100 >;
 			up_rate_limit_table = < 5000 >;
 			down_rate_limit_table = < 5000 >;
 			st_table = < 5 >;
@@ -5007,7 +5007,7 @@
 			device_type = "freqvar-tune";
 			shared-cpus = "4-7";
 
-			boost_table = < 20 858000 15 962000 5 1261000 0 >;
+			boost_table = < 120 858000 115 962000 105 1261000 100 >;
 			up_rate_limit_table = < 5000 >;
 			down_rate_limit_table = < 5000 >;
 			st_table = < 5 >;
