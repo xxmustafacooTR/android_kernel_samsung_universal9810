@@ -73,6 +73,7 @@ function clean_all {
 		fi
 		cd $KERNEL_DIR
 		echo
+		rm -f arch/arm64/boot/dtb.img arch/arm64/boot/dts/exynos/exynos9810-star2lte_eur_open_26.dtb arch/arm64/boot/dts/exynos/exynos9810-star2lte_eur_open_26.dtb.reverse.dts arch/arm64/boot/dts/exynos/exynos9810-starlte_eur_open_26.dtb arch/arm64/boot/dts/exynos/exynos9810-starlte_eur_open_26.dtb.reverse.dts arch/arm64/boot/dts/exynos/exynos9810-crownlte_eur_open_26.dtb arch/arm64/boot/dts/exynos/exynos9810-crownlte_eur_open_26.dtb.reverse.dts
 		make -j$(nproc) clean
 		make -j$(nproc) mrproper
         	rm -rf out/
