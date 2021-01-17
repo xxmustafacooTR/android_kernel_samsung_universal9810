@@ -69,6 +69,7 @@ extern void update_lbt_overutil(int cpu, unsigned long capacity);
 extern void gb_qos_update_request(struct gb_qos_request *req, u32 new_value);
 
 /* task band */
+extern struct task_band *lookup_band(struct task_struct *p);
 extern void sync_band(struct task_struct *p, bool join);
 extern void newbie_join_band(struct task_struct *newbie);
 extern void update_band(struct task_struct *p, long old_util);
@@ -132,6 +133,7 @@ static inline void update_lbt_overutil(int cpu, unsigned long capacity) { }
 
 static inline void gb_qos_update_request(struct gb_qos_request *req, u32 new_value) { }
 
+static inline struct task_band *lookup_band(struct task_struct *p) { return NULL; }
 static inline void sync_band(struct task_struct *p, bool join) { }
 static inline void newbie_join_band(struct task_struct *newbie) { }
 static inline void update_band(struct task_struct *p, long old_util) { }
