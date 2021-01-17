@@ -6632,7 +6632,6 @@ schedtune_task_margin(struct task_struct *p)
 		return 0;
 
 	util = task_util_est(p);
-	capacity = capacity_orig_of(task_cpu(p));
 
 	return schedtune_margin(SCHED_CAPACITY_SCALE, util, boost);
 }
