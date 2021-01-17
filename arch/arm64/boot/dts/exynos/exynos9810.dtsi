@@ -793,19 +793,21 @@
 		#cooling-cells = <2>; /* min followed by max */
 		governor = "interactive";
 		interactive_info = <338000 94 0>;
-		gpu_dvfs_table_size = <6 7>; /*<row col>*/
-		gpu_dvfs_table = <  572000    78  100   5  1794000        0      1469000
-		                    546000    78   99   1  1794000        0      1469000
-		                    455000    78   85   1  1539000        0      1469000
-		                    338000    78   85   1  1352000        0      1469000
-		                    299000    78   85   1  1014000        0      1586000
-		                    260000    78   85   1   421000        0      1586000 >;
+		gpu_dvfs_table_size = <8 7>; /*<row col>*/
+		gpu_dvfs_table = <  598000    78  100   5  1794000        0      	0
+				    572000    78   99   1  1794000        0      	0
+		                    546000    78   95   1  1794000        0      	0
+		                    455000    78   85   1  1539000        0      	0
+				    385000    78   85   1  1539000        0      	0
+		                    338000    78   80   1  1352000        0      	0
+		                    299000    78   80   1  1014000        0      	0
+		                    260000    78   70   1   421000        0      	0 >;
 		gpu_sustainable_info = <0 0 0 0 0>; /* Not used */
 		gpu_pmqos_cpu_cluster_num = <2>;
 		gpu_pmu_status_reg_offset = <0x4044>;
 		gpu_pmu_status_local_pwr_mask = <0xF>; /*0xF << 0*/
-		gpu_max_clock = <572000>;
-		gpu_max_clock_limit = <572000>;
+		gpu_max_clock = <598000>;
+		gpu_max_clock_limit = <598000>;
 		gpu_min_clock = <260000>;
 		gpu_dvfs_start_clock = <260000>;
 		gpu_dvfs_bl_config_clock = <260000>;
@@ -827,7 +829,7 @@
 		gpu_dvfs_polling_time = <30>;
 		gpu_pmqos_int_disable = <1>;
 		gpu_pmqos_mif_max_clock = <1794000>;
-		gpu_pmqos_mif_max_clock_base = <572000>;
+		gpu_pmqos_mif_max_clock_base = <598000>;
 		gpu_cl_dvfs_start_base = <455000>;
 		gpu_debug_level = <3>; /*DEBUG(1) INFO(2) WARNING(3) ERROR(4)*/
 		gpu_trace_level = <8>; /*TRACE_ALL*/
