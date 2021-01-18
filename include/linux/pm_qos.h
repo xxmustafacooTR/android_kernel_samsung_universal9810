@@ -9,6 +9,8 @@
 #include <linux/miscdevice.h>
 #include <linux/device.h>
 #include <linux/workqueue.h>
+#include <linux/cpumask.h>
+#include <linux/interrupt.h>
 
 enum {
 	PM_QOS_RESERVED = 0,
@@ -121,8 +123,6 @@ struct pm_qos_request {
 	/* Internal structure members */
 	struct irq_affinity_notify irq_notify;
 #endif
-
-struct pm_qos_request {
 	struct plist_node node;
 	int pm_qos_class;
 	struct delayed_work work; /* for pm_qos_update_request_timeout */
