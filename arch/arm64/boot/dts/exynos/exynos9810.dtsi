@@ -828,7 +828,7 @@
 		gpu_runtime_pm_delay_time = <50>;
 		gpu_dvfs_polling_time = <30>;
 		gpu_pmqos_int_disable = <1>;
-		gpu_pmqos_mif_max_clock = <1794000>;
+		gpu_pmqos_mif_max_clock = <2093000>;
 		gpu_pmqos_mif_max_clock_base = <598000>;
 		gpu_cl_dvfs_start_base = <455000>;
 		gpu_debug_level = <3>; /*DEBUG(1) INFO(2) WARNING(3) ERROR(4)*/
@@ -837,7 +837,7 @@
 		gpu_boost_gpu_min_lock = <0>;
 		gpu_boost_egl_min_lock = <1872000>;
 		gpu_vk_boost_max_lock = <338000>;
-		gpu_vk_boost_mif_min_lock = <1794000>;
+		gpu_vk_boost_mif_min_lock = <2002000>;
 		gpu_bts_support = <1>;
 		gpu_asv_cali_lock_val = <0>; /*Should check this value when MALI_ASV_CALIBRATION_SUPPORT is enabled*/
 		gpu_set_pmu_duration_reg = <0>; /* only for KC for now*/
@@ -3582,7 +3582,7 @@
 				thrd_mb = <4230819>;
 				freq_mfc = <672000>;
 				freq_int = <534000>;
-				freq_mif = <1794000>;
+				freq_mif = <2002000>;
 				freq_cpu = <0>;
 				freq_kfc = <0>;
 				mo_value = <0>;
@@ -3595,7 +3595,7 @@
 				thrd_mb = <1694860>;
 				freq_mfc = <672000>;
 				freq_int = <534000>;
-				freq_mif = <1794000>;
+				freq_mif = <2093000>;
 				freq_cpu = <0>;
 				freq_kfc = <0>;
 				mo_value = <0>;
@@ -5040,7 +5040,7 @@
 		cl_busy_ratio = <65>;
 		/* single_freq is parsed from ECT */
 		dual_freq = <2314000>;
-		triple_freq = <1794000>;
+		triple_freq = <1924000>;
 		quad_freq = <1794000>;
 		cal-id = <ACPM_DVFS_CPUCL1>;
 	};
@@ -5090,14 +5090,14 @@
 				ctrl-type = <PM_QOS_MIN_LIMIT>;
 				execution-mode = <AARCH64_MODE>;
 					/* mngs	    ank */
-				table = < 2964000 1794000
-					  2860000 1794000
-					  2704000 1794000
-					  2652000 1794000
-					  2496000 1794000
-					  2314000 1794000
-					  2158000 1794000
-					  2002000 1794000
+				table = < 2964000 2093000
+					  2860000 2093000
+					  2704000 2093000
+					  2652000 2093000
+					  2496000 2093000
+					  2314000 2093000
+					  2106000 2093000
+					  2002000 2002000
 					  1924000 1794000
 					  1794000 1794000
 					  1690000  715000
@@ -5117,27 +5117,27 @@
 				ctrl-type = <PM_QOS_MAX_LIMIT>;
 				execution-mode = <AARCH64_MODE>;
 					/* mngs	    ank */
-				table = < 2964000 1794000
-					  2860000 1794000
-					  2704000 1794000
-					  2652000 1794000
-					  2496000 1794000
-					  2314000 1794000
-					  2158000 1794000
-					  2002000 1794000
-					  1924000 1794000
-					  1794000 1794000
-					  1690000 1794000
-					  1586000 1794000
-					  1469000 1794000
-					  1261000 1794000
-					  1170000 1794000
-					  1066000 1794000
-					   962000 1794000
-					   858000 1794000
-					   741000 1794000
-					   650000 1794000
-					   598000 1794000 >;
+				table = < 2964000 2093000
+					  2860000 2093000
+					  2704000 2093000
+					  2652000 2093000
+					  2496000 2093000
+					  2314000 2093000
+					  2106000 2093000
+					  2002000 2093000
+					  1924000 2093000
+					  1794000 2093000
+					  1690000 2093000
+					  1586000 2093000
+					  1469000 2093000
+					  1261000 2093000
+					  1170000 2093000
+					  1066000 2093000
+					   962000 2093000
+					   858000 2093000
+					   741000 2093000
+					   650000 2093000
+					   598000 2093000 >;
 			};
 
 		};
@@ -5191,15 +5191,15 @@
 			cal-id = <ACPM_DVFS_CPUCL1>;
 			dm-type = <DM_CPU_CL1>;
 
-			min-freq = <650000>;
+			min-freq = <598000>;
 			max-freq = <1794000>;
-			policy-max = <2704000>;
+			policy-max = <2964000>;
 
 			/* PM QoS Class ID*/
 			pm_qos-min-class = <5>;
 			pm_qos-max-class = <6>;
 
-			pm_qos-booting = <1794000>;
+			pm_qos-booting = <2314000>;
 
 			#cooling-cells = <2>; /* min followed by max */
 
@@ -5208,14 +5208,14 @@
 					const-type = <CONSTRAINT_MIN>;
 					dm-type = <DM_MIF>;
 						/*  cpu     mif  */
-					table = < 2886000 1794000
-						  2860000 1794000
-						  2704000 1794000
-						  2652000 1794000
-						  2496000 1794000
-						  2314000 1794000
-						  2106000 1794000
-						  2002000 1794000
+					table = < 2964000 2093000
+						  2860000 2093000
+						  2704000 2093000
+						  2652000 2093000
+						  2496000 2093000
+						  2314000 2093000
+						  2106000 2093000
+						  2002000 2002000
 						  1924000 1794000
 						  1794000 1794000
 						  1690000 1539000
