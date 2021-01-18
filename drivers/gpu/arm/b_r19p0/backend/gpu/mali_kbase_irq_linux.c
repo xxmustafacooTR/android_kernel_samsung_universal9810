@@ -215,7 +215,7 @@ int kbase_set_custom_irq_handler(struct kbase_device *kbdev,
 
 	if (0 != request_irq(kbdev->irqs[irq_type].irq,
 			requested_irq_handler,
-			kbdev->irqs[irq_type].flags | IRQF_SHARED | IRQF_PERF_CRITICAL,
+			kbdev->irqs[irq_type].flags | IRQF_SHARED,
 			dev_name(kbdev->dev), kbase_tag(kbdev, irq_type))) {
 		result = -EINVAL;
 		dev_err(kbdev->dev, "Can't request interrupt %d (index %d)\n",
