@@ -83,7 +83,7 @@ int do_integrity_check(void);
 int __init testmgr_crypto_proc_init(void);
 const char *get_builtime_crypto_hmac(void);
 #else
-void __init crypto_init_proc(void);
+void crypto_init_proc(void);
 #endif
 void __exit crypto_exit_proc(void);
 #else
