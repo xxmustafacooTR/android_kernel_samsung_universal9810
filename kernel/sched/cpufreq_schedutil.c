@@ -509,7 +509,7 @@ static unsigned int sugov_next_freq_shared(struct sugov_cpu *sg_cpu, u64 time)
 	unsigned long util = 0, max = 1;
 	unsigned int j;
 
-	for_each_cpu(j, policy->cpus) {
+	for_each_cpu_and(j, policy->related_cpus, cpu_online_mask) {
 		struct sugov_cpu *j_sg_cpu = &per_cpu(sugov_cpu, j);
 		unsigned long j_util, j_max;
 		s64 delta_ns;
