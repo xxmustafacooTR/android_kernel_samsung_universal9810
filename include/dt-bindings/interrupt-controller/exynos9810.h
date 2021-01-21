@@ -277,7 +277,7 @@
 #define INTREQ__G2D						265
 #define INTREQ__JPEG						266
 #define INTREQ__MSCL						267
-#define INTREQ__ASTC						268
+#define INTREQ__JSQZ						268
 #define INTREQ__PPMU_G2DD0_interrupt_upper_or_normal		269
 #define INTREQ__PPMU_G2DD0_interrupt_lower			270
 #define INTREQ__PPMU_G2DD1_interrupt_upper_or_normal		271

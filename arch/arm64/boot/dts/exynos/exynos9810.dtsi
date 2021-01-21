@@ -3387,7 +3387,7 @@
 		#size-cells = <1>;
 		ranges;
 
-		domain-clients = <&astc>, <&smfc>, <&scaler_0>;
+		domain-clients = <&jsqz>, <&smfc>, <&scaler_0>;
 	};
 
 	smfc: smfc@17700000 {
@@ -3402,16 +3402,15 @@
 		samsung,power-domain = <&pd_g2d>;
 	};
 
-	astc: astc@17720000 {
-		compatible = "samsung,exynos-astc";
+	jsqz: jsqz@17720000 {
+		compatible = "samsung,exynos-jsqz";
 		dma-coherent;
 		reg = <0x0 0x17720000 0x1000>;
-		interrupts = <0 INTREQ__ASTC 0>;
-		clocks = <&clock GATE_ASTC>;
+		interrupts = <0 INTREQ__JSQZ 0>;
+		clocks = <&clock GATE_JSQZ>;
 		clock-names = "gate";
 		iommus = <&sysmmu_g2d2>;
-		/* ASTC IP uses 533000, not 534000 */
-		astc,int_qos_minlock = <533000>;
+		jsqz,int_qos_minlock = <533000>;
 		samsung,power-domain = <&pd_g2d>;
 	};
 
