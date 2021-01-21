@@ -79,6 +79,7 @@ int get_earpiece_gain(void);
 
 // Mic
 #define MIC_DEFAULT			0
+#define MIC_MAX 			255
 #define MIC_DOWN_GAIN_DEFAULT		128
 #define MIC_UP_GAIN_DEFAULT		128
 #define MIC_HP_GAIN_DEFAULT		128

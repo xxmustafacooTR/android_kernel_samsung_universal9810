@@ -571,6 +571,8 @@ static ssize_t mic_down_gain_store(struct device *dev, struct device_attribute *
 
 	if (ret != 1)
 		return -EINVAL;
+	if (val > MIC_MAX)
+		val = MIC_MAX;
 
 	mic_down_gain = val;
 
@@ -599,6 +601,8 @@ static ssize_t mic_up_gain_store(struct device *dev, struct device_attribute *at
 
 	if (ret != 1)
 		return -EINVAL;
+	if (val > MIC_MAX)
+		val = MIC_MAX;
 
 	mic_up_gain = val;
 
@@ -627,6 +631,8 @@ static ssize_t mic_hp_gain_store(struct device *dev, struct device_attribute *at
 
 	if (ret != 1)
 		return -EINVAL;
+	if (val > MIC_MAX)
+		val = MIC_MAX;
 
 	mic_hp_gain = val;
 
