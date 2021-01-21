@@ -995,16 +995,30 @@ void s5p_mfc_set_enc_params_vp9(struct s5p_mfc_ctx *ctx)
 
 	/* profile*/
 	reg = 0;
-	reg |= (p_vp9->vp9_version) ;
+	reg |= p_vp9->vp9_version;
 	/* bit depth minus8 */
 	if (ctx->is_10bit) {
 		reg &= ~(0x3F << 17);
 		reg |= (0x2 << 17);
 		reg |= (0x2 << 20);
-		/* fixed profile */
-		reg |= 0x2;
 	}
 	MFC_WRITEL(reg, S5P_FIMV_E_PICTURE_PROFILE);
+
+	/* for only information about wrong setting */
+	if (ctx->is_422format) {
+		if ((p_vp9->vp9_version != S5P_FIMV_E_PROFILE_VP9_PROFILE1) &&
+			(p_vp9->vp9_version != S5P_FIMV_E_PROFILE_VP9_PROFILE3)) {
+			mfc_err_ctx("4:2:2 format is not matched with profile(%d)\n",
+					p_vp9->vp9_version);
+		}
+	}
+	if (ctx->is_10bit) {
+		if ((p_vp9->vp9_version != S5P_FIMV_E_PROFILE_VP9_PROFILE2) &&
+			(p_vp9->vp9_version != S5P_FIMV_E_PROFILE_VP9_PROFILE3)) {
+			mfc_err_ctx("10bit format is not matched with profile(%d)\n",
+					p_vp9->vp9_version);
+		}
+	}
 
 	reg = MFC_READL(S5P_FIMV_E_VP9_OPTION);
 	/* if num_refs_for_p is 2, the performance falls by half */
@@ -1149,7 +1163,7 @@ void s5p_mfc_set_enc_params_hevc(struct s5p_mfc_ctx *ctx)
 	/* tier_flag & level & profile */
 	reg = 0;
 	/* profile */
-	reg |= p_hevc->profile & 0x3;
+	reg |= p_hevc->profile & 0xf;
 	/* level */
 	reg &= ~(0xFF << 8);
 	reg |= (p_hevc->level << 8);
@@ -1160,13 +1174,25 @@ void s5p_mfc_set_enc_params_hevc(struct s5p_mfc_ctx *ctx)
 		reg &= ~(0x3F << 17);
 		reg |= (0x2 << 17);
 		reg |= (0x2 << 20);
-		/* fixed profile */
-		if (ctx->is_422format)
-			reg |= 0x2;
-		else
-			reg |= 0x3;
 	}
 	MFC_WRITEL(reg, S5P_FIMV_E_PICTURE_PROFILE);
+
+	/* for only information about wrong setting */
+	if (ctx->is_422format) {
+		if ((p_hevc->profile != S5P_FIMV_E_PROFILE_HEVC_MAIN_422_10_INTRA) &&
+			(p_hevc->profile != S5P_FIMV_E_PROFILE_HEVC_MAIN_422_10)) {
+			mfc_err_ctx("4:2:2 format is not matched with profile(%d)\n",
+					p_hevc->profile);
+		}
+	}
+	if (ctx->is_10bit) {
+		if ((p_hevc->profile != S5P_FIMV_E_PROFILE_HEVC_MAIN_422_10_INTRA) &&
+			(p_hevc->profile != S5P_FIMV_E_PROFILE_HEVC_MAIN_10) &&
+			(p_hevc->profile != S5P_FIMV_E_PROFILE_HEVC_MAIN_422_10)) {
+			mfc_err_ctx("10bit format is not matched with profile(%d)\n",
+					p_hevc->profile);
+		}
+	}
 
 	/* max partition depth */
 	reg = MFC_READL(S5P_FIMV_E_HEVC_OPTIONS);
