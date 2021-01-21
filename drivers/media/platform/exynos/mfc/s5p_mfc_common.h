@@ -172,9 +172,10 @@
 				(s5p_mfc_version(dev) == 0xA01))
 #define IS_MFCV11X(dev)		(s5p_mfc_version(dev) == 0x1100)
 #define IS_MFCV12X(dev)		(s5p_mfc_version(dev) == 0x1200)
-#define FROM_MFCV11X(dev)	(IS_MFCV11X(dev) || IS_MFCV12X(dev))
-#define FROM_MFCV10X(dev)	(IS_MFCV10X(dev) || IS_MFCV11X(dev) || \
-				IS_MFCV12X(dev))
+#define IS_MFCV13X(dev)		(s5p_mfc_version(dev) == 0x1300)
+#define FROM_MFCV11X(dev)	(IS_MFCV11X(dev) || IS_MFCV12X(dev) || \
+					IS_MFCV13X(dev))
+#define FROM_MFCV10X(dev)	(IS_MFCV10X(dev) || FROM_MFCV11X(dev))
 
 /* supported feature macros by F/W version */
 #define FW_HAS_CONCEAL_CONTROL(dev)	(FROM_MFCV10X(dev))
@@ -246,6 +247,15 @@ static inline unsigned int s5p_mfc_version(struct s5p_mfc_dev *dev)
 		break;
 	case IP_VER_MFC_9L_0:
 		version = 0x1200;
+		break;
+	case IP_VER_MFC_9R_0:
+		version = 0x1202;
+		break;
+	case IP_VER_MFC_9M_0:
+		version = 0x1021;
+		break;
+	case IP_VER_MFC_9M_1:
+		version = 0x1300;
 		break;
 	}
 
