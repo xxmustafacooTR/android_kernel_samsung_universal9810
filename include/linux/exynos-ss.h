@@ -173,6 +173,7 @@ extern void s3c2410wdt_reset_confirm(unsigned long mtime, int index);
 #define s3c2410wdt_set_emergency_stop(a) 	(-1)
 #define s3c2410wdt_set_emergency_reset(a, b)	do { } while (0)
 #define s3c2410wdt_keepalive_emergency(a, b)	do { } while (0)
+#define s3c2410wdt_set_emergency_reset(a, b)	do { } while (0)
 #define s3c2410wdt_reset_confirm(a, b)		do { } while (0)
 #endif
 
