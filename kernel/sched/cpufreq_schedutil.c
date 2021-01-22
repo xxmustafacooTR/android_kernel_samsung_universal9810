@@ -572,7 +572,9 @@ static void sugov_update_shared(struct update_util_data *hook, u64 time,
 
 	if (sugov_should_update_freq(sg_policy, time)) {
 
+#ifndef CONFIG_PCIEASPM_PERFORMANCE
 		flags &= ~SCHED_CPUFREQ_DL;
+#endif
 
 		if (flags & SCHED_CPUFREQ_DL)
 			next_f = sg_policy->policy->cpuinfo.max_freq;
@@ -1198,6 +1200,8 @@ static void sugov_stop(struct cpufreq_policy *policy)
 		cpufreq_remove_update_util_hook(cpu);
 	}
 
+	synchronize_sched();
+
 #ifdef CONFIG_SCHED_KAIR_GLUE
 	for_each_cpu(cpu, policy->cpus) {
 		struct sugov_cpu *sg_cpu = &per_cpu(sugov_cpu, cpu);
@@ -1207,8 +1211,10 @@ static void sugov_stop(struct cpufreq_policy *policy)
 	}
 #endif
 
-	if (!policy->fast_switch_enabled)
+	if (!policy->fast_switch_enabled) {
+		irq_work_sync(&sg_policy->irq_work);
 		kthread_cancel_work_sync(&sg_policy->work);
+	}
 }
 
 static void sugov_limits(struct cpufreq_policy *policy)
