@@ -796,7 +796,7 @@
 		gpu_dvfs_table_size = <8 7>; /*<row col>*/
 		gpu_dvfs_table = <  598000    78  100   5  2093000        0      	0
 				    572000    78   99   1  2002000        0      	0
-		                    546000    78   95   1  1794000        0      	0
+		                    546000    78   95   1  2002000        0      	0
 		                    455000    78   85   1  1794000        0      	0
 				    385000    78   85   1  1539000        0      	0
 		                    338000    78   80   1  1352000        0      	0
@@ -3910,7 +3910,7 @@
 		/* initial_freq, default_qos, suspend_freq, min_freq, max_freq reboot_freq */
 
 		/* Booting value */
-		boot_info = <40 1794000>;
+		boot_info = <40 2002000>;
 		/* boot_qos_timeout, boot_freq */
 
 		use_get_dev = "false";
@@ -5021,7 +5021,8 @@
 		compatible = "exynos, hotplug_governor";
 
 		single_change_ms = <30>;
-		dual_change_ms = <30>;
+		dual_change_ms = <25>;
+		triple_change_ms = <20>;
 		quad_change_ms = <15>;
 		big_heavy_thr = <640>;
 		lit_heavy_thr = <200>;

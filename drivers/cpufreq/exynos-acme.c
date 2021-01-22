@@ -1083,6 +1083,86 @@ static int init_dm(struct exynos_cpufreq_domain *domain,
 	return register_exynos_dm_freq_scaler(domain->dm_type, dm_scaler);
 }
 
+#ifndef CONFIG_PCIEASPM_PERFORMANCE
+static unsigned long arg_cpu_min_c1 = 208000;
+
+static int __init cpufreq_read_cpu_min_c1(char *cpu_min_c1)
+{
+	unsigned long ui_khz;
+	int ret;
+
+	ret = kstrtoul(cpu_min_c1, 0, &ui_khz);
+	if (ret)
+		return -EINVAL;
+
+	arg_cpu_min_c1 = ui_khz;
+	printk("cpu_min_c1=%lu\n", arg_cpu_min_c1);
+	return ret;
+}
+__setup("cpu_min_c1=", cpufreq_read_cpu_min_c1);
+
+unsigned long arg_cpu_min_c2 = 598000;
+
+static __init int cpufreq_read_cpu_min_c2(char *cpu_min_c2)
+{
+	unsigned long ui_khz;
+	int ret;
+
+	ret = kstrtoul(cpu_min_c2, 0, &ui_khz);
+	if (ret)
+		return -EINVAL;
+
+	arg_cpu_min_c2 = ui_khz;
+	printk("cpu_min_c2=%lu\n", arg_cpu_min_c2);
+	return ret;
+}
+__setup("cpu_min_c2=", cpufreq_read_cpu_min_c2);
+#endif
+
+#ifndef CONFIG_PCIEASPM_BATTERY
+#ifdef CONFIG_PCIEASPM_PERFORMANCE
+static unsigned long arg_cpu_max_c1 = 2002000;
+#else
+static unsigned long arg_cpu_max_c1 = 1794000;
+#endif
+
+static int __init cpufreq_read_cpu_max_c1(char *cpu_max_c1)
+{
+	unsigned long ui_khz;
+	int ret;
+
+	ret = kstrtoul(cpu_max_c1, 0, &ui_khz);
+	if (ret)
+		return -EINVAL;
+
+	arg_cpu_max_c1 = ui_khz;
+	printk("cpu_max_c1=%lu\n", arg_cpu_max_c1);
+	return ret;
+}
+__setup("cpu_max_c1=", cpufreq_read_cpu_max_c1);
+
+#ifdef CONFIG_PCIEASPM_PERFORMANCE
+unsigned long arg_cpu_max_c2 = 2964000;
+#else
+unsigned long arg_cpu_max_c2 = 2860000;
+#endif
+
+static __init int cpufreq_read_cpu_max_c2(char *cpu_max_c2)
+{
+	unsigned long ui_khz;
+	int ret;
+
+	ret = kstrtoul(cpu_max_c2, 0, &ui_khz);
+	if (ret)
+		return -EINVAL;
+
+	arg_cpu_max_c2 = ui_khz;
+	printk("cpu_max_c2=%lu\n", arg_cpu_max_c2);
+	return ret;
+}
+__setup("cpu_max_c2=", cpufreq_read_cpu_max_c2);
+#endif
+
 static __init int init_domain(struct exynos_cpufreq_domain *domain,
 					struct device_node *dn)
 {
@@ -1111,6 +1191,27 @@ static __init int init_domain(struct exynos_cpufreq_domain *domain,
 	if (!of_property_read_u32(dn, "max-freq", &val))
 		domain->max_usable_freq = min(domain->max_freq, val);
 #endif
+
+
+	if (domain->id == 0) {
+#ifndef CONFIG_PCIEASPM_BATTERY
+		domain->max_usable_freq = arg_cpu_max_c1;
+		domain->max_freq = arg_cpu_max_c1;
+#endif
+#ifndef CONFIG_PCIEASPM_PERFORMANCE
+		domain->min_usable_freq = arg_cpu_min_c1;
+		domain->min_freq = arg_cpu_min_c1;
+#endif
+	} else if (domain->id == 1) {
+#ifndef CONFIG_PCIEASPM_BATTERY
+		domain->max_usable_freq = arg_cpu_max_c2;
+		domain->max_freq = arg_cpu_max_c2;
+#endif
+#ifndef CONFIG_PCIEASPM_PERFORMANCE
+		domain->min_usable_freq = arg_cpu_min_c2;
+		domain->min_freq = arg_cpu_min_c2;
+#endif
+	}
 
 	/* Default QoS for user */
 	if (!of_property_read_u32(dn, "user-default-qos", &val))

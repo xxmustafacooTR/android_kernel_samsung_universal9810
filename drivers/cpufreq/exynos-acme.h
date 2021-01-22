@@ -48,6 +48,9 @@ struct exynos_cpufreq_domain {
 	unsigned int			min_freq;
 #ifdef CONFIG_SEC_PM
 	unsigned int			max_usable_freq;
+#ifndef CONFIG_PCIEASPM_PERFORMANCE
+	unsigned int			min_usable_freq;
+#endif
 #endif
 	unsigned int			boot_freq;
 	unsigned int			resume_freq;
