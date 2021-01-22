@@ -230,7 +230,7 @@ do_star2lte() {
   vendorproduct=$(getprop ro.vendor.product.device 2>/dev/null);
     for devicename in $device $product $vendordevice $vendorproduct; do
       if [ "$devicename" == "star2lte" ]; then
-        ui_print "Looking for star2lte kernel files...";
+        ui_print "Looking for star2lte performance kernel files...";
         cp $AKHOME/Kernel/G965zImage $AKHOME/zImage;
         cp $AKHOME/Kernel/G965dtb.img $AKHOME/dtb.img;
         break 2;
@@ -244,7 +244,7 @@ do_starlte() {
   vendorproduct=$(getprop ro.vendor.product.device 2>/dev/null);
     for devicename in $device $product $vendordevice $vendorproduct; do
       if [ "$devicename" == "starlte" ]; then
-        ui_print "Looking for starlte kernel files...";
+        ui_print "Looking for starlte performance kernel files...";
 	$bspatch $AKHOME/Kernel/G965zImage $AKHOME/zImage $AKHOME/Kernel/G960zImage.diff
 	$bspatch $AKHOME/Kernel/G965dtb.img $AKHOME/dtb.img $AKHOME/Kernel/G960dtb.diff
         break 2;
@@ -258,7 +258,7 @@ do_crownlte() {
   vendorproduct=$(getprop ro.vendor.product.device 2>/dev/null);
     for devicename in $device $product $vendordevice $vendorproduct; do
       if [ "$devicename" == "crownlte" ]; then
-        ui_print "Looking for crownlte kernel files...";
+        ui_print "Looking for crownlte performance kernel files...";
         $bspatch $AKHOME/Kernel/G965zImage $AKHOME/zImage $AKHOME/Kernel/N960zImage.diff
 	$bspatch $AKHOME/Kernel/G965dtb.img $AKHOME/dtb.img $AKHOME/Kernel/N960dtb.diff
         break 2;
@@ -546,7 +546,6 @@ setup_env;
 BUS=$(cat /tmp/aroma/bus.prop | cut -d '=' -f2)
 
 do_devicecheck;
-do_devicecheck;
 if [ $BUS = 1 ]; then
   do_starlte;
   do_star2lte;
@@ -556,7 +555,8 @@ if [ $BUS = 3 ]; then
   do_starblte;
   do_star2blte;
   do_crownblte;
-else
+fi;
+if [ $BUS = 2 ]; then
   do_starslte;
   do_star2slte;
   do_crownslte;
