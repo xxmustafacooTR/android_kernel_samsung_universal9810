@@ -2234,12 +2234,18 @@ struct kbase_jd_atom *kbase_js_pull(struct kbase_context *kctx, int js)
 
 	return katom;
 }
-
-
+#ifndef CONFIG_PCIEASPM_BATTERY
+static void js_return_worker(struct kthread_work *data)
+#else
 static void js_return_worker(struct work_struct *data)
+#endif
 {
 	struct kbase_jd_atom *katom = container_of(data, struct kbase_jd_atom,
+#ifndef CONFIG_PCIEASPM_BATTERY
+									js_work);
+#else
 									work);
+#endif
 	struct kbase_context *kctx = katom->kctx;
 	struct kbase_device *kbdev = kctx->kbdev;
 	struct kbasep_js_device_data *js_devdata = &kbdev->js_data;
@@ -2356,8 +2362,13 @@ void kbase_js_unpull(struct kbase_context *kctx, struct kbase_jd_atom *katom)
 
 	kbase_job_check_leave_disjoint(kctx->kbdev, katom);
 
+#ifndef CONFIG_PCIEASPM_BATTERY
+	kthread_init_work(&katom->js_work, js_return_worker);
+	kthread_queue_work(&kctx->worker, &katom->js_work);
+#else
 	INIT_WORK(&katom->work, js_return_worker);
 	queue_work(kctx->jctx.job_done_wq, &katom->work);
+#endif
 }
 
 bool kbase_js_complete_atom_wq(struct kbase_context *kctx,

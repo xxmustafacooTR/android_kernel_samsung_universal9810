@@ -608,6 +608,9 @@ static int kbase_file_create_kctx(struct kbase_file *const kfile,
 {
 	struct kbase_device *kbdev = NULL;
 	struct kbase_context *kctx = NULL;
+#ifndef CONFIG_PCIEASPM_BATTERY
+	struct sched_param param;
+#endif
 #ifdef CONFIG_DEBUG_FS
 	char kctx_name[64];
 #endif
@@ -672,6 +675,25 @@ static int kbase_file_create_kctx(struct kbase_file *const kfile,
 
 	kfile->kctx = kctx;
 	atomic_set(&kfile->setup_state, KBASE_FILE_COMPLETE);
+
+#ifndef CONFIG_PCIEASPM_BATTERY
+	kthread_init_worker(&kctx->worker);
+
+	kctx->worker_thread = kthread_run(kthread_worker_fn,
+				&kctx->worker, "mali_kctx_worker");
+
+	if (IS_ERR(kctx->worker_thread)) {
+		pr_err("unable to start mali worker thread\n");
+		return -ENOMEM;
+	}
+
+#ifndef CONFIG_PCIEASPM_PERFORMANCE
+	param.sched_priority = MAX_RT_PRIO - 1;
+#else
+	param.sched_priority = 4;
+#endif
+	sched_setscheduler_nocheck(kctx->worker_thread, SCHED_FIFO, &param);
+#endif
 
 	return 0;
 }

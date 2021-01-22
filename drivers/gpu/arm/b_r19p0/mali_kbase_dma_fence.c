@@ -39,7 +39,11 @@
 #include <mali_kbase.h>
 
 static void
+#ifndef CONFIG_PCIEASPM_BATTERY
+kbase_dma_fence_work(struct kthread_work *pwork);
+#else
 kbase_dma_fence_work(struct work_struct *pwork);
+#endif
 
 static void
 kbase_dma_fence_waiters_add(struct kbase_jd_atom *katom)
@@ -126,9 +130,13 @@ kbase_dma_fence_queue_work(struct kbase_jd_atom *katom)
 {
 	struct kbase_context *kctx = katom->kctx;
 	bool ret;
-
+#ifndef CONFIG_PCIEASPM_BATTERY
+	kthread_init_work(&katom->fence_work, kbase_dma_fence_work);
+	ret = kthread_queue_work(&kctx->worker, &katom->work);
+#else
 	INIT_WORK(&katom->work, kbase_dma_fence_work);
 	ret = queue_work(kctx->dma_fence.wq, &katom->work);
+#endif
 	/* Warn if work was already queued, that should not happen. */
 	WARN_ON(!ret);
 }
@@ -171,12 +179,20 @@ kbase_dma_fence_cancel_atom(struct kbase_jd_atom *katom)
  * This function will clean and mark all dependencies as satisfied
  */
 static void
+#ifndef CONFIG_PCIEASPM_BATTERY
+kbase_dma_fence_work(struct kthread_work *pwork)
+#else
 kbase_dma_fence_work(struct work_struct *pwork)
+#endif
 {
 	struct kbase_jd_atom *katom;
 	struct kbase_jd_context *ctx;
 
+#ifndef CONFIG_PCIEASPM_BATTERY
+	katom = container_of(pwork, struct kbase_jd_atom, fence_work);
+#else
 	katom = container_of(pwork, struct kbase_jd_atom, work);
+#endif
 	ctx = &katom->kctx->jctx;
 
 	mutex_lock(&ctx->lock);

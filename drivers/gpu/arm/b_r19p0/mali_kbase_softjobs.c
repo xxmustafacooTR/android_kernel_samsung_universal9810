@@ -211,11 +211,18 @@ void kbase_soft_event_wait_callback(struct kbase_jd_atom *katom)
 	mutex_unlock(&kctx->jctx.lock);
 }
 #endif
-
+#ifndef CONFIG_PCIEASPM_BATTERY
+static void kbasep_soft_event_complete_job(struct kthread_work *work)
+#else
 static void kbasep_soft_event_complete_job(struct work_struct *work)
+#endif
 {
 	struct kbase_jd_atom *katom = container_of(work, struct kbase_jd_atom,
+#ifndef CONFIG_PCIEASPM_BATTERY
+			job_done_work);
+#else
 			work);
+#endif
 	struct kbase_context *kctx = katom->kctx;
 	int resched;
 
@@ -244,10 +251,19 @@ void kbasep_complete_triggered_soft_events(struct kbase_context *kctx, u64 evt)
 				list_del(&katom->queue);
 
 				katom->event_code = BASE_JD_EVENT_DONE;
+#ifndef CONFIG_PCIEASPM_BATTERY
+				kthread_init_work(&katom->job_done_work,
+#else
 				INIT_WORK(&katom->work,
+#endif
 					  kbasep_soft_event_complete_job);
+#ifndef CONFIG_PCIEASPM_BATTERY
+				kthread_queue_work(&kctx->worker,
+					   &katom->job_done_work);
+#else
 				queue_work(kctx->jctx.job_done_wq,
 					   &katom->work);
+#endif
 			} else {
 				/* There are still other waiting jobs, we cannot
 				 * cancel the timer yet.
@@ -340,10 +356,18 @@ static void kbase_fence_debug_wait_timeout(struct kbase_jd_atom *katom)
 
 struct kbase_fence_debug_work {
 	struct kbase_jd_atom *katom;
+#ifndef CONFIG_PCIEASPM_BATTERY
+	struct kthread_work work;
+#else
 	struct work_struct work;
+#endif
 };
 
+#ifndef CONFIG_PCIEASPM_BATTERY
+static void kbase_fence_debug_wait_timeout_worker(struct kthread_work *work)
+#else
 static void kbase_fence_debug_wait_timeout_worker(struct work_struct *work)
+#endif
 {
 	struct kbase_fence_debug_work *w = container_of(work,
 			struct kbase_fence_debug_work, work);
@@ -369,8 +393,13 @@ static void kbase_fence_debug_timeout(struct kbase_jd_atom *katom)
 	/* Ignore allocation failure. */
 	if (work) {
 		work->katom = katom;
+#ifndef CONFIG_PCIEASPM_BATTERY
+		kthread_init_work(&work->work, kbase_fence_debug_wait_timeout_worker);
+		kthread_queue_work(&kctx->worker, &work->work);
+#else
 		INIT_WORK(&work->work, kbase_fence_debug_wait_timeout_worker);
 		queue_work(kctx->jctx.job_done_wq, &work->work);
+#endif
 	}
 }
 #endif /* CONFIG_MALI_FENCE_DEBUG */
@@ -406,8 +435,13 @@ void kbasep_soft_job_timeout_worker(struct timer_list *timer)
 			list_del(&katom->queue);
 
 			katom->event_code = BASE_JD_EVENT_JOB_CANCELLED;
+#ifndef CONFIG_PCIEASPM_BATTERY
+			kthread_init_work(&katom->job_done_work, kbasep_soft_event_complete_job);
+			kthread_queue_work(&kctx->worker, &katom->job_done_work);
+#else
 			INIT_WORK(&katom->work, kbasep_soft_event_complete_job);
 			queue_work(kctx->jctx.job_done_wq, &katom->work);
+#endif
 			break;
 #ifdef CONFIG_MALI_FENCE_DEBUG
 		case BASE_JD_REQ_SOFT_FENCE_WAIT:

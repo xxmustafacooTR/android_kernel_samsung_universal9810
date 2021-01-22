@@ -48,6 +48,7 @@
 #include <linux/slab.h>
 #include <linux/file.h>
 #include <linux/sizes.h>
+#include <linux/kthread.h>
 
 #ifdef CONFIG_MALI_BUSLOG
 #include <linux/bus_logger.h>
@@ -608,7 +609,13 @@ struct kbase_ext_res {
  *                         snapshot of the age_count counter in kbase context.
  */
 struct kbase_jd_atom {
+	/* kthread work list */
 	struct work_struct work;
+#ifndef CONFIG_PCIEASPM_BATTERY
+	struct kthread_work event_work;
+	struct kthread_work job_done_work;
+	struct kthread_work js_work;
+#endif
 	ktime_t start_timestamp;
 
 	struct base_jd_udata udata;
@@ -2174,6 +2181,10 @@ struct kbase_context {
 	struct list_head event_coalesce_list;
 	struct mutex event_mutex;
 	atomic_t event_closed;
+#ifndef CONFIG_PCIEASPM_BATTERY
+	struct kthread_worker worker;
+	struct task_struct *worker_thread;
+#endif
 	struct workqueue_struct *event_workq;
 	atomic_t event_count;
 	int event_coalesce_count;
