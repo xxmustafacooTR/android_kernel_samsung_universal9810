@@ -1439,8 +1439,8 @@ static int __max98512_spk_enable(struct max98512_priv *max98512)
 
 	battery_temp = maxdsm_cal_get_temp_from_power_supply();
 
-	if (battery_temp > 520) {
-		msg_maxim("battery_temp[%d] over 52", battery_temp);
+	if (battery_temp > 55) {
+		msg_maxim("battery_temp[%d] over 55", battery_temp);
 		max98512_wrapper_write(max98512, MAX98512B,
 				       MAX98512_R0059_BROWNOUT_LVL2_THRESH,
 				       0x30);
@@ -1448,7 +1448,7 @@ static int __max98512_spk_enable(struct max98512_priv *max98512)
 				       MAX98512_R005A_BROWNOUT_LVL3_THRESH,
 				       0x10);
 	} else {
-		msg_maxim("battery_temp[%d] under 52", battery_temp);
+		msg_maxim("battery_temp[%d] under 55", battery_temp);
 		max98512_wrapper_write(max98512, MAX98512B,
 				       MAX98512_R0059_BROWNOUT_LVL2_THRESH,
 				       0x40);
