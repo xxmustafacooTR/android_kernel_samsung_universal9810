@@ -17,7 +17,7 @@
 ###
 
 ini_set("rom_name",             "ELS Kernel");
-ini_set("rom_version",          "RZ Kernel+");
+ini_set("rom_version",          "Stable Kernel+");
 ini_set("rom_author",           "xxmustafacooTR");
 ini_set("rom_device",           "Samsung Galaxy S9/S9+/N9");
 ini_set("rom_date",             "For OneUI2.5 (2.X)");
@@ -62,31 +62,7 @@ menubox(
   "Battery Life","BIG Single: 2704mhz\nLITTLE: 1794mhz\n25HZ Tick Rate\n32ms PELT",0
 );
 
-if prop("bus.prop", "selected")==1 then
-  selectbox(
-  "\nCPU frequencies","<@center><b>\nSelect Freqs Which You Want\n</b></@>","","cpu.prop",
-  "OC++","BIG Dual: 2704mhz\nBIG Triple: 2494mhz\nBIG Quad: 2314mhz",1,
-  "OC+","BIG Dual: 2496mhz\nBIG Triple: 2314mhz\nBIG Quad: 2106mhz",0,
-  "OC","BIG Dual: 2496mhz\nBIG Triple: 2106mhz\nBIG Quad: 1924mhz",0,
-  "Stock","BIG Dual: 2314mhz\nBIG Triple: 1794mhz\nBIG Quad: 1794mhz",0,
-  "UC","BIG Dual: 2002mhz\nBIG Triple: 1924mhz\nBIG Quad: 1690mhz",0,
-  "UC-","BIG Dual: 1924mhz\nBIG Triple: 1794mhz\nBIG Quad: 1586mhz",0,
-  "UC--","BIG Dual: 1794mhz\nBIG Triple: 1586mhz\nBIG Quad: 1469mhz",0
-  );
-endif;
-if prop("bus.prop", "selected")==3 then
-  selectbox(
-  "\nCPU frequencies","<@center><b>\nSelect Freqs Which You Want\n</b></@>","","cpu.prop",
-  "OC++","BIG Dual: 2704mhz\nBIG Triple: 2494mhz\nBIG Quad: 2314mhz",0,
-  "OC+","BIG Dual: 2496mhz\nBIG Triple: 2314mhz\nBIG Quad: 2106mhz",0,
-  "OC","BIG Dual: 2496mhz\nBIG Triple: 2106mhz\nBIG Quad: 1924mhz",0,
-  "Stock","BIG Dual: 2314mhz\nBIG Triple: 1794mhz\nBIG Quad: 1794mhz",1,
-  "UC","BIG Dual: 2002mhz\nBIG Triple: 1924mhz\nBIG Quad: 1690mhz",0,
-  "UC-","BIG Dual: 1924mhz\nBIG Triple: 1794mhz\nBIG Quad: 1586mhz",0,
-  "UC--","BIG Dual: 1794mhz\nBIG Triple: 1586mhz\nBIG Quad: 1469mhz",0
-  );
-else
-   selectbox(
+selectbox(
   "\nCPU frequencies","<@center><b>\nSelect Freqs Which You Want\n</b></@>","","cpu.prop",
   "OC++","BIG Dual: 2704mhz\nBIG Triple: 2494mhz\nBIG Quad: 2314mhz",0,
   "OC+","BIG Dual: 2496mhz\nBIG Triple: 2314mhz\nBIG Quad: 2106mhz",0,
@@ -95,8 +71,7 @@ else
   "UC","BIG Dual: 2002mhz\nBIG Triple: 1924mhz\nBIG Quad: 1690mhz",0,
   "UC-","BIG Dual: 1924mhz\nBIG Triple: 1794mhz\nBIG Quad: 1586mhz",0,
   "UC--","BIG Dual: 1794mhz\nBIG Triple: 1586mhz\nBIG Quad: 1469mhz",0
-  );
-endif;
+);
 
 selectbox(
   "\nZRAM","<@center><b>\nSelect ZRAM Sizes Which You Want\n</b></@>","","zram.prop",
