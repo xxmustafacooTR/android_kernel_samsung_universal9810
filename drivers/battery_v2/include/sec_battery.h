@@ -480,6 +480,7 @@ extern bool sleep_mode;
 
 extern void select_pdo(int num);
 
+void charger_control_init(struct sec_battery_info *info);
 extern int adc_read(struct sec_battery_info *battery, int channel);
 extern void adc_init(struct platform_device *pdev, struct sec_battery_info *battery);
 extern void adc_exit(struct sec_battery_info *battery);
