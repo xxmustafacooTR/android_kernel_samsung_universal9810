@@ -265,6 +265,90 @@ do_crownlte() {
       fi;
     done;
 }
+do_star2blte() {
+  device=$(getprop ro.product.device 2>/dev/null);
+  product=$(getprop ro.build.product 2>/dev/null);
+  vendordevice=$(getprop ro.product.vendor.device 2>/dev/null);
+  vendorproduct=$(getprop ro.vendor.product.device 2>/dev/null);
+    for devicename in $device $product $vendordevice $vendorproduct; do
+      if [ "$devicename" == "star2lte" ]; then
+        ui_print "Looking for star2lte battery kernel files...";
+        $bspatch $AKHOME/Kernel/G965zImage $AKHOME/zImage $AKHOME/Kernel/G965BzImage.diff
+        cp $AKHOME/Kernel/G965dtb.img $AKHOME/dtb.img;
+        break 2;
+      fi;
+    done;
+}
+do_starblte() {
+  device=$(getprop ro.product.device 2>/dev/null);
+  product=$(getprop ro.build.product 2>/dev/null);
+  vendordevice=$(getprop ro.product.vendor.device 2>/dev/null);
+  vendorproduct=$(getprop ro.vendor.product.device 2>/dev/null);
+    for devicename in $device $product $vendordevice $vendorproduct; do
+      if [ "$devicename" == "starlte" ]; then
+        ui_print "Looking for starlte battery kernel files...";
+	$bspatch $AKHOME/Kernel/G965zImage $AKHOME/zImage $AKHOME/Kernel/G960BzImage.diff
+	$bspatch $AKHOME/Kernel/G965dtb.img $AKHOME/dtb.img $AKHOME/Kernel/G960dtb.diff
+        break 2;
+      fi;
+    done;
+}
+do_crownblte() {
+  device=$(getprop ro.product.device 2>/dev/null);
+  product=$(getprop ro.build.product 2>/dev/null);
+  vendordevice=$(getprop ro.product.vendor.device 2>/dev/null);
+  vendorproduct=$(getprop ro.vendor.product.device 2>/dev/null);
+    for devicename in $device $product $vendordevice $vendorproduct; do
+      if [ "$devicename" == "crownlte" ]; then
+        ui_print "Looking for crownlte battery kernel files...";
+        $bspatch $AKHOME/Kernel/G965zImage $AKHOME/zImage $AKHOME/Kernel/N960BzImage.diff
+	$bspatch $AKHOME/Kernel/G965dtb.img $AKHOME/dtb.img $AKHOME/Kernel/N960dtb.diff
+        break 2;
+      fi;
+    done;
+}
+do_star2slte() {
+  device=$(getprop ro.product.device 2>/dev/null);
+  product=$(getprop ro.build.product 2>/dev/null);
+  vendordevice=$(getprop ro.product.vendor.device 2>/dev/null);
+  vendorproduct=$(getprop ro.vendor.product.device 2>/dev/null);
+    for devicename in $device $product $vendordevice $vendorproduct; do
+      if [ "$devicename" == "star2lte" ]; then
+        ui_print "Looking for star2lte stable kernel files...";
+        $bspatch $AKHOME/Kernel/G965zImage $AKHOME/zImage $AKHOME/Kernel/G965SzImage.diff
+        cp $AKHOME/Kernel/G965dtb.img $AKHOME/dtb.img;
+        break 2;
+      fi;
+    done;
+}
+do_starslte() {
+  device=$(getprop ro.product.device 2>/dev/null);
+  product=$(getprop ro.build.product 2>/dev/null);
+  vendordevice=$(getprop ro.product.vendor.device 2>/dev/null);
+  vendorproduct=$(getprop ro.vendor.product.device 2>/dev/null);
+    for devicename in $device $product $vendordevice $vendorproduct; do
+      if [ "$devicename" == "starlte" ]; then
+        ui_print "Looking for starlte stable kernel files...";
+	$bspatch $AKHOME/Kernel/G965zImage $AKHOME/zImage $AKHOME/Kernel/G960SzImage.diff
+	$bspatch $AKHOME/Kernel/G965dtb.img $AKHOME/dtb.img $AKHOME/Kernel/G960dtb.diff
+        break 2;
+      fi;
+    done;
+}
+do_crownslte() {
+  device=$(getprop ro.product.device 2>/dev/null);
+  product=$(getprop ro.build.product 2>/dev/null);
+  vendordevice=$(getprop ro.product.vendor.device 2>/dev/null);
+  vendorproduct=$(getprop ro.vendor.product.device 2>/dev/null);
+    for devicename in $device $product $vendordevice $vendorproduct; do
+      if [ "$devicename" == "crownlte" ]; then
+        ui_print "Looking for crownlte stable kernel files...";
+        $bspatch $AKHOME/Kernel/G965zImage $AKHOME/zImage $AKHOME/Kernel/N960SzImage.diff
+	$bspatch $AKHOME/Kernel/G965dtb.img $AKHOME/dtb.img $AKHOME/Kernel/N960dtb.diff
+        break 2;
+      fi;
+    done;
+}
 int2ver() {
   if $BB [ "$1" -eq "$1" ] 2>/dev/null; then
     echo "$1.0.0";
@@ -462,9 +546,21 @@ setup_env;
 BUS=$(cat /tmp/aroma/bus.prop | cut -d '=' -f2)
 
 do_devicecheck;
-do_starlte;
-do_star2lte;
-do_crownlte;
+do_devicecheck;
+if [ $BUS = 1 ]; then
+  do_starlte;
+  do_star2lte;
+  do_crownlte;
+fi;
+if [ $BUS = 3 ]; then
+  do_starblte;
+  do_star2blte;
+  do_crownblte;
+else
+  do_starslte;
+  do_star2slte;
+  do_crownslte;
+fi;
 do_versioncheck;
 do_levelcheck;
 

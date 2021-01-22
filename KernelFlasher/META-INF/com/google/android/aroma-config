@@ -55,7 +55,27 @@ agreebox(
    "<@center>\nYou must accept the terms</@>"
 );
 
-selectbox(
+menubox(
+  "\nCPU and Bus frequencies","<@center><b>\nSelect Kernel Build Style\n</b></@>","","bus.prop",
+  "Performance","BIG Single: 2886mhz\nLITTLE: 2002mhz\n250HZ Tick Rate\n10ms PELT",0,
+  "Default","BIG Single: 2860mhz\nLITTLE: 1794mhz\n100HZ Tick Rate\n16ms PELT",1,
+  "Battery Life","BIG Single: 2704mhz\nLITTLE: 1794mhz\n25HZ Tick Rate\n32ms PELT",0
+);
+
+if prop("bus.prop", "selected")==1 then
+  selectbox(
+  "\nCPU frequencies","<@center><b>\nSelect Freqs Which You Want\n</b></@>","","cpu.prop",
+  "OC++","BIG Dual: 2704mhz\nBIG Triple: 2494mhz\nBIG Quad: 2314mhz",1,
+  "OC+","BIG Dual: 2496mhz\nBIG Triple: 2314mhz\nBIG Quad: 2106mhz",0,
+  "OC","BIG Dual: 2496mhz\nBIG Triple: 2106mhz\nBIG Quad: 1924mhz",0,
+  "Stock","BIG Dual: 2314mhz\nBIG Triple: 1794mhz\nBIG Quad: 1794mhz",0,
+  "UC","BIG Dual: 2002mhz\nBIG Triple: 1924mhz\nBIG Quad: 1690mhz",0,
+  "UC-","BIG Dual: 1924mhz\nBIG Triple: 1794mhz\nBIG Quad: 1586mhz",0,
+  "UC--","BIG Dual: 1794mhz\nBIG Triple: 1586mhz\nBIG Quad: 1469mhz",0
+  );
+endif;
+if prop("bus.prop", "selected")==3 then
+  selectbox(
   "\nCPU frequencies","<@center><b>\nSelect Freqs Which You Want\n</b></@>","","cpu.prop",
   "OC++","BIG Dual: 2704mhz\nBIG Triple: 2494mhz\nBIG Quad: 2314mhz",0,
   "OC+","BIG Dual: 2496mhz\nBIG Triple: 2314mhz\nBIG Quad: 2106mhz",0,
@@ -64,11 +84,23 @@ selectbox(
   "UC","BIG Dual: 2002mhz\nBIG Triple: 1924mhz\nBIG Quad: 1690mhz",0,
   "UC-","BIG Dual: 1924mhz\nBIG Triple: 1794mhz\nBIG Quad: 1586mhz",0,
   "UC--","BIG Dual: 1794mhz\nBIG Triple: 1586mhz\nBIG Quad: 1469mhz",0
-);
+  );
+else
+   selectbox(
+  "\nCPU frequencies","<@center><b>\nSelect Freqs Which You Want\n</b></@>","","cpu.prop",
+  "OC++","BIG Dual: 2704mhz\nBIG Triple: 2494mhz\nBIG Quad: 2314mhz",0,
+  "OC+","BIG Dual: 2496mhz\nBIG Triple: 2314mhz\nBIG Quad: 2106mhz",0,
+  "OC","BIG Dual: 2496mhz\nBIG Triple: 2106mhz\nBIG Quad: 1924mhz",1,
+  "Stock","BIG Dual: 2314mhz\nBIG Triple: 1794mhz\nBIG Quad: 1794mhz",0,
+  "UC","BIG Dual: 2002mhz\nBIG Triple: 1924mhz\nBIG Quad: 1690mhz",0,
+  "UC-","BIG Dual: 1924mhz\nBIG Triple: 1794mhz\nBIG Quad: 1586mhz",0,
+  "UC--","BIG Dual: 1794mhz\nBIG Triple: 1586mhz\nBIG Quad: 1469mhz",0
+  );
+endif;
 
 selectbox(
   "\nZRAM","<@center><b>\nSelect ZRAM Sizes Which You Want\n</b></@>","","zram.prop",
-  "Select From Kernel Manager","You Can Enable ZRAM From a Kernel Manager",0,
+  "Disable","You Can Enable ZRAM From a Kernel Manager",0,
   "4072MB","ZRAM Size Is 4GB",0,
   "3072MB","ZRAM Size Is 3GB",0,
   "2560MB","ZRAM Size Is 2,5GB",1,
