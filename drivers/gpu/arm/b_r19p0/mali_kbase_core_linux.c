@@ -689,6 +689,7 @@ static int kbase_file_create_kctx(struct kbase_file *const kfile,
 
 #ifndef CONFIG_PCIEASPM_PERFORMANCE
 	param.sched_priority = MAX_RT_PRIO - 1;
+	set_user_nice(kctx->worker_thread, MIN_NICE);
 #else
 	param.sched_priority = 4;
 #endif
