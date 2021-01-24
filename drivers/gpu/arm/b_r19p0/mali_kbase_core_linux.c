@@ -609,7 +609,12 @@ static int kbase_file_create_kctx(struct kbase_file *const kfile,
 	struct kbase_device *kbdev = NULL;
 	struct kbase_context *kctx = NULL;
 #ifndef CONFIG_PCIEASPM_BATTERY
-	struct sched_param param;
+#ifdef CONFIG_PCIEASPM_PERFORMANCE
+	struct sched_param param = { .sched_priority = MAX_RT_PRIO - 1 };
+#else
+	struct sched_param param = { .sched_priority = MAX_RT_PRIO / 2 };
+#endif
+	int ret;
 #endif
 #ifdef CONFIG_DEBUG_FS
 	char kctx_name[64];
@@ -687,13 +692,15 @@ static int kbase_file_create_kctx(struct kbase_file *const kfile,
 		return -ENOMEM;
 	}
 
-#ifndef CONFIG_PCIEASPM_PERFORMANCE
-	param.sched_priority = MAX_RT_PRIO - 1;
+#ifdef CONFIG_PCIEASPM_PERFORMANCE
 	set_user_nice(kctx->worker_thread, MIN_NICE);
-#else
-	param.sched_priority = 4;
 #endif
-	sched_setscheduler_nocheck(kctx->worker_thread, SCHED_FIFO, &param);
+	ret = sched_setscheduler_nocheck(kctx->worker_thread, SCHED_FIFO, &param);
+	if (ret) {
+		kthread_stop(kctx->worker_thread);
+		pr_warn("%s: failed to set SCHED_FIFO\n", __func__);
+		return ret;
+	}
 #endif
 
 	return 0;

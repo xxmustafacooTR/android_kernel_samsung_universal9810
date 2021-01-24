@@ -541,6 +541,11 @@ static int decon_vsync_thread(void *data)
 
 int decon_create_vsync_thread(struct decon_device *decon)
 {
+#ifdef CONFIG_PCIEASPM_PERFORMANCE
+	struct sched_param param = { .sched_priority = MAX_RT_PRIO - 1 };
+#else
+	struct sched_param param = { .sched_priority = MAX_RT_PRIO / 2 };
+#endif
 	int ret = 0;
 	char name[16];
 
@@ -563,6 +568,8 @@ int decon_create_vsync_thread(struct decon_device *decon)
 		ret = PTR_ERR(decon->vsync.thread);
 		goto err;
 	}
+
+	sched_setscheduler_nocheck(decon->vsync.thread, SCHED_FIFO, &param);
 
 	return 0;
 
@@ -610,6 +617,11 @@ static int decon_fsync_thread(void *data)
 
 int decon_create_fsync_thread(struct decon_device *decon)
 {
+#ifdef CONFIG_PCIEASPM_PERFORMANCE
+	struct sched_param param = { .sched_priority = MAX_RT_PRIO - 1 };
+#else
+	struct sched_param param = { .sched_priority = MAX_RT_PRIO / 2 };
+#endif
 	char name[16];
 
 	if (decon->dt.out_type != DECON_OUT_DSI) {
@@ -624,6 +636,8 @@ int decon_create_fsync_thread(struct decon_device *decon)
 		decon->fsync.thread = NULL;
 		return PTR_ERR(decon->fsync.thread);
 	}
+
+	sched_setscheduler_nocheck(decon->fsync.thread, SCHED_FIFO, &param);
 
 	return 0;
 }
