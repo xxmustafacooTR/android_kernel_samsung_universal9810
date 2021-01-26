@@ -1084,7 +1084,11 @@ static int init_dm(struct exynos_cpufreq_domain *domain,
 }
 
 #ifndef CONFIG_PCIEASPM_PERFORMANCE
+#ifdef CONFIG_PCIEASPM_BATTERY
 static unsigned long arg_cpu_min_c1 = 208000;
+#else
+static unsigned long arg_cpu_min_c1 = 299000;
+#endif
 
 static int __init cpufreq_read_cpu_min_c1(char *cpu_min_c1)
 {
