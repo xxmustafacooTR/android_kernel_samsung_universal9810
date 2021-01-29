@@ -106,7 +106,6 @@ function make_star_kernel {
 	echo
 	cp -vr $KERNEL_DIR/arch/arm64/configs/$STARSDEFCONFIG $KERNEL_DIR/arch/arm64/configs/$STARDEFCONFIG
 	make ARCH=arm64 $STARDEFCONFIG
-	rm -f $ZIMAGE_DIR/$KERNEL $KERNELFLASHER_DIR/Kernel/G960zImage.diff $ZIMAGE_DIR/$DTBIMAGE $KERNELFLASHER_DIR/Kernel/G960dtb.diff
 	# cp -vr $KERNEL_DIR/arch/arm64/configs/$STARDEFCONFIG $KERNEL_DIR/arch/arm64/configs/exynos9810_defconfig
 	make -j$(nproc --all)
 
@@ -120,7 +119,6 @@ function make_crown_kernel {
 	echo
 	cp -vr $KERNEL_DIR/arch/arm64/configs/$CROWNSDEFCONFIG $KERNEL_DIR/arch/arm64/configs/$CROWNDEFCONFIG
         make ARCH=arm64 $CROWNDEFCONFIG
-	rm -f $ZIMAGE_DIR/$KERNEL $KERNELFLASHER_DIR/Kernel/N960zImage.diff $ZIMAGE_DIR/$DTBIMAGE $KERNELFLASHER_DIR/Kernel/N960dtb.diff
 	# cp -vr $KERNEL_DIR/arch/arm64/configs/$CROWNDEFCONFIG $KERNEL_DIR/arch/arm64/configs/exynos9810_defconfig
 	make -j$(nproc --all)
 
@@ -134,7 +132,6 @@ function make_star2b_kernel {
 	echo
 	cp -vr $KERNEL_DIR/arch/arm64/configs/$STAR2BDEFCONFIG $KERNEL_DIR/arch/arm64/configs/$STAR2DEFCONFIG
         make ARCH=arm64 $STAR2DEFCONFIG
-	rm -f $ZIMAGE_DIR/$KERNEL $KERNELFLASHER_DIR/Kernel/G965BzImage.diff $ZIMAGE_DIR/$DTBIMAGE $KERNELFLASHER_DIR/Kernel/G965dtb.diff
 	# cp -vr $KERNEL_DIR/arch/arm64/configs/$STAR2DEFCONFIG $KERNEL_DIR/arch/arm64/configs/exynos9810_defconfig
 	make -j$(nproc --all)
 
@@ -146,7 +143,6 @@ function make_starb_kernel {
 	echo
 	cp -vr $KERNEL_DIR/arch/arm64/configs/$STARBDEFCONFIG $KERNEL_DIR/arch/arm64/configs/$STARDEFCONFIG
         make ARCH=arm64 $STARDEFCONFIG
-	rm -f $ZIMAGE_DIR/$KERNEL $KERNELFLASHER_DIR/Kernel/G960BzImage.diff $ZIMAGE_DIR/$DTBIMAGE $KERNELFLASHER_DIR/Kernel/G960dtb.diff
 	# cp -vr $KERNEL_DIR/arch/arm64/configs/$STARDEFCONFIG $KERNEL_DIR/arch/arm64/configs/exynos9810_defconfig
 	make -j$(nproc --all)
 
@@ -158,7 +154,6 @@ function make_crownb_kernel {
 	echo
 	cp -vr $KERNEL_DIR/arch/arm64/configs/$CROWNBDEFCONFIG $KERNEL_DIR/arch/arm64/configs/$CROWNDEFCONFIG
         make ARCH=arm64 $CROWNDEFCONFIG
-	rm -f $ZIMAGE_DIR/$KERNEL $KERNELFLASHER_DIR/Kernel/N960BzImage.diff $ZIMAGE_DIR/$DTBIMAGE $KERNELFLASHER_DIR/Kernel/N960dtb.diff
 	# cp -vr $KERNEL_DIR/arch/arm64/configs/$CROWNDEFCONFIG $KERNEL_DIR/arch/arm64/configs/exynos9810_defconfig
 	make -j$(nproc --all)
 
@@ -181,7 +176,6 @@ function make_starp_kernel {
 	echo
 	cp -vr $KERNEL_DIR/arch/arm64/configs/$STARPDEFCONFIG $KERNEL_DIR/arch/arm64/configs/$STARDEFCONFIG
         make ARCH=arm64 $STARDEFCONFIG
-	rm -f $ZIMAGE_DIR/$KERNEL $KERNELFLASHER_DIR/Kernel/G960BzImage.diff $ZIMAGE_DIR/$DTBIMAGE $KERNELFLASHER_DIR/Kernel/G960dtb.diff
 	# cp -vr $KERNEL_DIR/arch/arm64/configs/$STARDEFCONFIG $KERNEL_DIR/arch/arm64/configs/exynos9810_defconfig
 	make -j$(nproc --all)
 
@@ -193,7 +187,6 @@ function make_crownp_kernel {
 	echo
 	cp -vr $KERNEL_DIR/arch/arm64/configs/$CROWNPDEFCONFIG $KERNEL_DIR/arch/arm64/configs/$CROWNDEFCONFIG
         make ARCH=arm64 $CROWNDEFCONFIG
-	rm -f $ZIMAGE_DIR/$KERNEL $KERNELFLASHER_DIR/Kernel/N960BzImage.diff $ZIMAGE_DIR/$DTBIMAGE $KERNELFLASHER_DIR/Kernel/N960dtb.diff
 	# cp -vr $KERNEL_DIR/arch/arm64/configs/$CROWNDEFCONFIG $KERNEL_DIR/arch/arm64/configs/exynos9810_defconfig
 	make -j$(nproc --all)
 
