@@ -5185,7 +5185,7 @@
 			cal-id = <ACPM_DVFS_CPUCL1>;
 			dm-type = <DM_CPU_CL1>;
 
-			min-freq = <598000>;
+			min-freq = <650000>;
 			max-freq = <1794000>;
 			policy-max = <2964000>;
 
@@ -5193,7 +5193,7 @@
 			pm_qos-min-class = <5>;
 			pm_qos-max-class = <6>;
 
-			pm_qos-booting = <2314000>;
+			pm_qos-booting = <1794000>;
 
 			#cooling-cells = <2>; /* min followed by max */
 
