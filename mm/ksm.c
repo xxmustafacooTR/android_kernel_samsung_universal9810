@@ -872,7 +872,8 @@ static int write_protect_page(struct vm_area_struct *vma, struct page *page,
 	if (!ptep)
 		goto out_mn;
 
-	if (pte_write(*ptep) || pte_dirty(*ptep)) {
+	if (pte_write(*ptep) || pte_dirty(*ptep) ||
+						mm_tlb_flush_pending(mm)) {
 		pte_t entry;
 
 		swapped = PageSwapCache(page);
@@ -1935,6 +1936,12 @@ int rmap_walk_ksm(struct page *page, struct rmap_walk_control *rwc)
 	stable_node = page_stable_node(page);
 	if (!stable_node)
 		return ret;
+
+	if (rwc->target_vma) {
+               unsigned long address = vma_address(page, rwc->target_vma);
+               ret = rwc->rmap_one(page, rwc->target_vma, address, rwc->arg);
+               goto out;
+	}
 again:
 	hlist_for_each_entry(rmap_item, &stable_node->hlist, hlist) {
 		struct anon_vma *anon_vma = rmap_item->anon_vma;
