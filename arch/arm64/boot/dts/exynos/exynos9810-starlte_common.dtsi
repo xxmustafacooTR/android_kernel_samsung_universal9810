@@ -806,6 +806,7 @@
 					regulator-name = "vdd_ldo12";
 					regulator-min-microvolt = <600000>;
 					regulator-max-microvolt = <1000000>;
+					regulator-always-on;
 					regulator-ramp-delay = <12000>;
 					regulator-initial-mode = <1>;
 				};
@@ -814,6 +815,7 @@
 					regulator-name = "vdd_ldo13";
 					regulator-min-microvolt = <1500000>;
 					regulator-max-microvolt = <1900000>;
+					regulator-always-on;
 					regulator-ramp-delay = <12000>;
 					regulator-initial-mode = <1>;
 				};
@@ -822,6 +824,7 @@
 					regulator-name = "vdd_ldo14";
 					regulator-min-microvolt = <1600000>;
 					regulator-max-microvolt = <3300000>;
+					regulator-always-on;
 					regulator-ramp-delay = <12000>;
 					regulator-initial-mode = <1>;
 				};
@@ -840,6 +843,14 @@
 					regulator-min-microvolt = <2700000>;
 					regulator-max-microvolt = <2700000>;
 					regulator-ramp-delay = <12000>;
+				};
+
+				ldo32_reg: LDO32 {
+					regulator-name = "vdd_ldo32";
+					regulator-min-microvolt = <1800000>;
+					regulator-max-microvolt = <3375000>;
+					regulator-always-on;
+					regulator-initial-mode = <2>;
 				};
 
 				ldo33_reg: LDO33 {
