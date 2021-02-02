@@ -532,7 +532,6 @@ static ssize_t show_max_lock_dvfs(struct device *dev, struct device_attribute *a
 	return ret;
 }
 
-#define SUSTAINABLE_FREQ 385000 // KHz
 static ssize_t set_max_lock_dvfs(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
 	int ret, clock = 0;
@@ -551,8 +550,8 @@ static ssize_t set_max_lock_dvfs(struct device *dev, struct device_attribute *at
 			return -ENOENT;
 		}
 
-		if (clock < SUSTAINABLE_FREQ)
-			clock = SUSTAINABLE_FREQ;
+		if (clock < platform->interactive.highspeed_clock)
+			clock = platform->interactive.highspeed_clock;
 
 		platform->user_max_lock_input = clock;
 
