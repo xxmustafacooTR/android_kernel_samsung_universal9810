@@ -342,16 +342,10 @@ static void sugov_get_util(unsigned long *util, unsigned long *max, u64 time)
 	int cpu = smp_processor_id();
 	struct rq *rq = cpu_rq(cpu);
 	unsigned long max_cap, rt;
-	s64 delta;
 
 	max_cap = arch_scale_cpu_capacity(NULL, cpu);
 
-	sched_avg_update(rq);
-	delta = time - rq->age_stamp;
-	if (unlikely(delta < 0))
-		delta = 0;
-	rt = div64_u64(rq->rt_avg, sched_avg_period() + delta);
-	rt = (rt * max_cap) >> SCHED_CAPACITY_SHIFT;
+	rt = rq->rt.avg.util_avg;
 
 #ifdef CONFIG_SCHED_EMS
 	*util = ml_boosted_cpu_util(cpu);
