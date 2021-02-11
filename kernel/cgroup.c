@@ -66,6 +66,7 @@
 #include <linux/file.h>
 #include <linux/psi.h>
 #include <net/sock.h>
+#include <linux/ioprio.h>
 
 #define CREATE_TRACE_POINTS
 #include <trace/events/cgroup.h>
@@ -2881,6 +2882,7 @@ static ssize_t __cgroup_procs_write(struct kernfs_open_file *of, char *buf,
 	struct task_struct *tsk;
 	struct cgroup_subsys *ss;
 	struct cgroup *cgrp;
+	struct sched_param param;
 	pid_t pid;
 	int ssid, ret;
 
@@ -2925,10 +2927,34 @@ static ssize_t __cgroup_procs_write(struct kernfs_open_file *of, char *buf,
 		ret = cgroup_attach_task(cgrp, tsk, threadgroup);
 
 	/* This covers boosting for app launches and app transitions */
-	if (!ret && !threadgroup &&
-	    !strcmp(of->kn->parent->name, "top-app") &&
+	if (!ret && !strcmp(of->kn->parent->name, "top-app") &&
 	    is_zygote_pid(tsk->parent->pid)) {
 		devfreq_boost_kick_max(DEVFREQ_EXYNOS_MIF, 500);
+	} else if (!ret && !strcmp(of->kn->parent->name, "foreground") &&
+	    is_zygote_pid(tsk->parent->pid)) {
+		devfreq_boost_kick_max(DEVFREQ_EXYNOS_MIF, 250);
+	}
+
+	param.sched_priority = 0;
+
+	if (!ret && !strcmp(of->kn->parent->name, "background")) {
+		sched_setscheduler_nocheck(tsk, SCHED_NORMAL, &param);
+	} else if (!strcmp(of->kn->parent->name, "foreground")) {
+		set_task_ioprio(tsk, IOPRIO_PRIO_VALUE(IOPRIO_CLASS_RT, 2));
+		param.sched_priority = 10;
+		sched_setscheduler_nocheck(tsk, SCHED_FIFO | SCHED_RR | SCHED_RESET_ON_FORK, &param);
+	} else if (!strcmp(of->kn->parent->name, "top-app")) {
+		set_task_ioprio(tsk, IOPRIO_PRIO_VALUE(IOPRIO_CLASS_RT, 1));
+		param.sched_priority = 15;
+		sched_setscheduler_nocheck(tsk, SCHED_FIFO | SCHED_RR | SCHED_RESET_ON_FORK, &param);
+	} else if (!strcmp(of->kn->parent->name, "ndroid.systemui")) {
+		set_task_ioprio(tsk, IOPRIO_PRIO_VALUE(IOPRIO_CLASS_RT, 2));
+		param.sched_priority = 15;
+		sched_setscheduler_nocheck(tsk, SCHED_FIFO | SCHED_RR | SCHED_RESET_ON_FORK, &param);
+	} else if (!strcmp(of->kn->parent->name, "audioserver")) {
+		set_task_ioprio(tsk, IOPRIO_PRIO_VALUE(IOPRIO_CLASS_RT, 1));
+		param.sched_priority = 20;
+		sched_setscheduler_nocheck(tsk, SCHED_FIFO | SCHED_RR | SCHED_RESET_ON_FORK, &param);
 	}
 
 	put_task_struct(tsk);

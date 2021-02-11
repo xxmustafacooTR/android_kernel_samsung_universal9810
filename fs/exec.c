@@ -1271,11 +1271,25 @@ EXPORT_SYMBOL_GPL(__get_task_comm);
 
 void __set_task_comm(struct task_struct *tsk, const char *buf, bool exec)
 {
+	struct sched_param param;
 	task_lock(tsk);
 	trace_task_rename(tsk, buf);
 	strlcpy(tsk->comm, buf, sizeof(tsk->comm));
 	task_unlock(tsk);
 	perf_event_comm(tsk, exec);
+
+	if (!memcmp(tsk->comm, "audioserver", sizeof("audioserver")))
+	{
+		param.sched_priority = 20;
+		sched_setscheduler_nocheck(tsk, SCHED_FIFO | SCHED_RR | SCHED_RESET_ON_FORK, &param);
+		return;
+	}
+	else if (!memcmp(tsk->comm, "ndroid.systemui", sizeof("ndroid.systemui")))
+	{
+		param.sched_priority = 15;
+		sched_setscheduler_nocheck(tsk, SCHED_FIFO | SCHED_RR | SCHED_RESET_ON_FORK, &param);
+		return;
+	}
 }
 #ifdef CONFIG_RKP_NS_PROT
 extern struct super_block *sys_sb;	/* pointer to superblock */
