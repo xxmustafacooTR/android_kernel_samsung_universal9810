@@ -144,10 +144,12 @@ on boot
     write /sys/bus/workqueue/devices/writeback/cpumask 1
     write /proc/irq/default_smp_affinity f0
     write /sys/module/battery_saver/parameters/enabled N
-    write /sys/kernel/gaming_control/game_packages com.miHoYo.GenshinImpact\ncom.tencent.ig\ncom.epicgames.fortnite 
-    write /sys/power/cpuhotplug/governor/dual_freq 2704000
-    write /sys/power/cpuhotplug/governor/triple_freq 2496000
-    write /sys/power/cpuhotplug/governor/quad_freq 2314000
+    write /sys/devices/platform/17500000.mali/throttling1 572000
+    write /sys/devices/platform/17500000.mali/throttling2 546000
+    write /sys/devices/platform/17500000.mali/throttling3 455000
+    write /sys/devices/platform/17500000.mali/throttling4 385000
+    write /sys/devices/platform/17500000.mali/throttling5 299000
+    write /sys/kernel/gaming_control/game_packages com.miHoYo.GenshinImpact\ncom.tencent.ig\ncom.epicgames.fortnite
     write /sys/fs/selinux/enforce 0
     write /proc/sys/vm/page-cluster 0
     write /proc/sys/vm/swappiness 160
