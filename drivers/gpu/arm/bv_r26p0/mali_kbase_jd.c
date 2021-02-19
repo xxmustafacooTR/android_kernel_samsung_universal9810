@@ -1400,9 +1400,17 @@ while (false)
 KBASE_EXPORT_TEST_API(kbase_jd_submit);
 
 
+#ifdef CONFIG_MALI_USE_KTHREAD
+void kbase_jd_done_worker(struct kthread_work *data)
+#else
 void kbase_jd_done_worker(struct work_struct *data)
+#endif
 {
+#ifdef CONFIG_MALI_USE_KTHREAD
+	struct kbase_jd_atom *katom = container_of(data, struct kbase_jd_atom, job_done_work);
+#else
 	struct kbase_jd_atom *katom = container_of(data, struct kbase_jd_atom, work);
+#endif
 	struct kbase_jd_context *jctx;
 	struct kbase_context *kctx;
 	struct kbasep_js_kctx_info *js_kctx_info;
@@ -1584,9 +1592,17 @@ void kbase_jd_done_worker(struct work_struct *data)
  * running (by virtue of only being called on contexts that aren't
  * scheduled).
  */
+#ifdef CONFIG_MALI_USE_KTHREAD
+static void jd_cancel_worker(struct kthread_work *data)
+#else
 static void jd_cancel_worker(struct work_struct *data)
+#endif
 {
+#ifdef CONFIG_MALI_USE_KTHREAD
+	struct kbase_jd_atom *katom = container_of(data, struct kbase_jd_atom, job_done_work);
+#else
 	struct kbase_jd_atom *katom = container_of(data, struct kbase_jd_atom, work);
+#endif
 	struct kbase_jd_context *jctx;
 	struct kbase_context *kctx;
 	struct kbasep_js_kctx_info *js_kctx_info;
@@ -1680,8 +1696,13 @@ void kbase_jd_done(struct kbase_jd_atom *katom, int slot_nr,
 #endif
 
 	WARN_ON(work_pending(&katom->work));
+#ifdef CONFIG_MALI_USE_KTHREAD
+	kthread_init_work(&katom->job_done_work, kbase_jd_done_worker);
+	kthread_queue_work(&kctx->worker, &katom->job_done_work);
+#else
 	INIT_WORK(&katom->work, kbase_jd_done_worker);
 	queue_work(kctx->jctx.job_done_wq, &katom->work);
+#endif
 }
 
 KBASE_EXPORT_TEST_API(kbase_jd_done);
@@ -1705,8 +1726,13 @@ void kbase_jd_cancel(struct kbase_device *kbdev, struct kbase_jd_atom *katom)
 
 	katom->event_code = BASE_JD_EVENT_JOB_CANCELLED;
 
+#ifdef CONFIG_MALI_USE_KTHREAD
+	kthread_init_work(&katom->job_done_work, jd_cancel_worker);
+	kthread_queue_work(&kctx->worker, &katom->job_done_work);
+#else
 	INIT_WORK(&katom->work, jd_cancel_worker);
 	queue_work(kctx->jctx.job_done_wq, &katom->work);
+#endif
 }
 
 

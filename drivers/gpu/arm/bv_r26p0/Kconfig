@@ -316,5 +316,13 @@ config MALI_PRFCNT_SET_SECONDARY_VIA_DEBUG_FS
 
 	  If unsure, say N.
 
+config MALI_USE_KTHREAD
+	tristate "Use kthread instead of workqueues"
+	default n
+	depends on BATTERY_SAMSUNG
+	help
+	 Say Y to use kthread workers with high priority
+	 for better performance instead of using workqueues.
+
 source "drivers/gpu/arm/bv_r26p0/platform/Kconfig"
 source "drivers/gpu/arm/bv_r26p0/tests/Kconfig"

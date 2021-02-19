@@ -655,6 +655,14 @@ static int kbase_file_create_kctx(struct kbase_file *const kfile,
 {
 	struct kbase_device *kbdev = NULL;
 	struct kbase_context *kctx = NULL;
+#ifdef CONFIG_MALI_USE_KTHREAD
+#ifdef CONFIG_PCIEASPM_PERFORMANCE
+	struct sched_param param = { .sched_priority = MAX_RT_PRIO - 1 };
+#else
+	struct sched_param param = { .sched_priority = MAX_RT_PRIO / 2 };
+#endif
+	int ret;
+#endif
 #ifdef CONFIG_DEBUG_FS
 	char kctx_name[64];
 #endif
@@ -719,6 +727,28 @@ static int kbase_file_create_kctx(struct kbase_file *const kfile,
 
 	kfile->kctx = kctx;
 	atomic_set(&kfile->setup_state, KBASE_FILE_COMPLETE);
+
+#ifdef CONFIG_MALI_USE_KTHREAD
+	kthread_init_worker(&kctx->worker);
+
+	kctx->worker_thread = kthread_run(kthread_worker_fn,
+				&kctx->worker, "mali_kctx_worker");
+
+	if (IS_ERR(kctx->worker_thread)) {
+		pr_err("unable to start mali worker thread\n");
+		return -ENOMEM;
+	}
+
+#ifdef CONFIG_PCIEASPM_PERFORMANCE
+	set_user_nice(kctx->worker_thread, MIN_NICE);
+#endif
+	ret = sched_setscheduler_nocheck(kctx->worker_thread, SCHED_FIFO, &param);
+	if (ret) {
+		kthread_stop(kctx->worker_thread);
+		pr_warn("%s: failed to set SCHED_FIFO\n", __func__);
+		return ret;
+	}
+#endif
 
 	return 0;
 }

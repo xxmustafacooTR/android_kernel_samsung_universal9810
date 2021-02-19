@@ -485,6 +485,12 @@ struct kbase_ext_res {
  */
 struct kbase_jd_atom {
 	struct work_struct work;
+#ifdef CONFIG_MALI_USE_KTHREAD
+	/* kthread work list */
+	struct kthread_work event_work;
+	struct kthread_work job_done_work;
+	struct kthread_work js_work;
+#endif
 	ktime_t start_timestamp;
 
 	struct base_jd_udata udata;

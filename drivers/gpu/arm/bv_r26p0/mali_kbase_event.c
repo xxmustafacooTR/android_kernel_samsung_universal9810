@@ -163,10 +163,18 @@ KBASE_EXPORT_TEST_API(kbase_event_dequeue);
  *                                       resources
  * @data:  Work structure
  */
+#ifdef CONFIG_MALI_USE_KTHREAD
+static void kbase_event_process_noreport_worker(struct kthread_work *data)
+#else
 static void kbase_event_process_noreport_worker(struct work_struct *data)
+#endif
 {
 	struct kbase_jd_atom *katom = container_of(data, struct kbase_jd_atom,
+#ifdef CONFIG_MALI_USE_KTHREAD
+			event_work);
+#else
 			work);
+#endif
 	struct kbase_context *kctx = katom->kctx;
 
 	if (katom->core_req & BASE_JD_REQ_EXTERNAL_RESOURCES)
@@ -190,8 +198,13 @@ static void kbase_event_process_noreport(struct kbase_context *kctx,
 		struct kbase_jd_atom *katom)
 {
 	if (katom->core_req & BASE_JD_REQ_EXTERNAL_RESOURCES) {
+#ifdef CONFIG_MALI_USE_KTHREAD
+		kthread_init_work(&katom->event_work, kbase_event_process_noreport_worker);
+		kthread_queue_work(&kctx->worker, &katom->event_work);
+#else
 		INIT_WORK(&katom->work, kbase_event_process_noreport_worker);
 		queue_work(kctx->event_workq, &katom->work);
+#endif
 	} else {
 		kbase_event_process(kctx, katom);
 	}
@@ -298,7 +311,9 @@ void kbase_event_cleanup(struct kbase_context *kctx)
 	int event_count;
 
 	KBASE_DEBUG_ASSERT(kctx);
+#ifndef CONFIG_MALI_USE_KTHREAD
 	KBASE_DEBUG_ASSERT(kctx->event_workq);
+#endif
 
 	flush_workqueue(kctx->event_workq);
 	destroy_workqueue(kctx->event_workq);

@@ -49,6 +49,10 @@
 #include <linux/file.h>
 #include <linux/sizes.h>
 
+#ifdef CONFIG_MALI_USE_KTHREAD
+#include <linux/kthread.h>
+#endif
+
 #ifdef CONFIG_MALI_BUSLOG
 #include <linux/bus_logger.h>
 #endif
@@ -1597,6 +1601,10 @@ struct kbase_context {
 	struct list_head event_coalesce_list;
 	struct mutex event_mutex;
 	atomic_t event_closed;
+#ifdef CONFIG_MALI_USE_KTHREAD
+	struct kthread_worker worker;
+	struct task_struct *worker_thread;
+#endif
 	struct workqueue_struct *event_workq;
 	atomic_t event_count;
 	int event_coalesce_count;
