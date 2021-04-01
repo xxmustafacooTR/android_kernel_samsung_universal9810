@@ -223,7 +223,7 @@
 
 /* NUMBER OF G2D DRIVER STARTS FROM 600 */
 #define CLK_G2D_BASE				(600)
-#define GATE_ASTC				(CLK_G2D_BASE + 0)
+#define GATE_JSQZ				(CLK_G2D_BASE + 0)
 #define GATE_G2D				(CLK_G2D_BASE + 1)
 #define GATE_JPEG				(CLK_G2D_BASE + 2)
 #define GATE_MSCL				(CLK_G2D_BASE + 3)

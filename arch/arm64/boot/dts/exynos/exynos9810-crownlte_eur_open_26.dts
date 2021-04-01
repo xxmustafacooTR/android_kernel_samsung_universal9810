@@ -8302,15 +8302,15 @@
 		phandle = <0x10f>;
 	};
 
-	astc@17720000 {
-		compatible = "samsung,exynos-astc";
+	jsqz@17720000 {
+		compatible = "samsung,exynos-jsqz";
 		dma-coherent;
 		reg = <0x0 0x17720000 0x1000>;
 		interrupts = <0x0 0x10c 0x0>;
 		clocks = <0x1a 0x258>;
 		clock-names = "gate";
 		iommus = <0x111>;
-		astc,int_qos_minlock = <0x82208>;
+		jsqz,int_qos_minlock = <0x82208>;
 		samsung,power-domain = <0x14>;
 		linux,phandle = <0x10e>;
 		phandle = <0x10e>;
@@ -14452,7 +14452,7 @@
 		fimg2d = "/g2d@17620000";
 		sysmmu_g2d2 = "/sysmmu@17780000";
 		smfc = "/smfc@17700000";
-		astc = "/astc@17720000";
+		jsqz = "/jsqz@17720000";
 		scaler_0 = "/scaler@17710000";
 		sysmmu_mfc0 = "/sysmmu@17880000";
 		sysmmu_mfc1 = "/sysmmu@178A0000";
