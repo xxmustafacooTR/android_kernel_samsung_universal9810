@@ -68,6 +68,9 @@ enum mfc_ip_version {
 	IP_VER_MFC_8K_0,
 	IP_VER_MFC_7K_0,
 	IP_VER_MFC_9L_0,
+	IP_VER_MFC_9R_0,
+	IP_VER_MFC_9M_0,
+	IP_VER_MFC_9M_1,
 };
 
 /*
