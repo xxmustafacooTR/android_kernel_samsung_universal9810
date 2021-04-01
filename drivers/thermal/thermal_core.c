@@ -621,7 +621,7 @@ static void update_temperature(struct thermal_zone_device *tz)
 
 	if (count++ >= count_limit) {
 		count = 1;
-		dev_info(&tz->device, "[TMU] last_temperature=%d, current_temperature=%d\n",
+		dev_dbg(&tz->device, "[TMU] last_temperature=%d, current_temperature=%d\n",
 			tz->last_temperature, tz->temperature);
 	}
 #endif
