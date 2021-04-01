@@ -98,8 +98,8 @@ function make_star_kernel {
 
 	# bsdiff $KERNELFLASHER_DIR/Kernel/G965zImage $ZIMAGE_DIR/$KERNEL $KERNELFLASHER_DIR/Kernel/G960zImage.diff
 	# bsdiff $KERNELFLASHER_DIR/Kernel/G965dtb.img $ZIMAGE_DIR/$DTBIMAGE $KERNELFLASHER_DIR/Kernel/G960dtb.diff
-	cp -vr $ZIMAGE_DIR/$KERNEL $KERNELFLASHER_DIR/Kernel/G960/zImage
-        cp -vr $ZIMAGE_DIR/$DTBIMAGE $KERNELFLASHER_DIR/Kernel/G960/dtb.img
+	cp -vr $ZIMAGE_DIR/$KERNEL $KERNELFLASHER_DIR/Kernel/G960zImage
+        cp -vr $ZIMAGE_DIR/$DTBIMAGE $KERNELFLASHER_DIR/Kernel/G960dtb.img
 }
 
 function make_crown_kernel {
@@ -111,8 +111,8 @@ function make_crown_kernel {
 
 	# bsdiff $KERNELFLASHER_DIR/Kernel/G965zImage $ZIMAGE_DIR/$KERNEL $KERNELFLASHER_DIR/Kernel/N960zImage.diff
 	# bsdiff $KERNELFLASHER_DIR/Kernel/G965dtb.img $ZIMAGE_DIR/$DTBIMAGE $KERNELFLASHER_DIR/Kernel/N960dtb.diff
-	cp -vr $ZIMAGE_DIR/$KERNEL $KERNELFLASHER_DIR/Kernel/N960/zImage
-        cp -vr $ZIMAGE_DIR/$DTBIMAGE $KERNELFLASHER_DIR/Kernel/N960/dtb.img
+	cp -vr $ZIMAGE_DIR/$KERNEL $KERNELFLASHER_DIR/Kernel/N960zImage
+        cp -vr $ZIMAGE_DIR/$DTBIMAGE $KERNELFLASHER_DIR/Kernel/N960dtb.img
 }
 
 function make_zip {
