@@ -1539,85 +1539,6 @@ static irqreturn_t vts_record_period_elapsed_handler(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
-static irqreturn_t vts_debuglog_bufzero_handler(int irq, void *dev_id)
-{
-	struct platform_device *pdev = dev_id;
-	struct device *dev = &pdev->dev;
-	struct vts_data *data = platform_get_drvdata(pdev);
-
-	dev_dbg(dev, "%s LogBuffer Index: %d\n", __func__, 0);
-
-	/* schedule log dump */
-	vts_log_schedule_flush(dev, 0);
-
-	vts_ipc_ack(data, 1);
-
-	return IRQ_HANDLED;
-}
-
-static irqreturn_t vts_debuglog_bufone_handler(int irq, void *dev_id)
-{
-	struct platform_device *pdev = dev_id;
-	struct device *dev = &pdev->dev;
-	struct vts_data *data = platform_get_drvdata(pdev);
-
-	dev_dbg(dev, "%s LogBuffer Index: %d\n", __func__, 1);
-
-	/* schedule log dump */
-	vts_log_schedule_flush(dev, 1);
-
-	vts_ipc_ack(data, 1);
-
-	return IRQ_HANDLED;
-}
-
-static irqreturn_t vts_audiodump_handler(int irq, void *dev_id)
-{
-	struct platform_device *pdev = dev_id;
-	struct device *dev = &pdev->dev;
-	struct vts_data *data = platform_get_drvdata(pdev);
-
-	dev_info(dev, "%s\n", __func__);
-
-	if (data->vts_ready && data->audiodump_enabled) {
-		u32 ackvalues[3] = {0, 0, 0};
-
-		mailbox_read_shared_register(data->pdev_mailbox,
-			ackvalues, 0, 2);
-		dev_info(dev, "%sDump offset: 0x%x size:0x%x\n",
-			__func__, ackvalues[0], ackvalues[1]);
-		/* register audio dump offset & size */
-		vts_dump_addr_register(dev, ackvalues[0],
-				ackvalues[1], VTS_AUDIO_DUMP);
-		/* schedule pcm dump */
-		vts_audiodump_schedule_flush(dev);
-		/* vts_ipc_ack should be sent once dump is completed */
-	} else {
-		vts_ipc_ack(data, 1);
-	}
-
-	return IRQ_HANDLED;
-}
-
-static irqreturn_t vts_logdump_handler(int irq, void *dev_id)
-{
-	struct platform_device *pdev = dev_id;
-	struct device *dev = &pdev->dev;
-	struct vts_data *data = platform_get_drvdata(pdev);
-
-	dev_info(dev, "%s\n", __func__);
-
-	if (data->vts_ready && data->logdump_enabled) {
-		/* schedule pcm dump */
-		vts_logdump_schedule_flush(dev);
-		/* vts_ipc_ack should be sent once dump is completed */
-	} else {
-		vts_ipc_ack(data, 1);
-	}
-
-	return IRQ_HANDLED;
-}
-
 void vts_register_dma(struct platform_device *pdev_vts,
 		struct platform_device *pdev_vts_dma, unsigned int id)
 {
@@ -2558,57 +2479,31 @@ static int samsung_vts_probe(struct platform_device *pdev)
 
 	result = samsung_vts_devm_request_threaded_irq(pdev, "error",
 			VTS_IRQ_VTS_ERROR, vts_error_handler);
-	if (result < 0) {
+	if (result < 0)
 		goto error;
-	}
 
 	result = samsung_vts_devm_request_threaded_irq(pdev, "boot_completed",
 			VTS_IRQ_VTS_BOOT_COMPLETED, vts_boot_completed_handler);
-	if (result < 0) {
+	if (result < 0)
 		goto error;
-	}
 
 	result = samsung_vts_devm_request_threaded_irq(pdev, "ipc_received",
 			VTS_IRQ_VTS_IPC_RECEIVED, vts_ipc_received_handler);
-	if (result < 0) {
+	if (result < 0)
 		goto error;
-	}
 
 	result = samsung_vts_devm_request_threaded_irq(pdev, "voice_triggered",
 			VTS_IRQ_VTS_VOICE_TRIGGERED, vts_voice_triggered_handler);
-	if (result < 0) {
+	if (result < 0)
 		goto error;
-	}
 
 	result = samsung_vts_devm_request_threaded_irq(pdev, "trigger_period_elapsed",
 			VTS_IRQ_VTS_PERIOD_ELAPSED, vts_trigger_period_elapsed_handler);
-	if (result < 0) {
+	if (result < 0)
 		goto error;
-	}
 
 	result = samsung_vts_devm_request_threaded_irq(pdev, "record_period_elapsed",
 			VTS_IRQ_VTS_REC_PERIOD_ELAPSED, vts_record_period_elapsed_handler);
-	if (result < 0) {
-		goto error;
-	}
-
-	result = samsung_vts_devm_request_threaded_irq(pdev, "debuglog_bufzero",
-			VTS_IRQ_VTS_DBGLOG_BUFZERO, vts_debuglog_bufzero_handler);
-	if (result < 0)
-		goto error;
-
-	result = samsung_vts_devm_request_threaded_irq(pdev, "debuglog_bufone",
-			VTS_IRQ_VTS_DBGLOG_BUFONE, vts_debuglog_bufone_handler);
-	if (result < 0)
-		goto error;
-
-	result = samsung_vts_devm_request_threaded_irq(pdev, "audio_dump",
-			VTS_IRQ_VTS_AUDIO_DUMP, vts_audiodump_handler);
-	if (result < 0)
-		goto error;
-
-	result = samsung_vts_devm_request_threaded_irq(pdev, "log_dump",
-			VTS_IRQ_VTS_LOG_DUMP, vts_logdump_handler);
 	if (result < 0)
 		goto error;
 
@@ -2789,3 +2684,4 @@ MODULE_AUTHOR("Palli Satish Kumar Reddy, <palli.satish@samsung.com>");
 MODULE_DESCRIPTION("Samsung Voice Trigger System");
 MODULE_ALIAS("platform:samsung-vts");
 MODULE_LICENSE("GPL");
+

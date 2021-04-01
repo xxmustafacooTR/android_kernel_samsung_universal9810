@@ -103,6 +103,7 @@ int save_acpm_dump(struct link_device *ld, struct io_device *iod,
 	return save_dump_file(ld, iod, arg, mld->acpm_base, acpm_size);
 }
 
+#ifdef CP_RAM_LOGGING
 int save_cplog_dump(struct link_device *ld, struct io_device *iod,
 		unsigned long arg)
 {
@@ -124,6 +125,7 @@ int save_cplog_dump(struct link_device *ld, struct io_device *iod,
 
 	return save_dump_file(ld, iod, arg, cplog_base, cplog_size);
 }
+#endif
 
 int save_shmem_dump(struct link_device *ld, struct io_device *iod,
 		unsigned long arg)
