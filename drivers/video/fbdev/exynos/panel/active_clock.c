@@ -1,8 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
- * Copyright (c) 2016 Samsung Electronics Co., Ltd.
- *	      http://www.samsung.com/
- *
- * Samsung's Active Clock Driver
+ * Copyright (c) Samsung Electronics Co., Ltd.
  * Author: Minwoo Kim <minwoo7945.kim@samsung.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -29,7 +27,7 @@ static int check_need_update(struct panel_device *panel,
 	int ret = 0;
 	struct panel_state *state;
 
-	if (!panel || !act_info|| !ioctl_info) {
+	if (!panel || !act_info || !ioctl_info) {
 		panel_err("LIVE-CLK:ERR:%s:invalid argument\n", __func__);
 		return -1;
 	}
@@ -46,9 +44,9 @@ static int check_need_update(struct panel_device *panel,
 		(act_info->time_min != ioctl_info->time_min) ||
 		(act_info->time_sec != ioctl_info->time_sec) ||
 		(act_info->time_ms != ioctl_info->time_ms)) {
-		if (state->cur_state == PANEL_STATE_ALPM) {
+		if (state->cur_state == PANEL_STATE_ALPM)
 			act_info->update_time = 1;
-		}
+
 		ret = 1;
 	}
 	if (act_info->interval != ioctl_info->interval)
@@ -66,7 +64,7 @@ static int check_need_update(struct panel_device *panel,
 	panel_info("ACT-CLK:En : %d\n", act_info->en);
 	panel_info("ACT-CLK:Axis:x:%d,y:%d\n", act_info->pos_x,
 		act_info->pos_y);
-	panel_info("ACT-CLK:Time::%d:%d:%d:%d\n",act_info->time_hr,
+	panel_info("ACT-CLK:Time::%d:%d:%d:%d\n", act_info->time_hr,
 		act_info->time_min, act_info->time_sec, act_info->time_ms);
 	panel_info("ACT-CLK:Interval : %d\n", act_info->interval);
 
@@ -75,7 +73,7 @@ static int check_need_update(struct panel_device *panel,
 
 static int set_active_clock(struct act_clock_dev *act_dev, void __user *arg)
 {
-	int ret= 0;
+	int ret = 0;
 	int need_update = 0;
 	struct panel_device *panel;
 	struct panel_state *state;
@@ -90,7 +88,7 @@ static int set_active_clock(struct act_clock_dev *act_dev, void __user *arg)
 		goto set_exit;
 	}
 
-	if (copy_from_user(&ioctl_info,(struct ioctl_act_clk __user *)arg,
+	if (copy_from_user(&ioctl_info, (struct ioctl_act_clk __user *)arg,
 			sizeof(struct ioctl_act_clk))) {
 		panel_err("LIVE-CLK:ERR:%s:failed to copy from user's active param\n", __func__);
 		goto set_exit;
@@ -114,25 +112,24 @@ static int set_active_clock(struct act_clock_dev *act_dev, void __user *arg)
 
 	if ((act_info->en == 1) &&
 		(act_info->update_img == IMG_UPDATE_NEED)) {
-		panel_info("PANEL:INFO:%s:Update Active Clock image \n", __func__);
+		panel_info("PANEL:INFO:%s:Update Active Clock image\n", __func__);
 		ret = panel_do_seqtbl_by_index(panel, PANEL_ACTIVE_CLK_IMG_SEQ);
-		if (unlikely(ret < 0)) {
+		if (unlikely(ret < 0))
 			panel_err("ACT-CLK:ERR:%s, failed to write init seqtbl\n", __func__);
-		}
+
 		act_info->update_img = IMG_UPDATE_DONE;
 	}
 
 	if (act_info->update_time) {
 		ret = panel_do_seqtbl_by_index(panel, PANEL_ACTIVE_CLK_UPDATE_SEQ);
-		if (unlikely(ret < 0)) {
+		if (unlikely(ret < 0))
 			panel_err("ACT-CLK:ERR:%s, failed to write init seqtbl\n", __func__);
-		}
+
 		act_info->update_time = 0;
 	} else {
 		ret = panel_do_seqtbl_by_index(panel, PANEL_ACTIVE_CLK_CTRL_SEQ);
-		if (unlikely(ret < 0)) {
+		if (unlikely(ret < 0))
 			panel_err("ACT-CLK:ERR:%s, failed to write init seqtbl\n", __func__);
-		}
 	}
 
 set_exit:
@@ -170,7 +167,7 @@ static int set_self_drawer(struct act_clock_dev *act_dev, void __user *arg)
 		goto set_exit;
 	}
 
-	if (copy_from_user(&ioctl_info,(struct ioctl_self_drawer __user *)arg,
+	if (copy_from_user(&ioctl_info, (struct ioctl_self_drawer __user *)arg,
 			sizeof(struct ioctl_self_drawer))) {
 		panel_err("LIVE-CLK:ERR:%s:failed to copy from user's active param\n", __func__);
 		goto set_exit;
@@ -215,32 +212,31 @@ static long active_clock_ioctl(struct file *file, unsigned int cmd, unsigned lon
 	mutex_lock(&panel->io_lock);
 
 	switch (cmd) {
-		case IOCTL_ACT_CLK :
-			panel_info("ACT-CLK:INFO:%s:IOCTL_ACT_CLK\n", __func__);
-			ret = set_active_clock(act_dev, (void __user *)arg);
-			break;
+	case IOCTL_ACT_CLK:
+		panel_info("ACT-CLK:INFO:%s:IOCTL_ACT_CLK\n", __func__);
+		ret = set_active_clock(act_dev, (void __user *)arg);
+		break;
 
-		case IOCTL_BLINK_CLK :
-			panel_info("ACT-CLK:INFO:%s:IOCTL_BLINK_CLK\n", __func__);
-			if (copy_from_user(&ioctl_blink, (struct ioctl_blink_clock __user *)arg,
-				sizeof(struct ioctl_blink_clock))) {
-				panel_err("ACT-CLK:ERR:%s:failed to copy from user's blink param\n", __func__);
-				goto exit_ioctl;
-			}
-			ret = set_blink_clock(act_dev, &ioctl_blink);
-
-			break;
-
-		case IOCTL_SELF_DRAWER_CLK:
-			panel_info("ACT-CLK:INFO:%s:IOCTL_SELF_DRAWER_CLK\n", __func__);
-			ret = set_self_drawer(act_dev, (void __user *)arg);
-			break;
-
-		default:
-			panel_err("ACT-CLK:ERR:%s : invalid cmd : %d\n", __func__, cmd);
-			ret = -EINVAL;
+	case IOCTL_BLINK_CLK:
+		panel_info("ACT-CLK:INFO:%s:IOCTL_BLINK_CLK\n", __func__);
+		if (copy_from_user(&ioctl_blink, (struct ioctl_blink_clock __user *)arg,
+			sizeof(struct ioctl_blink_clock))) {
+			panel_err("ACT-CLK:ERR:%s:failed to copy from user's blink param\n", __func__);
 			goto exit_ioctl;
+		}
+		ret = set_blink_clock(act_dev, &ioctl_blink);
 
+		break;
+
+	case IOCTL_SELF_DRAWER_CLK:
+		panel_info("ACT-CLK:INFO:%s:IOCTL_SELF_DRAWER_CLK\n", __func__);
+		ret = set_self_drawer(act_dev, (void __user *)arg);
+		break;
+
+	default:
+		panel_err("ACT-CLK:ERR:%s : invalid cmd : %d\n", __func__, cmd);
+		ret = -EINVAL;
+		goto exit_ioctl;
 	}
 
 exit_ioctl:
@@ -366,7 +362,7 @@ int probe_live_clock_drv(struct act_clock_dev *act_dev)
 	struct act_drawer_info *draw_info;
 
 	if (act_dev == NULL) {
-		panel_err("LIVE-CLK:ERR:%s: invalid live clk \n", __func__);
+		panel_err("LIVE-CLK:ERR:%s: invalid live clk\n", __func__);
 		return -EINVAL;
 	}
 	act_dev->dev.minor = MISC_DYNAMIC_MINOR;
@@ -406,9 +402,9 @@ int probe_live_clock_drv(struct act_clock_dev *act_dev)
 	blink_info->interval = 5;
 	blink_info->radius = 10;
 	blink_info->color = 0x000000;
-	blink_info->line_width = 0;;
+	blink_info->line_width = 0;
 	blink_info->pos1_x = 0;
-	blink_info->pos1_y = 0 ;
+	blink_info->pos1_y = 0;
 	blink_info->pos2_x = 0;
 	blink_info->pos2_y = 0;
 

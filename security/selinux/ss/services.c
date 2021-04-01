@@ -748,13 +748,6 @@ out:
 	kfree(n);
 	kfree(t);
 
-// [ SEC_SELINUX_PORTING_COMMON
-#ifdef CONFIG_ALWAYS_ENFORCE
-#if !defined(CONFIG_RKP_KDP)
-	selinux_enforcing = 1;
-#endif
-#endif
-// ] SEC_SELINUX_PORTING_COMMON
 	if (!selinux_enforcing)
 		return 0;
 	return -EPERM;
@@ -1539,13 +1532,6 @@ out:
 	kfree(t);
 	kfree(n);
 
-// [ SEC_SELINUX_PORTING_COMMON
-#ifdef CONFIG_ALWAYS_ENFORCE
-#if !defined(CONFIG_RKP_KDP)
-	selinux_enforcing = 1;
-#endif
-#endif
-// ] SEC_SELINUX_PORTING_COMMON
 	if (!selinux_enforcing)
 		return 0;
 	return -EACCES;
@@ -1837,11 +1823,6 @@ static inline int convert_context_handle_invalid_context(struct context *context
 	char *s;
 	u32 len;
 
-// [ SEC_SELINUX_PORTING_COMMON
-#ifdef CONFIG_ALWAYS_ENFORCE
-	selinux_enforcing = 1;
-#endif
-// ] SEC_SELINUX_PORTING_COMMON
 	if (selinux_enforcing)
 		return -EINVAL;
 
@@ -3296,6 +3277,7 @@ out:
 	return match;
 }
 
+#ifdef CONFIG_AUDIT
 static int (*aurule_callback)(void) = audit_update_lsm_rules;
 
 static int aurule_avc_callback(u32 event)
@@ -3318,6 +3300,7 @@ static int __init aurule_init(void)
 	return err;
 }
 __initcall(aurule_init);
+#endif
 
 #ifdef CONFIG_NETLABEL
 /**

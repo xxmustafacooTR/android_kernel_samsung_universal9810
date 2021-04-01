@@ -4463,12 +4463,12 @@ ssize_t sec_bat_show_attrs(struct device *dev,
 			value.intval = 0;
 			psy_do_property(battery->pdata->fgsrc_switch_name, set,
 					POWER_SUPPLY_PROP_ENERGY_NOW, value);
-			mdelay(200);
+			msleep(200);
 			psy_do_property(battery->pdata->fuelgauge_name, get,
 					POWER_SUPPLY_PROP_VOLTAGE_NOW, value);
 			dev_info(battery->dev, "voltage(%d)\n", value.intval/10);
 			ret = value.intval /10;
-			mdelay(200);
+			msleep(200);
 			value.intval = 1;
 			psy_do_property(battery->pdata->fgsrc_switch_name, set,
 					POWER_SUPPLY_PROP_ENERGY_NOW, value);

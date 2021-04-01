@@ -49,7 +49,7 @@
 
 /* respond timeout for MCP notification, in secs */
 #define MCP_TIMEOUT		10
-#define MCP_RETRIES		2
+#define MCP_RETRIES		3
 #define MCP_NF_QUEUE_SZ		8
 
 static struct {

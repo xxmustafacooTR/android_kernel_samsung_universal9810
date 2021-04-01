@@ -94,6 +94,8 @@ static void mfc_deinit_dec_ctx(struct s5p_mfc_ctx *ctx)
 {
 	struct s5p_mfc_dec *dec = ctx->dec_priv;
 
+	s5p_mfc_cleanup_assigned_iovmm(ctx);
+
 	s5p_mfc_delete_queue(&ctx->src_buf_queue);
 	s5p_mfc_delete_queue(&ctx->dst_buf_queue);
 	s5p_mfc_delete_queue(&ctx->src_buf_nal_queue);
@@ -161,6 +163,8 @@ static int mfc_init_dec_ctx(struct s5p_mfc_ctx *ctx)
 	dec->is_dpb_full = 0;
 	s5p_mfc_cleanup_assigned_fd(ctx);
 	s5p_mfc_clear_assigned_dpb(ctx);
+	mutex_init(&dec->dpb_mutex);
+
 	dec->sh_handle.fd = -1;
 	dec->ref_info = kzalloc(
 		(sizeof(struct dec_dpb_ref_info) * MFC_MAX_DPBS), GFP_KERNEL);

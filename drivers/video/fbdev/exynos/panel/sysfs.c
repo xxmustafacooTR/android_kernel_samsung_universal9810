@@ -1,15 +1,12 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
- * linux/drivers/video/fbdev/exynos/panel/sysfs.c
- *
- * Samsung MIPI-DSI Panel SYSFS driver.
- *
- * Copyright (c) 2016 Samsung Electronics
+ * Copyright (c) Samsung Electronics Co., Ltd.
  * JiHoon Kim <jihoonn.kim@samsung.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
-*/
+ */
 
 #include <linux/ctype.h>
 #include <linux/lcd.h>
@@ -55,7 +52,7 @@ static ssize_t fingerprint_store(struct device *dev,
 {
 	int rc;
 
-	rc = kstrtouint(buf, (unsigned int)0, &fingerprint_value);
+	rc = kstrtouint(buf, 0, &fingerprint_value);
 	if (rc < 0)
 		return rc;
 
@@ -148,7 +145,7 @@ static ssize_t cell_id_show(struct device *dev,
 	resource_copy_by_name(panel_data, coordinate, "coordinate");
 
 	snprintf(buf, PAGE_SIZE, "%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X\n",
-		date[0] , date[1], date[2], date[3], date[4], date[5], date[6],
+		date[0], date[1], date[2], date[3], date[4], date[5], date[6],
 		coordinate[0], coordinate[1], coordinate[2], coordinate[3]);
 
 	return strlen(buf);
@@ -269,6 +266,7 @@ static ssize_t brightness_table_show(struct device *dev,
 	char recv_buf[50] = {0, };
 	int recv_buf_len = ARRAY_SIZE(recv_buf);
 	int max_brightness = 0;
+
 	if (panel == NULL) {
 		panel_err("PANEL:ERR:%s:panel is null\n", __func__);
 		return -EINVAL;
@@ -295,7 +293,7 @@ static ssize_t brightness_table_show(struct device *dev,
 		}
 		prev_actual_brightness = actual_brightness;
 		prev_br = br;
-		if (PAGE_SIZE <= len) {
+		if (len >= PAGE_SIZE) {
 			pr_info("%s print buffer overflow %d\n", __func__, len);
 			len = PAGE_SIZE - 1;
 			goto exit;
@@ -350,7 +348,7 @@ static ssize_t adaptive_control_store(struct device *dev,
 		return -EINVAL;
 	}
 
-	rc = kstrtouint(buf, (unsigned int)0, &value);
+	rc = kstrtouint(buf, 0, &value);
 	if (rc < 0)
 		return rc;
 
@@ -412,7 +410,7 @@ static ssize_t siop_enable_store(struct device *dev,
 		return -EINVAL;
 	}
 
-	rc = kstrtouint(buf, (unsigned int)0, &value);
+	rc = kstrtouint(buf, 0, &value);
 	if (rc < 0)
 		return rc;
 
@@ -536,7 +534,7 @@ static ssize_t read_mtp_store(struct device *dev,
 	pr_info("READ_Reg addr: %02x, pos : %d len : %d\n",
 			readreg, readpos, readlen);
 	for (i = 0; i < readlen; i++)
-		pr_info("READ_Reg %dth : %02x \n", i + 1, readbuf[i]);
+		pr_info("READ_Reg %dth : %02x\n", i + 1, readbuf[i]);
 	mutex_unlock(&sysfs_lock);
 
 	return size;
@@ -580,7 +578,7 @@ static ssize_t mcd_mode_store(struct device *dev,
 	}
 	panel_data = &panel->panel_data;
 
-	rc = kstrtouint(buf, (unsigned int)0, &value);
+	rc = kstrtouint(buf, 0, &value);
 	if (rc < 0)
 		return rc;
 
@@ -614,7 +612,7 @@ static void print_mcd_resistance(u8 *mcd_nok, int size)
 		if (!(code % 0x10))
 			len += snprintf(buf + len, sizeof(buf) - len, "[%02X] ", code);
 		len += snprintf(buf + len, sizeof(buf) - len, "%02X%s",
-			   	mcd_nok[code], (!((code + 1) % 0x10)) ? "\n" : " ");
+				mcd_nok[code], (!((code + 1) % 0x10)) ? "\n" : " ");
 	}
 	pr_info("%s\n", buf);
 }
@@ -739,7 +737,7 @@ static ssize_t mcd_resistance_store(struct device *dev,
 		return -EINVAL;
 	}
 	panel_data = &panel->panel_data;
-	rc = kstrtouint(buf, (unsigned int)0, &value);
+	rc = kstrtouint(buf, 0, &value);
 	if (rc < 0)
 		return rc;
 
@@ -881,7 +879,7 @@ static ssize_t mst_store(struct device *dev,
 	}
 	panel_data = &panel->panel_data;
 
-	rc = kstrtouint(buf, (unsigned int)0, &value);
+	rc = kstrtouint(buf, 0, &value);
 	if (rc < 0)
 		return rc;
 
@@ -911,10 +909,9 @@ u8 checksum[4] = { 0x12, 0x34, 0x56, 0x78 };
 static bool gct_chksum_is_valid(struct panel_device *panel)
 {
 	int i;
-	struct panel_info *panel_data;
-	panel_data = &panel->panel_data;
+	struct panel_info *panel_data = &panel->panel_data;
 
-	for(i = 0; i < 4; i++)
+	for (i = 0; i < 4; i++)
 		if (checksum[i] != panel_data->props.gct_valid_chksum)
 			return false;
 	return true;
@@ -986,7 +983,7 @@ static ssize_t gct_store(struct device *dev,
 
 	panel_data = &panel->panel_data;
 
-	rc = kstrtouint(buf, (unsigned int)0, &value);
+	rc = kstrtouint(buf, 0, &value);
 	if (rc < 0)
 		return rc;
 
@@ -1147,7 +1144,7 @@ static ssize_t xtalk_mode_store(struct device *dev,
 		return -EINVAL;
 	}
 
-	rc = kstrtouint(buf, (unsigned int)0, &value);
+	rc = kstrtouint(buf, 0, &value);
 	if (rc < 0)
 		return rc;
 
@@ -1302,9 +1299,8 @@ static ssize_t poc_mca_show(struct device *dev,
 
 	len = get_resource_size_by_name(&panel->panel_data, "poc_mca_chksum");
 	buf[0] = '\0';
-	for (i = 0; i < len; i++) {
+	for (i = 0; i < len; i++)
 		snprintf(buf, PAGE_SIZE, "%s%02X ", buf, chksum_data[i]);
-	}
 
 	dev_info(dev, "%s poc_mca_checksum: %s\n", __func__, buf);
 
@@ -1349,9 +1345,8 @@ static ssize_t gamma_flash_show(struct device *dev,
 	else
 		ret = panel->dim_flash_work.ret;
 
-	pr_info("%s result %d, dim chksum(calc:%04X read:%04X), "
-			"mtp chksum(reg:%04X, calc:%04X, read:%04X)\n", __func__,
-			ret, result->dim_chksum_by_calc, result->dim_chksum_by_read,
+	pr_info("%s result %d, dim chksum(calc:%04X read:%04X), mtp chksum(reg:%04X, calc:%04X, read:%04X)\n",
+			__func__, ret, result->dim_chksum_by_calc, result->dim_chksum_by_read,
 			calc_checksum_16bit(result->mtp_reg, sizeof(result->mtp_reg)),
 			result->mtp_chksum_by_calc, result->mtp_chksum_by_read);
 
@@ -1372,7 +1367,7 @@ static ssize_t gamma_flash_store(struct device *dev,
 	if (!IS_PANEL_ACTIVE(panel))
 		return -ENODEV;
 
-	rc = kstrtouint(buf, (unsigned int)0, &value);
+	rc = kstrtouint(buf, 0, &value);
 	if (rc < 0)
 		return rc;
 
@@ -1425,7 +1420,7 @@ static ssize_t grayspot_store(struct device *dev,
 	}
 	panel_data = &panel->panel_data;
 
-	rc = kstrtouint(buf, (unsigned int)0, &value);
+	rc = kstrtouint(buf, 0, &value);
 	if (rc < 0)
 		return rc;
 
@@ -1489,7 +1484,7 @@ static ssize_t hmt_bright_store(struct device *dev,
 	}
 	panel_bl = &panel->panel_bl;
 
-	rc = kstrtouint(buf, (unsigned int)0, &value);
+	rc = kstrtouint(buf, 0, &value);
 	if (rc < 0)
 		return rc;
 
@@ -1499,9 +1494,8 @@ static ssize_t hmt_bright_store(struct device *dev,
 	mutex_lock(&panel_bl->lock);
 	mutex_lock(&panel->op_lock);
 
-	if (panel_bl->subdev[PANEL_BL_SUBDEV_TYPE_HMD].brightness != BRT(value)) {
+	if (panel_bl->subdev[PANEL_BL_SUBDEV_TYPE_HMD].brightness != BRT(value))
 		panel_bl->subdev[PANEL_BL_SUBDEV_TYPE_HMD].brightness = BRT(value);
-	}
 
 	if (panel->state.hmd_on != PANEL_HMD_ON) {
 		panel_info("PANEL:WARN:%s: hmd off\n", __func__);
@@ -2194,7 +2188,7 @@ static void show_aid_log(struct panel_info *panel_data, int id)
 			len += snprintf(buf + len, sizeof(buf) - len, "| ");
 			for_each_layer(elvss_tbl, layer)
 				for_each_col(elvss_tbl, col)
-				len += snprintf(buf + len, sizeof(buf) - len, "%02X ",
+					len += snprintf(buf + len, sizeof(buf) - len, "%02X ",
 						elvss_tbl->arr[maptbl_index(elvss_tbl, layer, i, col)]);
 		}
 
@@ -2270,13 +2264,13 @@ void ccb_set_mode(struct panel_device *panel, u8 ccb, int stepping)
 		dsim_write_hl_data(dsim, ccb_cmd, ARRAY_SIZE(ccb_cmd));
 		break;
 	case LCD_TYPE_S6E3HA3_WQHD:
-		if((ccb & 0x0F) == 0x00) {		// off
-			if(stepping) {
+		if ((ccb & 0x0F) == 0x00) {		// off
+			if (stepping) {
 				ccb_cmd[1] = dsim->priv.current_ccb;
-				for(secondval = 0x2A; secondval <= 0x3F; secondval += 1) {
+				for (secondval = 0x2A; secondval <= 0x3F; secondval += 1) {
 					ccb_cmd[2] = secondval;
 					dsim_write_hl_data(dsim, ccb_cmd, ARRAY_SIZE(ccb_cmd));
-					msleep(17);
+					usleep_range(17000, 17000 + 10);
 				}
 			}
 			ccb_cmd[1] = 0x00;
@@ -2284,22 +2278,22 @@ void ccb_set_mode(struct panel_device *panel, u8 ccb, int stepping)
 			dsim_write_hl_data(dsim, ccb_cmd, ARRAY_SIZE(ccb_cmd));
 		} else {						// on
 			ccb_cmd[1] = ccb;
-			if(stepping) {
-				for(secondval = 0x3F; secondval >= 0x2A; secondval -= 1) {
+			if (stepping) {
+				for (secondval = 0x3F; secondval >= 0x2A; secondval -= 1) {
 					ccb_cmd[2] = secondval;
 					dsim_write_hl_data(dsim, ccb_cmd, ARRAY_SIZE(ccb_cmd));
-					if(secondval != 0x2A)
-						msleep(17);
+					if (secondval != 0x2A)
+						usleep_range(17000, 17000 + 10);
 				}
 			} else {
 				ccb_cmd[2] = 0x2A;
 				dsim_write_hl_data(dsim, ccb_cmd, ARRAY_SIZE(ccb_cmd));
 			}
 		}
-		msleep(17);
+		usleep_range(17000, 17000 + 10);
 		break;
 	default:
-		pr_info("%s unknown panel \n", __func__);
+		pr_info("%s unknown panel\n", __func__);
 		break;
 	}
 
@@ -2350,31 +2344,31 @@ static ssize_t weakness_ccb_store(struct device *dev,
 
 	set_ccb = ((u8)(serverity) << 4);
 	switch (type) {
-		case 0:
+	case 0:
+		set_ccb = 0;
+		panel_dbg("%s: disable ccb\n", __func__);
+		break;
+	case 1:
+		set_ccb += 1;
+		panel_dbg("%s: enable red\n", __func__);
+		break;
+	case 2:
+		set_ccb += 5;
+		panel_dbg("%s: enable green\n", __func__);
+		break;
+	case 3:
+		if (serverity == 0) {
+			set_ccb += 9;
+			panel_dbg("%s: enable blue\n", __func__);
+		} else {
 			set_ccb = 0;
-			panel_dbg("%s: disable ccb\n", __func__);
-			break;
-		case 1:
-			set_ccb += 1;
-			panel_dbg("%s: enable red\n", __func__);
-			break;
-		case 2:
-			set_ccb += 5;
-			panel_dbg( "%s: enable green\n", __func__);
-			break;
-		case 3:
-			if (serverity == 0) {
-				set_ccb += 9;
-				panel_dbg("%s: enable blue\n", __func__);
-			} else {
-				set_ccb = 0;
-				set_ccb += 9;
-				panel_dbg("%s, serverity is out of range, blue only support 0\n", __func__);
-			}
-			break;
-		default:
-			set_ccb = 0;
-			break;
+			set_ccb += 9;
+			panel_dbg("%s, serverity is out of range, blue only support 0\n", __func__);
+		}
+		break;
+	default:
+		set_ccb = 0;
+		break;
 	}
 	if (panel->current_ccb == set_ccb) {
 		panel_dbg("%s: aleady set same ccb\n", __func__);
@@ -2544,8 +2538,7 @@ static ssize_t read_copr_show(struct device *dev,
 	}
 
 	if (props->version == 2)
-		panel_info("read_copr : cur_cnt %d, cur_copr %d, avg_copr %d, "
-				"s_cur_cnt %d, s_avg_copr %d, copr_ready %d, comp_copr %d\n",
+		panel_info("read_copr : cur_cnt %d, cur_copr %d, avg_copr %d, s_cur_cnt %d, s_avg_copr %d, copr_ready %d, comp_copr %d\n",
 				props->cur_cnt, props->cur_copr, props->avg_copr,
 				props->s_cur_cnt, props->s_avg_copr,
 				props->copr_ready, props->comp_copr);
@@ -2618,7 +2611,7 @@ static ssize_t copr_roi_show(struct device *dev,
 		for (c = 0; c < 3; c++) {
 			len += snprintf(buf + len, PAGE_SIZE - len,
 					"%d%s", out[i * 3 + c],
-					((i == copr->props.nr_roi -1) && c == 2) ? "\n" : " ");
+					((i == copr->props.nr_roi - 1) && c == 2) ? "\n" : " ");
 		}
 	}
 
@@ -2966,9 +2959,8 @@ static ssize_t isc_defect_store(struct device *dev,
 
 	if (value) {
 		ret = panel_do_seqtbl_by_index_nolock(panel, PANEL_CHECK_ISC_DEFECT_SEQ);
-		if (unlikely(ret < 0)) {
+		if (unlikely(ret < 0))
 			panel_err("PANEL:ERR:%s:failed to write ics defect seq\n", __func__);
-		}
 	}
 
 	mutex_unlock(&panel->op_lock);
@@ -3034,12 +3026,6 @@ struct device_attribute panel_attrs[] = {
 	__PANEL_ATTR_RW(alpm, 0664),
 	__PANEL_ATTR_RW(lpm_opr, 0664),
 	__PANEL_ATTR_RW(fingerprint, 0644),
-#if 0
-#ifdef CONFIG_ACTIVE_CLOCK
-	__PANEL_ATTR_RW(active_clock, 0644),
-	__PANEL_ATTR_RW(active_blink, 0644),
-#endif
-#endif
 #ifdef CONFIG_SUPPORT_HMD
 	__PANEL_ATTR_RW(hmt_bright, 0664),
 	__PANEL_ATTR_RW(hmt_on, 0664),
@@ -3094,16 +3080,16 @@ int panel_sysfs_probe(struct panel_device *panel)
 		else
 			pr_err("success to create /sys/devices/svc svc : 0x%pK\n", svc);
 	} else {
-		svc = (struct kobject*)svc_sd->priv;
+		svc = (struct kobject *)svc_sd->priv;
 		pr_info("success to find svc_sd : 0x%pK  svc : 0x%pK\n", svc_sd, svc);
 	}
 
 	if (!IS_ERR_OR_NULL(svc)) {
 		ret = sysfs_create_link(svc, &lcd->dev.kobj, "OCTA");
 		if (ret)
-			pr_err("failed to create svc/OCTA/ \n");
+			pr_err("failed to create svc/OCTA/\n");
 		else
-			pr_info("success to create svc/OCTA/ \n");
+			pr_info("success to create svc/OCTA/\n");
 	} else {
 		pr_err("failed to find svc kobject\n");
 	}

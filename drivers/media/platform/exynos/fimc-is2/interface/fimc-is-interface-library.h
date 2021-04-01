@@ -97,6 +97,9 @@ typedef u32 (*start_up_func_t)(void **func);
 typedef u32 (*rta_start_up_func_t)(void *bootargs, void **func);
 typedef void(*os_system_func_t)(void);
 
+#define DDK_SHUT_DOWN_FUNC_ADDR	(DDK_LIB_ADDR + 0x100)
+typedef int (*ddk_shut_down_func_t)(void *data);
+
 #define RTA_SHUT_DOWN_FUNC_ADDR	(RTA_LIB_ADDR + 0x100)
 typedef int (*rta_shut_down_func_t)(void *data);
 

@@ -1,9 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
- * linux/drivers/video/fbdev/exynos/panel/panel_poc.c
- *
- * Samsung Common LCD Driver.
- *
- * Copyright (c) 2017 Samsung Electronics
+ * Copyright (c) Samsung Electronics Co., Ltd.
  * Gwanghui Lee <gwanghui.lee@samsung.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -302,12 +299,10 @@ int poc_write_data(struct panel_device *panel, u8 *data, u32 addr, u32 size)
 		}
 
 		poc_info->wdata = data[i];
-		if (i == 0 || i == (size - 1) || (poc_addr & 0xFF) == 0 || (poc_addr & 0xFF) == 0xFF) {
+		if (i == 0 || i == (size - 1) || (poc_addr & 0xFF) == 0 || (poc_addr & 0xFF) == 0xFF)
 			ret = panel_do_poc_seqtbl_by_index_nolock(poc_dev, POC_WRITE_DAT_STT_END_SEQ);
-		}
-		else {
+		else
 			ret = panel_do_poc_seqtbl_by_index_nolock(poc_dev, POC_WRITE_DAT_SEQ);
-		}
 
 		if (unlikely(ret < 0)) {
 			pr_err("%s, failed to write poc-wr-img seq\n", __func__);
@@ -718,7 +713,7 @@ int set_panel_poc(struct panel_poc_device *poc_dev, u32 cmd, const char *cmd_ext
 			pr_err("%s, failed to read img partition\n", __func__);
 			return ret;
 		}
-		
+
 		ret = poc_data_backup(panel, poc_rd_img + POC_IMG_ADDR, POC_IMG_SIZE, POC_IMG_PATH);
 		if (unlikely(ret < 0)) {
 			pr_err("%s, failed to backup poc img\n", __func__);
@@ -968,7 +963,7 @@ static ssize_t panel_poc_read(struct file *file, char __user *buf, size_t count,
 	partition_size = get_poc_partition_size(poc_dev, POC_IMG_PARTITION);
 	if (partition_size < 0)
 		return -EINVAL;
-	
+
 	if (unlikely(*ppos < 0 || *ppos >= partition_size)) {
 		panel_err("POC:ERR:%s: invalid read pos %d\n",
 				__func__, (int)*ppos);
@@ -1029,7 +1024,7 @@ static ssize_t panel_poc_write(struct file *file, const char __user *buf,
 	partition_size = get_poc_partition_size(poc_dev, POC_IMG_PARTITION);
 	if (partition_size < 0)
 		return -EINVAL;
-	
+
 	if (unlikely(*ppos < 0 || *ppos >= partition_size)) {
 		panel_err("POC:ERR:%s: invalid write size pos %d, size %d\n",
 				__func__, (int)*ppos, (int)count);

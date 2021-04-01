@@ -460,6 +460,8 @@ static void mfc_dec_dst_stop_streaming(struct s5p_mfc_ctx *ctx)
 		return;
 	}
 
+	s5p_mfc_cleanup_assigned_iovmm(ctx);
+
 	s5p_mfc_cleanup_assigned_fd(ctx);
 	s5p_mfc_cleanup_queue(&ctx->buf_queue_lock, &ctx->ref_buf_queue);
 
@@ -603,9 +605,6 @@ static void s5p_mfc_dec_buf_queue(struct vb2_buffer *vb)
 		buf->vir_addr = stream_vir;
 
 		s5p_mfc_add_tail_buf(&ctx->buf_queue_lock, &ctx->src_buf_queue, buf);
-
-		MFC_TRACE_CTX("Q src[%d] fd: %d, %#llx\n",
-				vb->index, vb->planes[0].m.fd, buf->planes.stream);
 	} else if (vq->type == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE) {
 		index = vb->index;
 		mfc_debug(2, "Dst queue: %p\n", &ctx->dst_buf_queue);

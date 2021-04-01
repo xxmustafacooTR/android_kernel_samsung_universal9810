@@ -1,7 +1,7 @@
 /*
  * Broadcom Dongle Host Driver (DHD), common DHD core.
  *
- * Copyright (C) 1999-2019, Broadcom.
+ * Copyright (C) 1999-2020, Broadcom.
  *
  *      Unless you and Broadcom execute a separate written software license
  * agreement governing use of this software, this software is licensed to you
@@ -4120,7 +4120,7 @@ dhd_pktfilter_offload_set(dhd_pub_t * dhd, char *arg)
 					htod16(WL_PKT_FILTER_MFLAG_NEG);
 				(argv[i])++;
 			}
-			if (argv[i] == (char *)'\0') {
+			if (argv[i] == '\0') {
 				printf("Pattern not provided\n");
 				goto fail;
 			}

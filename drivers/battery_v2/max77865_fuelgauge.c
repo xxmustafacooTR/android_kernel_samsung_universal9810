@@ -872,8 +872,6 @@ int max77865_fg_alert_init(struct max77865_fuelgauge_data *fuelgauge, int soc)
 		pr_err("%s: TALRT_THRESHOLD_REG is not valid (0x%x)\n",
 			__func__, read_data);
 
-	/*mdelay(100);*/
-
 	/* Enable SOC alerts */
 	if (max77865_bulk_read(fuelgauge->i2c, CONFIG_REG,
 			       2, config_data) < 0) {
@@ -1421,7 +1419,7 @@ static int max77865_fg_get_property(struct power_supply *psy,
 	static int abnormal_current_cnt = 0;
 	union power_supply_propval value;
 	u8 data[2] = {0, 0};
-    enum power_supply_property ext_psp = psp;
+    	enum power_supply_property ext_psp = psp;
 
 	switch (psp) {
 		/* Cell voltage (VCELL, mV) */

@@ -59,6 +59,11 @@ int s5p_mfc_mem_get_user_shared_handle(struct s5p_mfc_ctx *ctx,
 int s5p_mfc_mem_cleanup_user_shared_handle(struct s5p_mfc_ctx *ctx,
 		struct mfc_user_shared_handle *handle);
 
+void s5p_mfc_put_iovmm(struct s5p_mfc_ctx *ctx, int num_planes, int index, int spare);
+void s5p_mfc_get_iovmm(struct s5p_mfc_ctx *ctx, struct vb2_buffer *vb);
+void s5p_mfc_move_iovmm_to_spare(struct s5p_mfc_ctx *ctx, int num_planes, int index);
+void s5p_mfc_cleanup_assigned_iovmm(struct s5p_mfc_ctx *ctx);
+
 void *s5p_mfc_mem_get_vaddr(struct s5p_mfc_dev *dev,
 		struct s5p_mfc_special_buf *special_buf);
 void s5p_mfc_mem_ion_free(struct s5p_mfc_dev *dev,
