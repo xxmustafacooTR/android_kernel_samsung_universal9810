@@ -212,7 +212,7 @@ static unsigned int get_next_freq(struct sugov_policy *sg_policy,
 	unsigned int freq = arch_scale_freq_invariant() ?
 				policy->cpuinfo.max_freq : policy->cur;
 
-	freq = (freq + (freq >> 2)) * util / max;
+	freq = freq * util / max;
 
 	if (freq == sg_policy->cached_raw_freq && !sg_policy->need_freq_update)
 		return sg_policy->next_freq;
@@ -256,6 +256,7 @@ static void sugov_get_util(unsigned long *util, unsigned long *max, u64 time)
 		*util = *util + rt;
 
 	*util = freqvar_boost_vector(cpu, *util);
+	*util = *util + (*util >> 2);
 	*util = min(*util, max_cap);
 	*max = max_cap;
 
