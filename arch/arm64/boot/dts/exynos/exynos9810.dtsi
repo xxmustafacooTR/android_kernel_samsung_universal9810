@@ -5001,6 +5001,7 @@
 			up_rate_limit_table = < 5000 >;
 			down_rate_limit_table = < 5000 >;
 			st_table = < 5 >;
+			upscale_ratio_table = < 75 1248000 85 >;
 		};
 
 		domain@1 {
@@ -5011,6 +5012,7 @@
 			up_rate_limit_table = < 5000 >;
 			down_rate_limit_table = < 5000 >;
 			st_table = < 5 >;
+			upscale_ratio_table = < 80 1066000 81 1469000 87 1794000 90 >;
 		};
 	};
 
