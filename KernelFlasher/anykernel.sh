@@ -42,12 +42,15 @@ dump_boot;
 mount -o remount,rw /vendor;
 mount -o remount,rw /system;
 
+ui_print "Copying patched fstabs";
 if [ -d /system/product/vendor_overlay ]; then
     cp -af /tmp/anykernel/ramdisk/init.services.rc /system/product/vendor_overlay/29/etc/init/;
     cp -af /tmp/anykernel/ramdisk/fstab.samsungexynos9810 /system/product/vendor_overlay/29/etc/;
+    cp -af /tmp/anykernel/ramdisk/fstab.enableswap /system/product/vendor_overlay/29/etc/;
 else
     cp -af /tmp/anykernel/ramdisk/init.services.rc /vendor/etc/init/;
     cp -af /tmp/anykernel/ramdisk/fstab.samsungexynos9810 /vendor/etc/;
+    cp -af /tmp/anykernel/ramdisk/fstab.enableswap /vendor/etc/;
 fi;
 
 # Move device dtb
