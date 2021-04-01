@@ -1226,4 +1226,8 @@ source "drivers/input/touchscreen/sec_ts/Kconfig"
 source "drivers/input/touchscreen/sec_ts/y771/Kconfig"
 source "drivers/input/touchscreen/stm/Kconfig"
 source "drivers/input/touchscreen/stm/fts7/Kconfig"
+
+config WAKE_GESTURES
+	bool "wake gestures"
+
 endif
