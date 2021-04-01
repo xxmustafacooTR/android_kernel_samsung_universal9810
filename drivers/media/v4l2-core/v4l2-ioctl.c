@@ -2822,7 +2822,8 @@ long
 video_usercopy(struct file *file, unsigned int cmd, unsigned long arg,
 	       v4l2_kioctl func)
 {
-	char	sbuf[128];
+	char	sbuf[SZ_4K] __aligned(8);
+	char    mbuf_onstack[SZ_512] __aligned(8);
 	void    *mbuf = NULL;
 	void	*parg = (void *)arg;
 	long	err  = -EINVAL;
@@ -2884,10 +2885,14 @@ video_usercopy(struct file *file, unsigned int cmd, unsigned long arg,
 		 * array) fits into sbuf (so that mbuf will still remain
 		 * unused up to here).
 		 */
-		mbuf = kmalloc(array_size, GFP_KERNEL);
-		err = -ENOMEM;
-		if (NULL == mbuf)
-			goto out_array_args;
+		if (array_size <= ARRAY_SIZE(mbuf_onstack)) {
+			mbuf = mbuf_onstack;
+		} else {
+			mbuf = kmalloc(array_size, GFP_KERNEL);
+			err = -ENOMEM;
+			if (NULL == mbuf)
+				goto out_array_args;
+		}
 		err = -EFAULT;
 		if (copy_from_user(mbuf, user_ptr, array_size))
 			goto out_array_args;
@@ -2930,7 +2935,8 @@ out_array_args:
 	}
 
 out:
-	kfree(mbuf);
+	if (mbuf != mbuf_onstack)
+		kfree(mbuf);
 	return err;
 }
 EXPORT_SYMBOL(video_usercopy);
