@@ -7569,6 +7569,8 @@ static int wake_cap(struct task_struct *p, int cpu, int prev_cpu)
 
 static inline bool
 task_is_boosted(struct task_struct *p) {
+	if (sched_feat(EXYNOS_MS))
+		return 0;
 #ifdef CONFIG_CGROUP_SCHEDTUNE
 	return schedtune_task_boost(p) > 0;
 #else
