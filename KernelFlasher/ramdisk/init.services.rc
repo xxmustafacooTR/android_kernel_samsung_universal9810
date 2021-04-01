@@ -1,0 +1,151 @@
+# Copyright (C) 2012 The Android Open Source Project
+#
+# IMPORTANT: Do not create world writable files or directories.
+# This is a common source of Android security bugs.
+#
+
+on init
+    # EAS stune boosting interfaces
+    chown system system /dev/stune/top-app/schedtune.boost
+    chown system system /dev/stune/top-app/schedtune.prefer_idle
+    chown system system /dev/stune/top-app/schedtune.prefer_perf
+    chown system system /dev/stune/top-app/cgroup.procs
+
+    chown system system /dev/stune/foreground/schedtune.boost
+    chown system system /dev/stune/foreground/schedtune.prefer_idle
+    chown system system /dev/stune/foreground/schedtune.prefer_perf
+    chown system system /dev/stune/foreground/cgroup.procs
+
+    chown system system /dev/stune/background/schedtune.boost
+    chown system system /dev/stune/background/schedtune.prefer_idle
+    chown system system /dev/stune/background/schedtune.prefer_perf
+    chown system system /dev/stune/background/cgroup.procs
+
+    chown system system /dev/stune/schedtune.boost
+    chown system system /dev/stune/schedtune.prefer_idle
+    chown system system /dev/stune/schedtune.prefer_perf
+    chown system system /dev/stune/cgroup.procs
+
+    write /dev/stune/top-app/schedtune.boost 1
+    write /dev/stune/top-app/schedtune.sched_boost 1
+    write /dev/stune/top-app/schedtune.util_est_en 1
+    write /dev/stune/top-app/schedtune.ontime_en 1
+    
+    write /dev/stune/rt/schedtune.boost 1
+    write /dev/stune/rt/schedtune.sched_boost 1
+
+    write /dev/stune/foreground/schedtune.boost 1
+    write /dev/stune/foreground/schedtune.sched_boost 1
+    write /dev/stune/foreground/schedtune.util_est_en 1
+    write /dev/stune/foreground/schedtune.ontime_en 1
+
+    write /dev/stune/background/schedtune.boost 0
+
+    write /dev/stune/schedtune.boost 0
+
+    # CPUSET(9810)
+    chown system system /dev/cpuset/top-app/cpus
+    chown system system /dev/cpuset/foreground/cpus
+    chown system system /dev/cpuset/background/cpus
+    chown system system /dev/cpuset/system-background/cpus
+    chown system system /dev/cpuset/restricted/cpus
+    chown system system /dev/cpuset/cpus
+    chown system system /sys/power/cpuhotplug/governor/single_freq
+    chown system system /sys/power/cpuhotplug/governor/dual_freq
+    chown system system /sys/power/cpuhotplug/governor/triple_freq
+    chown system system /sys/power/cpuhotplug/governor/quad_freq
+    chown radio system /dev/stune/top-app/schedtune.prefer_perf
+    chown radio system /dev/stune/top-app/schedtune.prefer_idle
+    chown radio system /dev/stune/top-app/schedtune.band
+    chown radio system /dev/stune/top-app/schedtune.boost
+    chown radio system /dev/stune/top-app/schedtune.util_est_en
+    chown radio system /dev/stune/top-app/schedtune.ontime_en
+    chown radio system /dev/stune/foreground/schedtune.prefer_perf
+    chown radio system /dev/stune/foreground/schedtune.prefer_idle
+    chown radio system /dev/stune/foreground/schedtune.band;
+    chown radio system /dev/stune/foreground/schedtune.boost
+    chown radio system /dev/stune/foreground/schedtune.util_est_en
+    chown radio system /dev/stune/foreground/schedtune.ontime_en
+    chown radio system /dev/stune/background/schedtune.prefer_perf
+    chown radio system /dev/stune/background/schedtune.prefer_idle
+    chown radio system /dev/stune/background/schedtune.band
+    chown radio system /dev/stune/background/schedtune.boost
+    chown radio system /dev/stune/background/schedtune.util_est_en
+    chown radio system /dev/stune/background/schedtune.ontime_en
+    chown radio system /sys/kernel/ems/ontime/coregroup0/lower_boundary
+    chown radio system /sys/kernel/ems/ontime/coregroup0/upper_boundary
+    chown radio system /sys/kernel/ems/ontime/coregroup0/coverage_ratio
+    chown radio system /sys/kernel/ems/ontime/coregroup1/lower_boundary
+    chown radio system /sys/kernel/ems/ontime/coregroup1/upper_boundary
+    chown radio system /sys/kernel/ems/ontime/coregroup1/coverage_ratio
+    chown radio system /sys/kernel/ems/lbt/overutil_ratio_level0
+    chown radio system /sys/kernel/ems/lbt/overutil_ratio_level1
+    chown radio system /sys/devices/system/cpu/cpufreq/policy0/schedutil/freqvar_boost
+    chown radio system /sys/devices/system/cpu/cpufreq/policy0/schedutil/freqvar_up_rate_limit
+    chown radio system /sys/devices/system/cpu/cpufreq/policy0/schedutil/freqvar_down_rate_limit
+    chown radio system /sys/devices/system/cpu/cpufreq/policy0/schedutil/freqvar_upscale_ratio
+    chown radio system /sys/devices/system/cpu/cpufreq/policy4/schedutil/freqvar_boost
+    chown radio system /sys/devices/system/cpu/cpufreq/policy4/schedutil/freqvar_up_rate_limit
+    chown radio system /sys/devices/system/cpu/cpufreq/policy4/schedutil/freqvar_down_rate_limit
+    chown radio system /sys/devices/system/cpu/cpufreq/policy4/schedutil/freqvar_upscale_ratio
+
+    chmod 0664 /dev/cpuset/top-app/cpus
+    chmod 0664 /dev/cpuset/foreground/cpus
+    chmod 0664 /dev/cpuset/background/cpus
+    chmod 0664 /dev/cpuset/system-background/cpus
+    chmod 0664 /dev/cpuset/restricted/cpus
+    chmod 0664 /dev/cpuset/cpus
+    chmod 0664 /sys/power/cpuhotplug/governor/single_freq
+    chmod 0664 /sys/power/cpuhotplug/governor/dual_freq
+    chmod 0664 /sys/power/cpuhotplug/governor/triple_freq
+    chmod 0664 /sys/power/cpuhotplug/governor/quad_freq
+    chmod 0664 /dev/stune/top-app/schedtune.prefer_perf
+    chmod 0664 /dev/stune/top-app/schedtune.prefer_idle
+    chmod 0664 /dev/stune/top-app/schedtune.band
+    chmod 0664 /dev/stune/top-app/schedtune.boost
+    chmod 0664 /dev/stune/top-app/schedtune.util_est_en
+    chmod 0664 /dev/stune/top-app/schedtune.ontime_en
+    chmod 0664 /dev/stune/foreground/schedtune.prefer_perf
+    chmod 0664 /dev/stune/foreground/schedtune.prefer_idle
+    chmod 0664 /dev/stune/foreground/schedtune.band;
+    chmod 0664 /dev/stune/foreground/schedtune.boost
+    chmod 0664 /dev/stune/foreground/schedtune.util_est_en
+    chmod 0664 /dev/stune/foreground/schedtune.ontime_en
+    chmod 0664 /dev/stune/background/schedtune.prefer_perf
+    chmod 0664 /dev/stune/background/schedtune.prefer_idle
+    chmod 0664 /dev/stune/background/schedtune.band
+    chmod 0664 /dev/stune/background/schedtune.boost
+    chmod 0664 /dev/stune/background/schedtune.util_est_en
+    chmod 0664 /dev/stune/background/schedtune.ontime_en
+    chmod 0664 /sys/kernel/ems/ontime/coregroup0/lower_boundary
+    chmod 0664 /sys/kernel/ems/ontime/coregroup0/upper_boundary
+    chmod 0664 /sys/kernel/ems/ontime/coregroup0/coverage_ratio
+    chmod 0664 /sys/kernel/ems/ontime/coregroup1/lower_boundary
+    chmod 0664 /sys/kernel/ems/ontime/coregroup1/upper_boundary
+    chmod 0664 /sys/kernel/ems/ontime/coregroup1/coverage_ratio
+    chmod 0664 /sys/kernel/ems/lbt/overutil_ratio_level0
+    chmod 0664 /sys/kernel/ems/lbt/overutil_ratio_level1
+    chmod 0664 /sys/devices/system/cpu/cpufreq/policy0/schedutil/freqvar_boost
+    chmod 0664 /sys/devices/system/cpu/cpufreq/policy0/schedutil/freqvar_up_rate_limit
+    chmod 0664 /sys/devices/system/cpu/cpufreq/policy0/schedutil/freqvar_down_rate_limit
+    chmod 0664 /sys/devices/system/cpu/cpufreq/policy0/schedutil/freqvar_upscale_ratio
+    chmod 0664 /sys/devices/system/cpu/cpufreq/policy4/schedutil/freqvar_boost
+    chmod 0664 /sys/devices/system/cpu/cpufreq/policy4/schedutil/freqvar_up_rate_limit
+    chmod 0664 /sys/devices/system/cpu/cpufreq/policy4/schedutil/freqvar_down_rate_limit
+    chmod 0664 /sys/devices/system/cpu/cpufreq/policy4/schedutil/freqvar_upscale_ratio
+
+on boot
+    write /sys/devices/system/cpu/cpufreq/policy4/schedutil/exp_util 0
+    write /dev/cpuset/top-app/cpus 0-7
+    write /dev/cpuset/foreground/cpus 0-7
+    write /dev/cpuset/background/cpus 1-3
+    write /dev/cpuset/restricted/cpus 1-2
+    write /dev/cpuset/system-background/cpus 0-3
+    write /sys/bus/workqueue/devices/writeback/cpumask 1
+    write /proc/irq/default_smp_affinity f0
+    write /sys/fs/selinux/enforce 0
+    write /proc/sys/vm/page-cluster 0
+    write /proc/sys/vm/swappiness 160
+    write /sys/block/zram0/comp_algorithm zstd
+    write /proc/sys/vm/page-cluster 0
+    write /sys/fs/selinux/enforce 1
