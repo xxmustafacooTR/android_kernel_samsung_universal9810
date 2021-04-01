@@ -2908,14 +2908,19 @@ static void displayport_aux_sel(struct displayport_device *displayport)
 
 static void displayport_check_adapter_type(struct displayport_device *displayport)
 {
+	displayport->dex_adapter_type = DEX_WQHD_SUPPORT;
+}
+
+/* static void displayport_check_adapter_type(struct displayport_device *displayport)
+{
 	displayport->dex_adapter_type = DEX_FHD_SUPPORT;
 
 	if (displayport->ven_id != 0x04e8)
 		return;
 
 	switch(displayport->prod_id) {
-	case 0xa029: /* PAD */
-	case 0xa020: /* Station */
+	case 0xa029: // PAD
+	case 0xa020: // Station
 	case 0xa02a:
 	case 0xa02b:
 	case 0xa02c:
@@ -2929,7 +2934,7 @@ static void displayport_check_adapter_type(struct displayport_device *displaypor
 		displayport->dex_adapter_type = DEX_WQHD_SUPPORT;
 		break;
 	};
-}
+} */
 
 static int usb_typec_displayport_notification(struct notifier_block *nb,
 		unsigned long action, void *data)
