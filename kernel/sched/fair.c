@@ -7723,6 +7723,9 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 	int sync = wake_flags & WF_SYNC;
 	int target_cpu;
 
+	if (sync && (lookup_band(p) && lookup_band(cpu_rq(cpu)->curr)))
+		sync = 0;
+
 	if (sd_flag & SD_BALANCE_WAKE) {
 		int _wake_cap = wake_cap(p, cpu, prev_cpu);
 
