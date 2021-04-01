@@ -561,4 +561,19 @@ config STACKDEPOT
 config SBITMAP
 	bool
 
+config KAIR
+	bool
+	default y
+	help
+	  Library to support KAIR class as the realization of Elastic Capacity
+	  Vessel abstract theory.
+
+config SCHED_KAIR_GLUE
+	bool
+	depends on KAIR
+	default y
+	help
+	  Glue interface sticking edge of CFS scheduler and smoother governor
+	  working based on KAIR concept strategy.
+
 endmenu
