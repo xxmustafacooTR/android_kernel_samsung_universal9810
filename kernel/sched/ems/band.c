@@ -29,7 +29,7 @@ struct task_band *lookup_band(struct task_struct *p)
 	return band;
 }
 
-int band_play_cpu(struct task_struct *p)
+int band_play_cpu(struct task_struct *p, int sync)
 {
 	struct task_band *band;
 	int cpu, min_cpu = -1;
@@ -38,6 +38,15 @@ int band_play_cpu(struct task_struct *p)
 	band = lookup_band(p);
 	if (!band || cpumask_empty(&band->playable_cpus))
 		return -1;
+
+	if (sysctl_sched_sync_hint_enable && sync) {
+		int cpu = smp_processor_id();
+		int band_playable = cpu_rq(cpu)->nr_running == 1;
+
+		if (band_playable && cpumask_test_cpu(cpu, &p->cpus_allowed)
+				&& cpumask_test_cpu(cpu, &band->playable_cpus))
+			return cpu;
+	}
 
 	for_each_cpu_and(cpu, cpu_online_mask, &band->playable_cpus) {
 		if (!cpu_rq(cpu)->nr_running)
