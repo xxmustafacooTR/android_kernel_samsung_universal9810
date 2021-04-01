@@ -403,6 +403,13 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -Werror-implicit-function-declaration \
 		   -Wno-format-security \
 		   -std=gnu89
+
+KBUILD_CFLAGS	+= $(call cc-option, -march=armv8-a+crypto+crc,)
+ifeq ($(CONFIG_SOC_EXYNOS9810), y)
+KBUILD_CFLAGS	+= $(call cc-option, -mcpu=cortex-a55+crypto+crc,)
+KBUILD_CFLAGS	+= $(call cc-option, -mtune=exynos-m3+crypto+crc,)
+endif
+
 KBUILD_CPPFLAGS := -D__KERNEL__
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=
