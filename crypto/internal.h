@@ -80,7 +80,7 @@ char *get_fips_functest_mode(void);
 #endif
 void crypto_init_proc(int *fips_error);
 int do_integrity_check(void);
-int testmgr_crypto_proc_init(void);
+int __init testmgr_crypto_proc_init(void);
 const char *get_builtime_crypto_hmac(void);
 #else
 void __init crypto_init_proc(void);
