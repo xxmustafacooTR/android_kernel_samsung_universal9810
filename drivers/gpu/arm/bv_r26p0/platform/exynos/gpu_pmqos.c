@@ -125,12 +125,20 @@ int gpu_pm_qos_command(struct exynos_context *platform, gpu_pmqos_state state)
 		mutex_unlock(&platform->gpu_vk_boost_lock);
 #endif
 		pm_qos_update_request(&exynos5_g3d_cpu_cluster0_min_qos, platform->table[platform->step].cpu_little_min_freq); // LITTLE Min request
-		if (!platform->boost_is_enabled && platform->env_data.utilization > 65)
-			pm_qos_update_request(&exynos5_g3d_cpu_cluster1_max_qos, platform->table[platform->step].cpu_big_max_freq);
+		if (!platform->boost_is_enabled) {
+			if (platform->env_data.utilization > 65)
+				pm_qos_update_request(&exynos5_g3d_cpu_cluster1_max_qos, platform->table[platform->step].cpu_big_max_freq);
+			else
+				pm_qos_update_request(&exynos5_g3d_cpu_cluster1_max_qos, PM_QOS_CLUSTER1_FREQ_MAX_DEFAULT_VALUE);
+		}
 #if PM_QOS_CPU_CLUSTER_NUM == 3
 		pm_qos_update_request(&exynos5_g3d_cpu_cluster1_min_qos, platform->table[platform->step].cpu_middle_min_freq); /* MIDDLE Min request */
-		if (!platform->boost_is_enabled && platform->env_data.utilization > 65)
-		pm_qos_update_request(&exynos5_g3d_cpu_cluster2_max_qos, platform->table[platform->step].cpu_big_max_freq); /* BIG Max request */
+		if (!platform->boost_is_enabled) {
+			if (platform->env_data.utilization > 65)
+				pm_qos_update_request(&exynos5_g3d_cpu_cluster1_max_qos, platform->table[platform->step].cpu_big_max_freq);
+			else
+				pm_qos_update_request(&exynos5_g3d_cpu_cluster1_max_qos, PM_QOS_CLUSTER1_FREQ_MAX_DEFAULT_VALUE);
+		}
 #ifdef CONFIG_MALI_SUSTAINABLE_OPT
 		if (platform->sustainable.info_array[0] > 0) {
 			if (((platform->cur_clock == platform->sustainable.info_array[0])
