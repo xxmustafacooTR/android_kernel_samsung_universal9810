@@ -7718,12 +7718,14 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 {
 	struct sched_domain *tmp, *affine_sd = NULL, *sd = NULL;
 	int cpu = smp_processor_id();
+	struct task_struct *curr = READ_ONCE(cpu_rq(cpu)->curr);
 	int new_cpu = prev_cpu;
 	int want_affine = 0;
 	int sync = wake_flags & WF_SYNC;
 	int target_cpu;
 
-	if (sync && (lookup_band(p) && lookup_band(cpu_rq(cpu)->curr)))
+	if (sync && (lookup_band(p) && lookup_band(curr)) &&
+	    !same_thread_group(p, curr))
 		sync = 0;
 
 	if (sd_flag & SD_BALANCE_WAKE) {
