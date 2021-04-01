@@ -206,6 +206,8 @@ static int dev_pm_qos_constraints_allocate(struct device *dev)
 	c->type = PM_QOS_MIN;
 	c->notifiers = n;
 
+	kfree(c->notifiers);
+
 	c = &qos->latency_tolerance;
 	plist_head_init(&c->list);
 	c->target_value = PM_QOS_LATENCY_TOLERANCE_DEFAULT_VALUE;
