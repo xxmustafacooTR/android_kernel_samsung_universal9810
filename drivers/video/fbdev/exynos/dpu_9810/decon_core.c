@@ -4057,10 +4057,12 @@ static int decon_remove(struct platform_device *pdev)
 		decon_release_windows(decon->win[i]);
 
 	debugfs_remove_recursive(decon->d.debug_root);
+#ifdef CONFIG_DECON_EVENT_LOG
 	if (decon->d.event_log)
 		kfree(decon->d.event_log);
 
 	decon_info("remove sucessful\n");
+#endif
 	return 0;
 }
 

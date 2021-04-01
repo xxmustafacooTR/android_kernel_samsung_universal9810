@@ -870,8 +870,8 @@ void decon_destroy_debugfs(struct decon_device *decon);
 #define DPU_EVENT_LOG_WINUP_FLAGS(...) do { } while(0)
 #define DPU_EVENT_LOG_APPLY_REGION(...) do { } while(0)
 #define DPU_EVENT_SHOW(...) do { } while(0)
-#define decon_create_debugfs(...) do { } while(0)
-#define decon_destroy_debugfs(..) do { } while(0)
+#define decon_create_debugfs(...) 0
+#define decon_destroy_debugfs(...) do { } while(0)
 #endif
 
 
