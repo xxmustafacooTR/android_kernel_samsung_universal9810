@@ -19,43 +19,9 @@
 		linux,phandle = <0x19c>;
 		phandle = <0x19c>;
 
-		abox_rmem@0xEA800000 {
-			compatible = "exynos,abox_rmem";
-			reg = <0x0 0xfb200000 0x2800000>;
-			linux,phandle = <0x147>;
-			phandle = <0x147>;
-		};
-
 		modem_if {
 			compatible = "exynos,modem_if";
 			reg = <0x0 0xf0000000 0x9200000>;
-		};
-
-		cp_ram_logging {
-			compatible = "exynos,cp_ram_logging";
-			reg = <0x0 0xf9200000 0x2000000>;
-		};
-
-		zswap_debug {
-			compatible = "exynos,zswap_debug";
-			reg = <0x0 0x91300000 0x1000>;
-		};
-
-		sec_debug_magic {
-			compatible = "exynos,sec_debug_magic";
-			reg = <0x0 0x80000000 0x1000>;
-		};
-
-		tima_region@0xB8000000 {
-			compatible = "removed-dma-pool";
-			reg = <0x0 0xb8000000 0x200000>;
-			linux,phandle = <0x19d>;
-			phandle = <0x19d>;
-		};
-
-		seclog_mem {
-			compatible = "exynos,seclog";
-			reg = <0x0 0xc0000000 0x80000>;
 		};
 
 		video_stream {
@@ -84,53 +50,6 @@
 			id = <0xb>;
 		};
 
-		exynos_ss {
-			compatible = "exynos,exynos_ss";
-			reg = <0x0 0xfda00000 0x1c08000>;
-			#address-cells = <0x2>;
-			#size-cells = <0x1>;
-
-			header {
-				compatible = "exynos_ss,header";
-				reg = <0x0 0xfda00000 0x10000>;
-			};
-
-			log_kernel {
-				compatible = "exynos_ss,log_kernel";
-				reg = <0x0 0xfda10000 0x200000>;
-			};
-
-			log_platform {
-				compatible = "exynos_ss,log_platform";
-				reg = <0x0 0xfdc10000 0x400000>;
-			};
-
-			log_sfr {
-				compatible = "exynos_ss,log_sfr";
-				reg = <0x0 0xfe010000 0x200000>;
-			};
-
-			log_cachedump {
-				compatible = "exynos_ss,log_cachedump";
-				reg = <0x0 0xfe210000 0xa00000>;
-			};
-
-			log_etm {
-				compatible = "exynos_ss,log_etm";
-				reg = <0x0 0xfec10000 0x100000>;
-			};
-
-			log_pstore {
-				compatible = "exynos_ss,log_pstore";
-				reg = <0x0 0xfed10000 0x8000>;
-			};
-
-			log_kevents {
-				compatible = "exynos_ss,log_kevents";
-				reg = <0x0 0xfed18000 0x800000>;
-			};
-		};
-
 		fimc_is_lib {
 			compatible = "exynos,fimc_is_lib";
 			reg = <0x0 0xff800000 0x800000>;
@@ -153,13 +72,6 @@
 			alloc-ranges = <0x0 0x40000000 0xc0000000>;
 			alignment = <0x0 0x400000>;
 			id = <0xc>;
-		};
-
-		rkp_region@0xAF800000 {
-			compatible = "removed-dma-pool";
-			reg = <0x0 0xaf800000 0x2000000>;
-			linux,phandle = <0x19e>;
-			phandle = <0x19e>;
 		};
 	};
 
@@ -10095,14 +10007,6 @@
 			phandle = <0x180>;
 		};
 
-		abox_debug@0 {
-			compatible = "samsung,abox-debug";
-			memory-region = <0x147>;
-			reg = <0x0 0x0 0x0>;
-			linux,phandle = <0x2e2>;
-			phandle = <0x2e2>;
-		};
-
 		abox_vss@0 {
 			compatible = "samsung,abox-vss";
 			magic_offset = <0x600000>;
@@ -11645,8 +11549,8 @@
 		mailbox = <0x179>;
 		#sound-dai-cells = <0x1>;
 		interrupt-parent = <0x179>;
-		interrupts = <0x10 0x11 0x12 0x13 0x14 0x15 0x16 0x17 0x18 0x19>;
-		interrupt-names = "error", "boot_completed", "ipc_received", "voice_triggered", "trigger_period_elapsed", "record_period_elapsed", "debuglog_bufzero", "debuglog_bufone", "audio_dump", "log_dump";
+		interrupts = <0x10 0x11 0x12 0x13 0x14 0x15>;
+		interrupt-names = "error", "boot_completed", "ipc_received", "voice_triggered", "trigger_period_elapsed", "record_period_elapsed";
 		status = "okay";
 		lpsd-gain = <0x0>;
 		dmic-gain = <0x0>;
@@ -13809,9 +13713,6 @@
 
 	__symbols__ {
 		reserved_memory = "/reserved-memory";
-		abox_rmem = "/reserved-memory/abox_rmem@0xEA800000";
-		tima_mem = "/reserved-memory/tima_region@0xB8000000";
-		rkp_region = "/reserved-memory/rkp_region@0xAF800000";
 		pinctrl_0 = "/pinctrl@14050000";
 		gpa0 = "/pinctrl@14050000/gpa0";
 		gpa1 = "/pinctrl@14050000/gpa1";
@@ -14501,7 +14402,6 @@
 		abox_uaif_3 = "/abox@0x17C50000/abox_uaif@0x17C50530";
 		abox_dsif = "/abox@0x17C50000/abox_dsif@0x17C50550";
 		abox_effect = "/abox@0x17C50000/abox_effect@0x17D2E000";
-		abox_debug = "/abox@0x17C50000/abox_debug@0";
 		abox_vss = "/abox@0x17C50000/abox_vss@0";
 		ext_bin_0 = "/abox@0x17C50000/ext_bin@0";
 		ext_bin_1 = "/abox@0x17C50000/ext_bin@1";
