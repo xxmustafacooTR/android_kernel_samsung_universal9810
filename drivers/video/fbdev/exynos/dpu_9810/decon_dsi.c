@@ -116,7 +116,7 @@ int decon_register_irq(struct decon_device *decon)
 	/* 1: FRAME START */
 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
 	ret = devm_request_irq(dev, res->start, decon_irq_handler,
-			IRQF_PERF_CRITICAL, pdev->name, decon);
+			0, pdev->name, decon);
 	if (ret) {
 		decon_err("failed to install FRAME START irq\n");
 		return ret;
@@ -125,7 +125,7 @@ int decon_register_irq(struct decon_device *decon)
 	/* 2: FRAME DONE */
 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 1);
 	ret = devm_request_irq(dev, res->start, decon_irq_handler,
-			IRQF_PERF_CRITICAL, pdev->name, decon);
+			0, pdev->name, decon);
 	if (ret) {
 		decon_err("failed to install FRAME DONE irq\n");
 		return ret;
@@ -134,7 +134,7 @@ int decon_register_irq(struct decon_device *decon)
 	/* 3: EXTRA: resource conflict, timeout and error irq */
 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 2);
 	ret = devm_request_irq(dev, res->start, decon_irq_handler,
-			IRQF_PERF_CRITICAL, pdev->name, decon);
+			0, pdev->name, decon);
 	if (ret) {
 		decon_err("failed to install EXTRA irq\n");
 		return ret;
@@ -171,7 +171,7 @@ int decon_register_irq(struct decon_device *decon)
 		/* 0: FIFO irq */
 		res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
 		ret = devm_request_irq(dev, res->start, decon_irq_handler,
-				IRQF_PERF_CRITICAL, pdev->name, decon);
+				0, pdev->name, decon);
 		if (ret) {
 			decon_err("failed to install FIFO irq\n");
 			return ret;
@@ -181,7 +181,7 @@ int decon_register_irq(struct decon_device *decon)
 	/* 1: FRAME START */
 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 1);
 	ret = devm_request_irq(dev, res->start, decon_irq_handler,
-			IRQF_PERF_CRITICAL, pdev->name, decon);
+			0, pdev->name, decon);
 	if (ret) {
 		decon_err("failed to install FRAME START irq\n");
 		return ret;
@@ -190,7 +190,7 @@ int decon_register_irq(struct decon_device *decon)
 	/* 2: FRAME DONE */
 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 2);
 	ret = devm_request_irq(dev, res->start, decon_irq_handler,
-			IRQF_PERF_CRITICAL, pdev->name, decon);
+			0, pdev->name, decon);
 	if (ret) {
 		decon_err("failed to install FRAME DONE irq\n");
 		return ret;
@@ -199,7 +199,7 @@ int decon_register_irq(struct decon_device *decon)
 	/* 3: EXTRA: resource conflict, timeout and error irq */
 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 3);
 	ret = devm_request_irq(dev, res->start, decon_irq_handler,
-			IRQF_PERF_CRITICAL, pdev->name, decon);
+			0, pdev->name, decon);
 	if (ret) {
 		decon_err("failed to install EXTRA irq\n");
 		return ret;
@@ -556,7 +556,7 @@ int decon_create_vsync_thread(struct decon_device *decon)
 	}
 
 	sprintf(name, "decon%d-vsync", decon->id);
-	decon->vsync.thread = kthread_run_perf_critical(decon_vsync_thread, decon, name);
+	decon->vsync.thread = kthread_run(decon_vsync_thread, decon, name);
 	if (IS_ERR_OR_NULL(decon->vsync.thread)) {
 		decon_err("failed to run vsync thread\n");
 		decon->vsync.thread = NULL;
@@ -618,7 +618,7 @@ int decon_create_fsync_thread(struct decon_device *decon)
 	}
 
 	sprintf(name, "decon%d-fsync", decon->id);
-	decon->fsync.thread = kthread_run_perf_critical(decon_fsync_thread, decon, name);
+	decon->fsync.thread = kthread_run(decon_fsync_thread, decon, name);
 	if (IS_ERR_OR_NULL(decon->fsync.thread)) {
 		decon_err("failed to run fsync thread\n");
 		decon->fsync.thread = NULL;
@@ -1220,7 +1220,7 @@ int decon_register_hiber_work(struct decon_device *decon)
 	atomic_set(&decon->hiber.trig_cnt, 0);
 	atomic_set(&decon->hiber.block_cnt, 0);
 
-	decon->hiber.thread = kthread_run_perf_critical(decon_hiber_thread,
+	decon->hiber.thread = kthread_run(decon_hiber_thread,
 			decon, "decon_hiber");
 	if (IS_ERR(decon->hiber.thread)) {
 		decon->hiber.thread = NULL;
@@ -1265,7 +1265,7 @@ int decon_register_hiber_work(struct decon_device *decon)
 	atomic_set(&decon->hiber.block_cnt, 0);
 
 	kthread_init_worker(&decon->hiber.worker);
-	decon->hiber.thread = kthread_run_perf_critical(kthread_worker_fn,
+	decon->hiber.thread = kthread_run(kthread_worker_fn,
 			&decon->hiber.worker, "decon_hiber");
 	if (IS_ERR(decon->hiber.thread)) {
 		decon->hiber.thread = NULL;
