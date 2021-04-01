@@ -6612,7 +6612,7 @@ schedtune_cpu_margin(unsigned long util, int cpu)
 	int boost = schedtune_cpu_boost(cpu);
 	unsigned long capacity;
 
-	if (boost == 0)
+	if (boost == 0 || sched_feat(EXYNOS_MS))
 		return 0;
 
 	capacity = capacity_orig_of(cpu);
