@@ -509,6 +509,115 @@ unsigned long freqvar_st_boost_vector(int cpu)
 }
 
 /**********************************************************************
+ * freqvar up-scale ratio                                             *
+ **********************************************************************/
+struct freqvar_upscale_ratio {
+	struct freqvar_table *table;
+	int ratio; 
+};
+DEFINE_PER_CPU(struct freqvar_upscale_ratio *, freqvar_upscale_ratio);
+
+attr_freqvar(upscale_ratio, upscale_ratio, table);
+static struct governor_attr freqvar_upscale_ratio_attr = __ATTR_RW(freqvar_upscale_ratio);
+
+// @diepquynh edit: use util instead of freq for tipping point
+unsigned long freqvar_tipping_point(int cpu, unsigned long util)
+{
+	struct freqvar_upscale_ratio *upscale = per_cpu(freqvar_upscale_ratio, cpu);
+
+	if (!upscale)
+		return util + (util >> 2);
+
+	return util * 100 / upscale->ratio;
+}
+
+static void freqvar_upscale_ratio_update(int cpu, int new_freq)
+{
+	struct freqvar_upscale_ratio *upscale;
+
+	upscale = per_cpu(freqvar_upscale_ratio, cpu);
+	if (!upscale)
+		return;
+
+	upscale->ratio = freqvar_get_value(new_freq, upscale->table);
+}
+
+static void freqvar_upscale_ratio_free(struct freqvar_upscale_ratio *upscale)
+{
+	if (upscale)
+		freqvar_free(upscale->table);
+
+	freqvar_free(upscale);
+}
+
+static struct
+freqvar_upscale_ratio *freqvar_upscale_ratio_alloc(struct cpufreq_policy *policy)
+{
+	struct freqvar_upscale_ratio *upscale;
+	int size;
+
+	upscale = kzalloc(sizeof(*upscale), GFP_KERNEL);
+	if (!upscale)
+		return NULL;
+
+	size = freqvar_get_table_size(policy);
+	if (size <= 0)
+		goto fail_alloc;
+
+	upscale->table = kzalloc(sizeof(struct freqvar_table) * (size + 1), GFP_KERNEL);
+	if (!upscale->table)
+		goto fail_alloc;
+
+	return upscale;
+
+fail_alloc:
+	freqvar_upscale_ratio_free(upscale);
+	return NULL;
+}
+
+static int freqvar_upscale_ratio_init(struct device_node *dn, const struct cpumask *mask)
+{
+	struct freqvar_upscale_ratio *upscale;
+	struct cpufreq_policy *policy;
+	int cpu, ret = 0;
+
+	policy = cpufreq_cpu_get(cpumask_first(mask));
+	if (!policy)
+		return -ENODEV;
+
+	upscale = freqvar_upscale_ratio_alloc(policy);
+	if (!upscale) {
+		ret = -ENOMEM;
+		goto fail_init;
+	}
+
+	ret = freqvar_fill_frequency_table(policy, upscale->table);
+	if (ret)
+		goto fail_init;
+
+	ret = freqvar_parse_value_dt(dn, "upscale_ratio_table", upscale->table);
+	if (ret)
+		goto fail_init;
+
+	for_each_cpu(cpu, mask)
+		per_cpu(freqvar_upscale_ratio, cpu) = upscale;
+
+	freqvar_upscale_ratio_update(policy->cpu, policy->cur);
+
+	ret = sugov_sysfs_add_attr(policy, &freqvar_upscale_ratio_attr.attr);
+	if (ret)
+		goto fail_init;
+
+	return 0;
+
+fail_init:
+	cpufreq_cpu_put(policy);
+	freqvar_upscale_ratio_free(upscale);
+
+	return ret;
+}
+
+/**********************************************************************
  * cpufreq notifier callback                                          *
  **********************************************************************/
 static int freqvar_cpufreq_callback(struct notifier_block *nb,
@@ -524,6 +633,7 @@ static int freqvar_cpufreq_callback(struct notifier_block *nb,
 
 	freqvar_boost_update(freq->cpu, freq->new);
 	freqvar_rate_limit_update(freq->cpu, freq->new);
+	freqvar_upscale_ratio_update(freq->cpu, freq->new);
 
 	return 0;
 }
@@ -558,6 +668,7 @@ static int __init freqvar_tune_init(void)
 
 		freqvar_boost_init(dn, &shared_mask);
 		freqvar_rate_limit_init(dn, &shared_mask);
+		freqvar_upscale_ratio_init(dn, &shared_mask);
 	}
 
 	cpufreq_register_notifier(&freqvar_cpufreq_notifier,
