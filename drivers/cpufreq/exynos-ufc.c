@@ -23,8 +23,11 @@
 
 #include "exynos-acme.h"
 
-
+#ifdef CONFIG_PCIEASPM_PERFORMANCE
 #define SUSTAINABLE_FREQ 1794000
+#else
+#define SUSTAINABLE_FREQ 1469000
+#endif
 /*********************************************************************
  *                          SYSFS INTERFACES                         *
  *********************************************************************/
