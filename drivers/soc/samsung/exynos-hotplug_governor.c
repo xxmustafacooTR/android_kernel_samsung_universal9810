@@ -34,6 +34,10 @@
 #define LIT	0
 #define BIG	1
 
+#ifndef CONFIG_PCIEASPM_BATTERY
+extern unsigned long arg_cpu_max_c2;
+#endif
+
 enum hpgov_event {
 	HPGOV_SLACK_TIMER_EXPIRED = 1,	/* slack timer expired */
 };
@@ -1122,7 +1126,11 @@ static int __init exynos_hpgov_parse_dt(void)
 
 	if (of_property_read_u32(np, "cal-id", &exynos_hpgov.cal_id))
 		goto exit;
-	max_freq = (int)cal_dfs_get_max_freq(exynos_hpgov.cal_id);
+#ifndef CONFIG_PCIEASPM_BATTERY
+	max_freq = arg_cpu_max_c2;
+#else
+max_freq = (int)cal_dfs_get_max_freq(exynos_hpgov.cal_id);
+#endif
 	if (!max_freq)
 		goto exit;
 	exynos_hpgov.maxfreq_table[SINGLE] = max_freq;

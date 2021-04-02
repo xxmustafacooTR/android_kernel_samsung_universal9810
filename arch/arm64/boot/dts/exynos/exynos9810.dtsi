@@ -5021,7 +5021,8 @@
 		compatible = "exynos, hotplug_governor";
 
 		single_change_ms = <30>;
-		dual_change_ms = <30>;
+		dual_change_ms = <25>;
+		triple_change_ms = <20>;
 		quad_change_ms = <15>;
 		big_heavy_thr = <640>;
 		lit_heavy_thr = <200>;
