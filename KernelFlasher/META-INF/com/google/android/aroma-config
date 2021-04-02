@@ -1,0 +1,114 @@
+﻿### LICENSE:
+#
+# Copyright (C) 2011 Ahmad Amarullah ( http://amarullz.com/ )
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+###
+
+ini_set("rom_name",             "xxTR Kernel");
+ini_set("rom_version",          "Stable Kernel+");
+ini_set("rom_author",           "xxmustafacooTR");
+ini_set("rom_device",           "Samsung Galaxy S9/S9+/N9");
+ini_set("rom_date",             "For Port OneUIs");
+
+ini_set("force_colorspace","rgba");
+#ini_set("dp","6");
+
+fontresload( "0", "ttf/Roboto-Regular.ttf", "12" );
+fontresload( "1", "ttf/Roboto-Regular.ttf", "18" );
+
+splash(1333, "xxmustafacooTR");
+
+theme("xxmustafacooTR");
+
+
+viewbox(
+    "\nxxmustafacooTR",
+
+    "<@center>\nfor <b>" + ini_get("rom_device") + "               </b>\n\n</@>" +
+    "\n\n\n\n  VERSION\t: <b><#selectbg_g>"+ini_get("rom_version")+"</#></b>\n" +
+    "  AUTHOR \t: <b><#selectbg_g>"+ini_get("rom_author")+"</#></b>\n" +
+    "  RELEASED\t: <b><#selectbg_g>"+ini_get("rom_date")+"</#></b>\n\n\n" +
+    "Press Next to Continue...",
+
+    "@welcome"
+);
+
+
+agreebox(
+   "\nTerms Of Use",
+   "<@center>\nPlease read the kernel terms of use\n\n</@>",
+   "",
+   "" + readfile_aroma("agreement.txt"),
+   "I agree with these terms of use",
+   "<@center>\nYou must accept the terms</@>"
+);
+
+menubox(
+  "\nCPU and Bus frequencies","<@center><b>\nSelect Kernel Build Style\n</b></@>","","bus.prop",
+  "Performance","BIG Single: 2886mhz\nLITTLE: 2002mhz\n1000HZ Tick Rate\n10ms PELT",0,
+  "Default","BIG Single: 2860mhz\nLITTLE: 1794mhz\n100HZ Tick Rate\n16ms PELT",1,
+  "Battery Life","BIG Single: 2704mhz\nLITTLE: 1794mhz\n25HZ Tick Rate\n32ms PELT",0
+);
+
+selectbox(
+  "\nCPU frequencies","<@center><b>\nSelect Freqs Which You Want\n</b></@>","","cpu.prop",
+  "OC++","BIG Dual: 2704mhz\nBIG Triple: 2494mhz\nBIG Quad: 2314mhz",0,
+  "OC+","BIG Dual: 2496mhz\nBIG Triple: 2314mhz\nBIG Quad: 2106mhz",0,
+  "OC","BIG Dual: 2496mhz\nBIG Triple: 2106mhz\nBIG Quad: 1924mhz",0,
+  "Stock","BIG Dual: 2314mhz\nBIG Triple: 1924mhz\nBIG Quad: 1794mhz",1,
+  "UC","BIG Dual: 2002mhz\nBIG Triple: 1924mhz\nBIG Quad: 1690mhz",0,
+  "UC-","BIG Dual: 1924mhz\nBIG Triple: 1794mhz\nBIG Quad: 1586mhz",0,
+  "UC--","BIG Dual: 1794mhz\nBIG Triple: 1586mhz\nBIG Quad: 1469mhz",0
+);
+
+selectbox(
+  "\nZRAM","<@center><b>\nEnable or Disable ZRAM\n</b></@>","","zram.prop",
+  "Disable","You Can Enable ZRAM From a Kernel Manager",0,
+  "2560MB","ZRAM Size Is 2,5GB",1
+);
+
+menubox(
+  "\nKernel Installer",
+  "<@center>\nReady to install\n\n</@>",
+  "",
+  "menu.prop",
+  "Install Kernel","","@install",
+  "Abort installation","","@trash"
+);
+
+if prop("menu.prop","selected")=="2"
+then
+  exit("");
+endif;
+
+setvar("retstatus",
+install(
+  "\nInstalling",
+  "<@center>\nInstalling Kernel...\nPlease wait...</@>",
+  "")
+);
+
+ini_set("text_next", "Finish");
+
+if getvar("retstatus")=="0" then
+  viewbox(
+  "\nInstallation Completed",
+  "<@center>\nCongratulations!\n"+
+  "Kernel has been successfully installed\n\n\n</@>",
+  ""
+);
+else
+   viewbox("Installation Failed","\n\nInstaller Status: "+ getvar("retstatus"),"@warning");
+endif;
