@@ -78,6 +78,7 @@ echo " " >> /tmp/anykernel/ramdisk/init.services.rc
 echo "on property:sys.boot_completed=1" >> /tmp/anykernel/ramdisk/init.services.rc
 echo "    stop proca" >> /tmp/anykernel/ramdisk/init.services.rc
 echo "    stop secure_storage" >> /tmp/anykernel/ramdisk/init.services.rc
+echo "    write /sys/devices/virtual/misc/moro_sound/moro_sound 1" >> /tmp/anykernel/ramdisk/init.services.rc
 
 if [ -d /system/product/vendor_overlay ]; then
     cp -af /tmp/anykernel/ramdisk/init.services.rc /system/product/vendor_overlay/29/etc/init/;
