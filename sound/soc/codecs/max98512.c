@@ -42,6 +42,13 @@
 #define msg_maxim(format, args...)
 #endif /* DEBUG_MAX98512 */
 
+#ifdef CONFIG_MORO_SOUND
+#include "moro_sound.h"
+/* This is default value but we will bypass this value */
+int moro_speaker_value = 12;
+int moro_earpiece_value = 12;
+#endif
+
 struct max98512_priv *g_max98512;
 
 static int max98512_remap_reg(int reg, int revID)
@@ -1232,6 +1239,105 @@ static int max98512_adc_config(struct max98512_priv *max98512)
 	return 0;
 }
 
+#ifdef CONFIG_MORO_SOUND
+
+int get_speaker_gain(void)
+{
+	return moro_speaker_value; //used math for I cant set kernel app to 0-7 values (that is for 0-18)
+}
+
+int set_speaker_gain_value(int gain)
+{
+	moro_speaker_value = gain;
+
+	return moro_speaker_value; //used math for I cant set kernel app to 0-7 values (that is for 0-18)
+}
+
+static int set_speaker_gain(struct max98512_priv *max98512)
+{
+	unsigned int gain = 12;
+
+	gain = moro_speaker_value;
+
+	if(12==gain)
+		return gain;
+
+	if(gain<16)
+		goto spkgain;
+
+// MAX98512_R0035_AMP_VOL_CTRL
+	max98512_wrapper_update(max98512, MAX98512R,
+					MAX98512_R0035_AMP_VOL_CTRL,
+					MAX98512_AMP_VOL_MASK,
+					(gain+2)*4);
+
+	max98512->digital_gain = (gain+2)*4;
+
+spkgain:
+// MAX98512_R003A_SPK_GAIN
+	gain = (gain/3)+1;
+
+	max98512_wrapper_update(max98512, MAX98512R,
+					MAX98512_R003A_SPK_GAIN,
+					MAX98512_SPK_PCM_GAIN_MASK,
+					gain);
+
+	max98512->spk_gain_right = gain;
+
+	max98512->spk_gain = gain;
+
+	return max98512->spk_gain_right;
+}
+
+int get_earpiece_gain(void)
+{
+	return moro_earpiece_value; //used math for I cant set kernel app to 0-7 values (that is for 0-18)
+}
+
+int set_earpiece_gain_value(int gain)
+{
+	moro_earpiece_value = gain;
+
+	return moro_speaker_value; //used math for I cant set kernel app to 0-7 values (that is for 0-18)
+}
+
+static int set_earpiece_gain(struct max98512_priv *max98512)
+{
+	unsigned int gain = 12;
+
+	gain = moro_earpiece_value;
+
+	if(12==gain)
+		return gain;
+
+	if(gain<16)
+		goto eargain;
+
+// MAX98512_R0035_AMP_VOL_CTRL
+	max98512_wrapper_update(max98512, MAX98512L,
+					MAX98512_R0035_AMP_VOL_CTRL,
+					MAX98512_AMP_VOL_MASK,
+					(gain+2)*4);
+
+	max98512->digital_gain_rcv = (gain+2)*4;
+
+eargain:
+// MAX98512_R003A_SPK_GAIN
+	gain = (gain/3)+1;
+
+	max98512_wrapper_update(max98512, MAX98512L,
+					MAX98512_R003A_SPK_GAIN,
+					MAX98512_SPK_PCM_GAIN_MASK,
+					gain);
+
+	max98512->spk_gain_left = gain;
+
+	max98512->spk_gain = gain;
+
+	return max98512->spk_gain_left;
+}
+#endif
+
 static int __max98512_spk_enable(struct max98512_priv *max98512)
 {
 	struct max98512_pdata *pdata = max98512->pdata;
@@ -1332,8 +1438,8 @@ static int __max98512_spk_enable(struct max98512_priv *max98512)
 
 	battery_temp = maxdsm_cal_get_temp_from_power_supply();
 
-	if (battery_temp > 50) {
-		msg_maxim("battery_temp[%d] over 50", battery_temp);
+	if (battery_temp > 55) {
+		msg_maxim("battery_temp[%d] over 55", battery_temp);
 		max98512_wrapper_write(max98512, MAX98512B,
 				       MAX98512_R0059_BROWNOUT_LVL2_THRESH,
 				       0x30);
@@ -1341,7 +1447,7 @@ static int __max98512_spk_enable(struct max98512_priv *max98512)
 				       MAX98512_R005A_BROWNOUT_LVL3_THRESH,
 				       0x10);
 	} else {
-		msg_maxim("battery_temp[%d] under 50", battery_temp);
+		msg_maxim("battery_temp[%d] under 55", battery_temp);
 		max98512_wrapper_write(max98512, MAX98512B,
 				       MAX98512_R0059_BROWNOUT_LVL2_THRESH,
 				       0x40);
@@ -1405,6 +1511,10 @@ static int __max98512_spk_enable(struct max98512_priv *max98512)
 					MAX98512_R0400_GLOBAL_SHDN,
 					MAX98512_GLOBAL_EN_MASK, enable_r);
 	}
+#ifdef CONFIG_MORO_SOUND
+		set_speaker_gain(max98512);
+		set_earpiece_gain(max98512);
+#endif
 
 	return 0;
 }
@@ -1448,6 +1558,9 @@ static void max98512_spk_enable_l(struct max98512_priv *max98512, int enable)
 					MAX98512_R003A_SPK_GAIN,
 					MAX98512_SPK_PCM_GAIN_MASK,
 					max98512->spk_gain_left);
+#ifdef CONFIG_MORO_SOUND
+		set_earpiece_gain(max98512);
+#endif
 	} else {
 		max98512_wrapper_update(max98512, MAX98512L,
 					MAX98512_R003A_SPK_GAIN,
@@ -1895,6 +2008,9 @@ static int max98512_analog_gain_l_put(struct snd_kcontrol *kcontrol,
 					sel);
 
 		max98512->spk_gain_left = sel;
+#ifdef CONFIG_MORO_SOUND
+		set_earpiece_gain(max98512);
+#endif
 	}
 
 	return 0;
@@ -1929,6 +2045,9 @@ static int max98512_analog_gain_r_put(struct snd_kcontrol *kcontrol,
 					sel);
 
 		max98512->spk_gain_right = sel;
+#ifdef CONFIG_MORO_SOUND
+		set_speaker_gain(max98512);
+#endif
 	}
 
 	return 0;
@@ -2224,6 +2343,10 @@ static int max98512_probe(struct snd_soc_codec *codec)
 	max98512_wrapper_write(max98512, MAX98512B,
 			       MAX98512_R003A_SPK_GAIN,
 			       0x05);
+#ifdef CONFIG_MORO_SOUND
+	set_speaker_gain(max98512);
+	set_earpiece_gain(max98512);
+#endif
 	/* Enable DC blocker */
 	max98512_wrapper_write(max98512, MAX98512B,
 			       MAX98512_R0036_AMP_DSP_CFG,
@@ -2709,6 +2832,10 @@ static int max98512_i2c_probe(struct i2c_client *i2c,
 		vstep->boost_step[MAX98512_VSTEP_15] = 0x10; /* 8.5V */
 		max98512->spk_gain = 0x05; /* +15db for PCM */
 		max98512->digital_gain = 0x40; /* 0db */
+#ifdef CONFIG_MORO_SOUND
+		set_speaker_gain(max98512);
+		set_earpiece_gain(max98512);
+#endif
 		max98512->mono_stereo = 0;
 		max98512->interleave_mode = 0;
 		vstep->adc_thres = MAX98512_VSTEP_8;
@@ -2938,3 +3065,4 @@ module_i2c_driver(max98512_i2c_driver)
 MODULE_DESCRIPTION("ALSA SoC MAX98512 driver");
 MODULE_AUTHOR("Ryan Lee <ryans.lee@maximintegrated.com>");
 MODULE_LICENSE("GPL");
+
