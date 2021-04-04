@@ -34,6 +34,8 @@
 #define LIT	0
 #define BIG	1
 
+extern unsigned long arg_cpu_max_c2;
+
 enum hpgov_event {
 	HPGOV_SLACK_TIMER_EXPIRED = 1,	/* slack timer expired */
 };
@@ -1122,7 +1124,12 @@ static int __init exynos_hpgov_parse_dt(void)
 
 	if (of_property_read_u32(np, "cal-id", &exynos_hpgov.cal_id))
 		goto exit;
-	max_freq = (int)cal_dfs_get_max_freq(exynos_hpgov.cal_id);
+
+	max_freq = arg_cpu_max_c2;
+
+	if (!max_freq)
+		max_freq = (int)cal_dfs_get_max_freq(exynos_hpgov.cal_id);
+
 	if (!max_freq)
 		goto exit;
 	exynos_hpgov.maxfreq_table[SINGLE] = max_freq;
