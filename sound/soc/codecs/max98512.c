@@ -1246,14 +1246,7 @@ int get_speaker_gain(void)
 	return moro_speaker_value; //used math for I cant set kernel app to 0-7 values (that is for 0-18)
 }
 
-int set_speaker_gain_value(int gain)
-{
-	moro_speaker_value = gain;
-
-	return moro_speaker_value; //used math for I cant set kernel app to 0-7 values (that is for 0-18)
-}
-
-static int set_speaker_gain(struct max98512_priv *max98512)
+int set_speaker_gain(struct max98512_priv *max98512)
 {
 	unsigned int gain = 12;
 
@@ -1289,19 +1282,21 @@ spkgain:
 	return max98512->spk_gain_right;
 }
 
+int set_speaker_gain_value(int gain)
+{
+	moro_speaker_value = gain;
+
+	set_speaker_gain(g_max98512);
+
+	return moro_speaker_value; //used math for I cant set kernel app to 0-7 values (that is for 0-18)
+}
+
 int get_earpiece_gain(void)
 {
 	return moro_earpiece_value; //used math for I cant set kernel app to 0-7 values (that is for 0-18)
 }
 
-int set_earpiece_gain_value(int gain)
-{
-	moro_earpiece_value = gain;
-
-	return moro_speaker_value; //used math for I cant set kernel app to 0-7 values (that is for 0-18)
-}
-
-static int set_earpiece_gain(struct max98512_priv *max98512)
+int set_earpiece_gain(struct max98512_priv *max98512)
 {
 	unsigned int gain = 12;
 
@@ -1335,6 +1330,15 @@ eargain:
 	max98512->spk_gain = gain;
 
 	return max98512->spk_gain_left;
+}
+
+int set_earpiece_gain_value(int gain)
+{
+	moro_earpiece_value = gain;
+
+	set_earpiece_gain(g_max98512);
+
+	return moro_speaker_value; //used math for I cant set kernel app to 0-7 values (that is for 0-18)
 }
 #endif
 
