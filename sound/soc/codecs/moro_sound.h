@@ -23,6 +23,10 @@
 
 void moro_sound_hook_madera_pcm_probe(struct regmap *pmap);
 int _regmap_write_nohook(struct regmap *map, unsigned int reg, unsigned int val);
+int set_speaker_gain_value(int gain);
+int get_speaker_gain(void);
+int set_earpiece_gain_value(int gain);
+int get_earpiece_gain(void);
 
 
 /*****************************************/
@@ -39,8 +43,18 @@ int _regmap_write_nohook(struct regmap *map, unsigned int reg, unsigned int val)
 #define HEADPHONE_MIN 			60
 #define HEADPHONE_MAX 			190
 
+/* Earpiece levels */
+#define EARPIECE_DEFAULT		12
+#define EARPIECE_MIN 			0
+#define EARPIECE_MAX 			18
+
+/* Speaker levels */
+#define SPEAKER_DEFAULT			12
+#define SPEAKER_MIN 			0
+#define SPEAKER_MAX 			18
+
 // Mixers sources
-#define OUT2L_MIX_DEFAULT		32
+#define OUT2L_MIX_DEFAULT		33
 #define OUT2R_MIX_DEFAULT		33
 #define EQ1_MIX_DEFAULT			0
 #define EQ2_MIX_DEFAULT			0
