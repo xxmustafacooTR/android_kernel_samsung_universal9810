@@ -5,6 +5,7 @@
  * 
  * Date		: March 2019 - v2.0
  *		: April 2019 - v2.1
+ *		: December 2020 - v2.2
  *
  *
  * Based on the Boeffla Sound 1.6 for Galaxy S3
@@ -30,44 +31,29 @@
 // pointer to regmap
 static struct regmap *map;
 
-// internal moro sound variables
-static int first = 1;				// first access
+// First access
+static int first = 1;
 
-static int moro_sound;				// moro sound master switch
-static int debug;				// debug switch
+// Switches
+static int moro_sound, eq, headphone_mono, mic, reset = 0;
 
-static int headphone_gain_l;			// headphone volume left
-static int headphone_gain_r;			// headphone volume right
+// Gains
+static int headphone_gain_l, headphone_gain_r, earpiece_gain, speaker_gain, eq_gains[5],
+	mic_down_gain, mic_up_gain, mic_hp_gain;
 
-static int earpiece_gain;			// earpiece volume
-static int speaker_gain;			// speaker volume
-
-static int out2l_mix_source;			// out2 mix source left
-static int out2r_mix_source;			// out2 mix source right
-static int eq1_mix_source;			// eq1 mix source left
-static int eq2_mix_source;			// eq2 mix soirce right
-
-static int eq;					// eq master switch
-static int eq_gains[5] = {EQ_GAIN_DEFAULT};	// eq 5 bands gains
+// Mixers
+static int out2l_mix_source, out2r_mix_source, eq1_mix_source, eq2_mix_source;
 
 
 /*****************************************/
 // Internal function declarations
 /*****************************************/
 
-static unsigned int get_headphone_gain_l(void);
-static unsigned int get_headphone_gain_r(void);
-static void set_headphone_gain_l(int gain);
-static void set_headphone_gain_r(int gain);
+static unsigned int get_value(int reg, int mask, int shift);
+static void set_value(int reg, int mask, int shift, int value);
 
-static void set_out2l_mix_source(int value);
-static void set_out2r_mix_source(int value);
-
-static void set_eq1_mix_source(int value);
-static void set_eq2_mix_source(int value);
-
-static void set_eq(void);
-static void set_eq_gains(void);
+static void set_eq(bool reset);
+static void set_eq_gains(bool reset);
 
 static void reset_moro_sound(void);
 static void reset_audio_hub(void);
@@ -82,159 +68,83 @@ static void update_audio_hub(void);
 
 #define _read(reg, val) regmap_read(map, reg, val)
 
-static unsigned int get_headphone_gain_l(void)
+static unsigned int get_value(int reg, int mask, int shift)
 {
 	unsigned int val;
 
-	_read(MADERA_DAC_DIGITAL_VOLUME_2L, &val);
-	val &= MADERA_OUT2L_VOL_MASK;
-	val >>= MADERA_OUT2L_VOL_SHIFT;
+	_read(reg, &val);
+	val &= mask;
+	val >>= shift;
 
 	return val;
 }
 
-static void set_headphone_gain_l(int gain)
+static void set_value(int reg, int mask, int shift, int value)
 {
 	unsigned int val;
 
-	_read(MADERA_DAC_DIGITAL_VOLUME_2L, &val);
-	val &= ~MADERA_OUT2L_VOL_MASK;
-	val |= (gain << MADERA_OUT2L_VOL_SHIFT);
-	_write(MADERA_DAC_DIGITAL_VOLUME_2L, val);
+	_read(reg, &val);
+	val &= ~mask;
+	val |= (value << shift);
+	_write(reg, val);
 }
 
-static unsigned int get_headphone_gain_r(void)
+static void set_eq(bool reset)
 {
-	unsigned int val;
-
-	_read(MADERA_DAC_DIGITAL_VOLUME_2R, &val);
-	val &= MADERA_OUT2R_VOL_MASK;
-	val >>= MADERA_OUT2R_VOL_SHIFT;
-
-	return val;
-}
-
-static void set_headphone_gain_r(int gain)
-{
-	unsigned int val;
-
-	_read(MADERA_DAC_DIGITAL_VOLUME_2R, &val);
-	val &= ~MADERA_OUT2R_VOL_MASK;
-	val |= (gain << MADERA_OUT2R_VOL_SHIFT);
-	_write(MADERA_DAC_DIGITAL_VOLUME_2R, val);
-}
-
-static void set_out2l_mix_source(int value)
-{
-	unsigned int val;
-
-	_read(MADERA_OUT2LMIX_INPUT_1_SOURCE, &val);
-	val &= ~MADERA_MIXER_SOURCE_MASK;
-	val |= (value << MADERA_MIXER_SOURCE_SHIFT);
-	_write(MADERA_OUT2LMIX_INPUT_1_SOURCE, val);
-}
-
-static void set_out2r_mix_source(int value)
-{
-	unsigned int val;
-
-	_read(MADERA_OUT2RMIX_INPUT_1_SOURCE, &val);
-	val &= ~MADERA_MIXER_SOURCE_MASK;
-	val |= (value << MADERA_MIXER_SOURCE_SHIFT);
-	_write(MADERA_OUT2RMIX_INPUT_1_SOURCE, val);
-}
-
-static void set_eq1_mix_source(int value)
-{
-	unsigned int val;
-
-	_read(MADERA_EQ1MIX_INPUT_1_SOURCE, &val);
-	val &= ~MADERA_MIXER_SOURCE_MASK;
-	val |= (value << MADERA_MIXER_SOURCE_SHIFT);
-	_write(MADERA_EQ1MIX_INPUT_1_SOURCE, val);
-}
-
-
-static void set_eq2_mix_source(int value)
-{
-	unsigned int val;
-
-	_read(MADERA_EQ2MIX_INPUT_1_SOURCE, &val);
-	val &= ~MADERA_MIXER_SOURCE_MASK;
-	val |= (value << MADERA_MIXER_SOURCE_SHIFT);
-	_write(MADERA_EQ2MIX_INPUT_1_SOURCE, val);
-}
-
-static void set_eq(void)
-{
-	unsigned int val;
-
 	// If EQ is enabled
-	if (eq & moro_sound)
-	{
-		// Enable EQ1 for left channel
-		_read(MADERA_EQ1_1, &val);
-		val &= ~MADERA_EQ1_ENA_MASK;
-		val |= 1 << MADERA_EQ1_ENA_SHIFT;
-		_write(MADERA_EQ1_1, val);
-
-		// Enable EQ2 for right channel
-		_read(MADERA_EQ2_1, &val);
-		val &= ~MADERA_EQ2_ENA_MASK;
-		val |= 1 << MADERA_EQ2_ENA_SHIFT;
-		_write(MADERA_EQ2_1, val);
-
+	if (eq & moro_sound) {
 		// Set mixers
 		eq1_mix_source = 33;	// EQ1 -> AIF1 RX1 left
 		eq2_mix_source = 33;	// EQ2 -> AIF1 RX2 right
-		set_eq1_mix_source(eq1_mix_source);
-		set_eq2_mix_source(eq2_mix_source);
 
 		out2l_mix_source = 81;	// OUT2L -> EQ1 left
 		out2r_mix_source = 81;	// OUT2R -> EQ2 right
-		set_out2l_mix_source(out2l_mix_source);
-		set_out2r_mix_source(out2r_mix_source);
-	}
-	// If EQ is disabled
-	else
-	{
-		// Disable EQ1
-		_read(MADERA_EQ1_1, &val);
-		val &= ~MADERA_EQ1_ENA_MASK;
-		val |= 0 << MADERA_EQ1_ENA_SHIFT;
-		_write(MADERA_EQ1_1, val);
 
-		// Disable EQ2
-		_read(MADERA_EQ2_1, &val);
-		val &= ~MADERA_EQ2_ENA_MASK;
-		val |= 0 << MADERA_EQ2_ENA_SHIFT;
-		_write(MADERA_EQ2_1, val);
+	} else {
 
 		// Set mixers to default
 		eq1_mix_source = EQ1_MIX_DEFAULT;
 		eq2_mix_source = EQ2_MIX_DEFAULT;
-		set_eq1_mix_source(eq1_mix_source);
-		set_eq2_mix_source(eq2_mix_source);
 
 		out2l_mix_source = OUT2L_MIX_DEFAULT;
 		out2r_mix_source = OUT2R_MIX_DEFAULT;
-		set_out2l_mix_source(out2l_mix_source);
-		set_out2r_mix_source(out2r_mix_source);
 	}
 
-	set_eq_gains();
+	set_value(EQ1_ENA, eq);
+	set_value(EQ2_ENA, eq);
+
+	set_value(EQ1_MIX, eq1_mix_source);
+	set_value(EQ2_MIX, eq2_mix_source);
+
+	set_value(OUT2L_MIX, out2l_mix_source);
+	set_value(OUT2R_MIX, out2r_mix_source);
+
+	// If reset = true, then set the eq band gains to default values
+	if (reset)
+		set_eq_gains(1);
+	else
+		set_eq_gains(0);
 }
 
-static void set_eq_gains(void)
+static void set_eq_gains(bool reset)
 {
 	unsigned int val;
 	unsigned int gain1, gain2, gain3, gain4, gain5;
 
-	gain1 = eq_gains[0];
-	gain2 = eq_gains[1];
-	gain3 = eq_gains[2];
-	gain4 = eq_gains[3];
-	gain5 = eq_gains[4];
+	// If reset = true, set the eq band gains to default
+	if (reset) {
+		gain1 = EQ_B1_GAIN_DEFAULT;
+		gain2 = EQ_B2_GAIN_DEFAULT;
+		gain3 = EQ_B3_GAIN_DEFAULT;
+		gain4 = EQ_B4_GAIN_DEFAULT;
+		gain5 = EQ_B5_GAIN_DEFAULT;
+	} else {
+		gain1 = eq_gains[0];
+		gain2 = eq_gains[1];
+		gain3 = eq_gains[2];
+		gain4 = eq_gains[3];
+		gain5 = eq_gains[4];
+	}
 
 	// First register
 	// read current value from audio hub and mask all bits apart from equalizer enabled bit,
@@ -256,9 +166,6 @@ static void set_eq_gains(void)
 	val |= ((gain5 + EQ_GAIN_OFFSET) << MADERA_EQ1_B5_GAIN_SHIFT);
 	_write(MADERA_EQ1_2, val);
 	_write(MADERA_EQ2_2, val);
-
-	if (debug)
-		printk("Moro-sound: written the new EQ gain values\n");
 }
 
 
@@ -272,13 +179,17 @@ void moro_sound_hook_madera_pcm_probe(struct regmap *pmap)
 	// that for internal calls to the audio hub
 	map = pmap;
 
-	// Print debug info
-	printk("Moro-sound: regmap pointer received\n");
-
 	// Initialize moro sound master switch finally
 	moro_sound = MORO_SOUND_DEFAULT;
+	headphone_mono = HEADPHONE_MONO_DEFAULT;
+	mic = MIC_DEFAULT;
 	eq = EQ_DEFAULT;
-	set_eq();
+	eq_gains[0] = EQ_B1_GAIN_DEFAULT;
+	eq_gains[1] = EQ_B2_GAIN_DEFAULT;
+	eq_gains[2] = EQ_B3_GAIN_DEFAULT;
+	eq_gains[3] = EQ_B4_GAIN_DEFAULT;
+	eq_gains[4] = EQ_B5_GAIN_DEFAULT;
+	set_eq(0);
 
 	// If moro sound is enabled during driver start, reset to default configuration
 	if (moro_sound)
@@ -313,14 +224,6 @@ unsigned int moro_sound_write_hook(unsigned int reg, unsigned int val)
 			break;
 		}
 
-		// earpiece
-		case MADERA_DAC_DIGITAL_VOLUME_3L:
-		{
-			val &= ~MADERA_OUT3L_VOL_MASK;
-			val |= (earpiece_gain << MADERA_OUT3L_VOL_SHIFT);
-			break;
-		}
-
 		if (eq){
 			// hpout2 l
 			case MADERA_OUT2LMIX_INPUT_1_SOURCE:
@@ -334,6 +237,29 @@ unsigned int moro_sound_write_hook(unsigned int reg, unsigned int val)
 			{
 				val &= ~MADERA_MIXER_SOURCE_MASK;
 				val |= (out2r_mix_source << MADERA_MIXER_SOURCE_SHIFT);
+				break;
+			}
+		}
+		if (mic){
+			// mic down
+			case MADERA_ADC_DIGITAL_VOLUME_1R:
+			{
+				val &= ~MADERA_IN1R_DIG_VOL_MASK;
+				val |= (mic_down_gain << MADERA_IN1R_DIG_VOL_SHIFT);
+				break;
+			}
+			// mic up
+			case MADERA_ADC_DIGITAL_VOLUME_3L:
+			{
+				val &= ~MADERA_IN3L_DIG_VOL_MASK;
+				val |= (mic_up_gain << MADERA_IN3L_DIG_VOL_SHIFT);
+				break;
+			}
+			// mic hp
+			case MADERA_ADC_DIGITAL_VOLUME_2L:
+			{
+				val &= ~MADERA_IN2L_DIG_VOL_MASK;
+				val |= (mic_hp_gain << MADERA_IN2L_DIG_VOL_SHIFT);
 				break;
 			}
 		}
@@ -356,6 +282,7 @@ static void reset_moro_sound(void)
 
 	headphone_gain_l = HEADPHONE_DEFAULT;
 	headphone_gain_r = HEADPHONE_DEFAULT;
+	headphone_mono = HEADPHONE_MONO_DEFAULT;
 
 	out2l_mix_source = OUT2L_MIX_DEFAULT;
 	out2r_mix_source = OUT2R_MIX_DEFAULT;
@@ -363,33 +290,39 @@ static void reset_moro_sound(void)
 	eq1_mix_source = EQ1_MIX_DEFAULT;
 	eq2_mix_source = EQ2_MIX_DEFAULT;
 
-	debug = DEBUG_DEFAULT;
-	
-	if (debug)
-		printk("Moro-sound: moro sound reset done\n");
+	eq = EQ_DEFAULT;
+	eq_gains[0] = EQ_B1_GAIN_DEFAULT;
+	eq_gains[1] = EQ_B2_GAIN_DEFAULT;
+	eq_gains[2] = EQ_B3_GAIN_DEFAULT;
+	eq_gains[3] = EQ_B4_GAIN_DEFAULT;
+	eq_gains[4] = EQ_B5_GAIN_DEFAULT;
+
+	mic = MIC_DEFAULT;
+	mic_down_gain = MIC_DOWN_GAIN_DEFAULT;
+	mic_up_gain = MIC_UP_GAIN_DEFAULT;
+	mic_hp_gain = MIC_HP_GAIN_DEFAULT;
 }
 
 
 static void reset_audio_hub(void)
 {
-	// reset all audio hub registers back to defaults
-
-	set_headphone_gain_l(HEADPHONE_DEFAULT);
-	set_headphone_gain_r(HEADPHONE_DEFAULT);
+	set_value(OUT2L_VOLUME, HEADPHONE_DEFAULT);
+	set_value(OUT2R_VOLUME, HEADPHONE_DEFAULT);
+	set_value(OUT2_MONO, HEADPHONE_MONO_DEFAULT);
 
 	set_earpiece_gain_value(EARPIECE_DEFAULT);
 	set_speaker_gain_value(SPEAKER_DEFAULT);
 
-	set_out2l_mix_source(OUT2L_MIX_DEFAULT);
-	set_out2r_mix_source(OUT2R_MIX_DEFAULT);
+	set_value(OUT2L_MIX, OUT2L_MIX_DEFAULT);
+	set_value(OUT2R_MIX, OUT2R_MIX_DEFAULT);
 
-	set_eq1_mix_source(EQ1_MIX_DEFAULT);
-	set_eq2_mix_source(EQ2_MIX_DEFAULT);
+	set_value(EQ1_MIX, EQ1_MIX_DEFAULT);
+	set_value(EQ2_MIX, EQ2_MIX_DEFAULT);
 
-	set_eq();
-	
-	if (debug)
-		printk("Moro-sound: madera audio hub reset done\n");
+	set_value(MIC1R_VOLUME, MIC_DOWN_GAIN_DEFAULT);
+	set_value(MIC3L_VOLUME, MIC_UP_GAIN_DEFAULT);
+	set_value(MIC2L_VOLUME, MIC_HP_GAIN_DEFAULT);
+	set_eq(1);
 }
 
 
@@ -400,19 +333,21 @@ static void update_audio_hub(void)
 	set_earpiece_gain_value(earpiece_gain);
 	set_speaker_gain_value(speaker_gain);
 
-	set_headphone_gain_l(headphone_gain_l);
-	set_headphone_gain_r(headphone_gain_r);
+	set_value(OUT2L_VOLUME, headphone_gain_l);
+	set_value(OUT2R_VOLUME, headphone_gain_r);
+	set_value(OUT2_MONO, headphone_mono);
 
-	set_out2l_mix_source(out2l_mix_source);
-	set_out2r_mix_source(out2r_mix_source);
+	set_value(OUT2L_MIX, out2l_mix_source);
+	set_value(OUT2R_MIX, out2r_mix_source);
 
-	set_eq1_mix_source(eq1_mix_source);
-	set_eq2_mix_source(eq2_mix_source);
+	set_value(EQ1_MIX, eq1_mix_source);
+	set_value(EQ2_MIX, eq1_mix_source);
 
-	set_eq();
+	set_value(MIC1R_VOLUME, mic_down_gain);
+	set_value(MIC3L_VOLUME, mic_up_gain);
+	set_value(MIC2L_VOLUME, mic_hp_gain);
 
-	if (debug)
-		printk("Moro-sound: madera audio hub updated done\n");
+	set_eq(0);
 }
 
 
@@ -460,10 +395,6 @@ static ssize_t moro_sound_store(struct device *dev, struct device_attribute *att
 			if(val == 1) update_audio_hub();
 			if(val == 0) reset_audio_hub();
 		}
-
-		// print debug info
-		if (debug)
-			printk("Moro-sound: status %d\n", moro_sound);
 	}
 
 	return count;
@@ -483,8 +414,7 @@ static ssize_t headphone_gain_store(struct device *dev, struct device_attribute 
 					const char *buf, size_t count)
 {
 	unsigned int ret = -EINVAL;
-	int val_l;
-	int val_r;
+	int val_l, val_r;
 
 	// Terminate if moro sound is not enabled
 	if (!moro_sound)
@@ -510,12 +440,44 @@ static ssize_t headphone_gain_store(struct device *dev, struct device_attribute 
 	headphone_gain_r = val_r;
 
 	// set new values
-	set_headphone_gain_l(headphone_gain_l);
-	set_headphone_gain_r(headphone_gain_r);
+	set_value(OUT2L_VOLUME, headphone_gain_l);
+	set_value(OUT2R_VOLUME, headphone_gain_r);
 
-	// print debug info
-	if (debug)
-		printk("Moro-sound: headphone volume L=%d R=%d\n", headphone_gain_l, headphone_gain_r);
+	return count;
+}
+
+static ssize_t headphone_mono_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf, "%d\n", headphone_mono);
+}
+
+static ssize_t headphone_mono_store(struct device *dev, struct device_attribute *attr,
+					const char *buf, size_t count)
+{
+	unsigned int ret = -EINVAL;
+	int val;
+
+	// Terminate if moro sound is not enabled
+	if (!moro_sound)
+		return count;
+
+	// read values from input buffer
+	ret = sscanf(buf, "%d", &val);
+
+	if (ret != 1)
+		return -EINVAL;
+
+	// store if valid data
+	if ((val == 0) || (val == 1)) {
+		// check if there was a change
+		if (headphone_mono != val) {
+			// set new status
+			headphone_mono = val;
+
+			// set new values
+			set_value(OUT2_MONO, headphone_mono);
+		}
+	}
 
 	return count;
 }
@@ -550,15 +512,127 @@ static ssize_t earpiece_gain_store(struct device *dev, struct device_attribute *
 	earpiece_gain = val;
 	// set new values
 	set_earpiece_gain_value(earpiece_gain);
-	// print debug info
-	if (debug)
-		printk("Moro-sound: earpiece volume: %d\n", earpiece_gain);
 	return count;
 }
 static ssize_t earpiece_limits_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	// return version information
 	return sprintf(buf, "Min:%u Max:%u Def:%u\n", EARPIECE_MIN, EARPIECE_MAX, EARPIECE_DEFAULT);
+}
+// Mic Gain
+
+static ssize_t mic_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf, "%d\n", mic);
+}
+
+static ssize_t mic_store(struct device *dev, struct device_attribute *attr,
+					const char *buf, size_t count)
+{
+	unsigned int ret = -EINVAL;
+	int val;
+
+	// Terminate if moro sound is not enabled
+	if (!moro_sound)
+		return count;
+
+	// read values from input buffer
+	ret = sscanf(buf, "%d", &val);
+
+	if (ret != 1)
+		return -EINVAL;
+
+	mic = val;
+
+	set_value(MIC1R_VOLUME, MIC_DOWN_GAIN_DEFAULT);
+	set_value(MIC3L_VOLUME, MIC_UP_GAIN_DEFAULT);
+	set_value(MIC2L_VOLUME, MIC_HP_GAIN_DEFAULT);
+
+	return count;
+}
+
+static ssize_t mic_down_gain_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf, "%d\n", mic_down_gain);
+}
+
+static ssize_t mic_down_gain_store(struct device *dev, struct device_attribute *attr,
+					const char *buf, size_t count)
+{
+	unsigned int ret = -EINVAL;
+	int val;
+
+	// Terminate if moro sound is not enabled
+	if ((!moro_sound) && (!mic))
+		return count;
+
+	// read values from input buffer
+	ret = sscanf(buf, "%d", &val);
+
+	if (ret != 1)
+		return -EINVAL;
+
+	mic_down_gain = val;
+
+	set_value(MIC1R_VOLUME, mic_down_gain);
+
+	return count;
+}
+
+static ssize_t mic_up_gain_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf, "%d\n", mic_up_gain);
+}
+
+static ssize_t mic_up_gain_store(struct device *dev, struct device_attribute *attr,
+					const char *buf, size_t count)
+{
+	unsigned int ret = -EINVAL;
+	int val;
+
+	// Terminate if moro sound is not enabled
+	if ((!moro_sound) && (!mic))
+		return count;
+
+	// read values from input buffer
+	ret = sscanf(buf, "%d", &val);
+
+	if (ret != 1)
+		return -EINVAL;
+
+	mic_up_gain = val;
+
+	set_value(MIC3L_VOLUME, mic_up_gain);
+
+	return count;
+}
+
+static ssize_t mic_hp_gain_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf, "%d\n", mic_hp_gain);
+}
+
+static ssize_t mic_hp_gain_store(struct device *dev, struct device_attribute *attr,
+					const char *buf, size_t count)
+{
+	unsigned int ret = -EINVAL;
+	int val;
+
+	// Terminate if moro sound is not enabled
+	if ((!moro_sound) && (!mic))
+		return count;
+
+	// read values from input buffer
+	ret = sscanf(buf, "%d", &val);
+
+	if (ret != 1)
+		return -EINVAL;
+
+	mic_hp_gain = val;
+
+	set_value(MIC2L_VOLUME, mic_hp_gain);
+
+	return count;
 }
 // Speaker Volume
 static ssize_t speaker_gain_show(struct device *dev, struct device_attribute *attr, char *buf)
@@ -583,9 +657,6 @@ static ssize_t speaker_gain_store(struct device *dev, struct device_attribute *a
 	speaker_gain = val;
 	// set new values
 	set_speaker_gain_value(speaker_gain);
-	// print debug info
-	if (debug)
-		printk("Moro-sound: speaker volume: %d\n", speaker_gain);
 	return count;
 }
 static ssize_t speaker_limits_show(struct device *dev, struct device_attribute *attr, char *buf)
@@ -629,12 +700,8 @@ static ssize_t eq_store(struct device *dev, struct device_attribute *attr,
 			// store new value
 			eq = val;
 
-			set_eq();
+			set_eq(1);
 		}
-
-		// print debug info
-		if (debug)
-			printk("Moro-sound: EQ status: %d\n", eq);
 	}
 
 	return count;
@@ -653,8 +720,7 @@ static ssize_t eq_gains_store(struct device *dev, struct device_attribute *attr,
 					const char *buf, size_t count)
 {
 	unsigned int ret = -EINVAL;
-	int gains[5];
-	int i;
+	int i, gains[5];
 
 	// Terminate if moro sound is not enabled
 	if (!moro_sound)
@@ -679,11 +745,7 @@ static ssize_t eq_gains_store(struct device *dev, struct device_attribute *attr,
 	}
 
 	// set new values
-	set_eq_gains();
-
-	// print debug info
-	if (debug)
-		printk("Moro-sound: EQ gains: %d %d %d %d %d\n", eq_gains[0], eq_gains[1], eq_gains[2], eq_gains[3], eq_gains[4]);
+	set_eq_gains(0);
 
 	return count;
 }
@@ -716,11 +778,7 @@ static ssize_t eq_b1_gain_store(struct device *dev, struct device_attribute *att
 	eq_gains[0] = val;
 
 	// set new values
-	set_eq_gains();
-
-	// print debug info
-	if (debug)
-		printk("Moro-sound: EQ Band1 gain: %d\n", eq_gains[0]);
+	set_eq_gains(0);
 
 	return count;
 }
@@ -753,11 +811,7 @@ static ssize_t eq_b2_gain_store(struct device *dev, struct device_attribute *att
 	eq_gains[1] = val;
 
 	// set new values
-	set_eq_gains();
-
-	// print debug info
-	if (debug)
-		printk("Moro-sound: EQ Band2 gain: %d\n", eq_gains[1]);
+	set_eq_gains(0);
 
 	return count;
 }
@@ -790,11 +844,7 @@ static ssize_t eq_b3_gain_store(struct device *dev, struct device_attribute *att
 	eq_gains[2] = val;
 
 	// set new values
-	set_eq_gains();
-
-	// print debug info
-	if (debug)
-		printk("Moro-sound: EQ Band3 gain: %d\n", eq_gains[2]);
+	set_eq_gains(0);
 
 	return count;
 }
@@ -827,11 +877,7 @@ static ssize_t eq_b4_gain_store(struct device *dev, struct device_attribute *att
 	eq_gains[3] = val;
 
 	// set new values
-	set_eq_gains();
-
-	// print debug info
-	if (debug)
-		printk("Moro-sound: EQ Band4 gain: %d\n", eq_gains[3]);
+	set_eq_gains(0);
 
 	return count;
 }
@@ -864,11 +910,7 @@ static ssize_t eq_b5_gain_store(struct device *dev, struct device_attribute *att
 	eq_gains[4] = val;
 
 	// set new values
-	set_eq_gains();
-
-	// print debug info
-	if (debug)
-		printk("Moro-sound: EQ Band5 gain: %d\n", eq_gains[4]);
+	set_eq_gains(0);
 
 	return count;
 }
@@ -876,17 +918,17 @@ static ssize_t eq_b5_gain_store(struct device *dev, struct device_attribute *att
 
 // Debug status
 
-static ssize_t debug_show(struct device *dev, struct device_attribute *attr, char *buf)
+static ssize_t reset_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	// return current debug status
-	return sprintf(buf, "%d\n", debug);
+	return sprintf(buf, "%d\n", reset);
 }
 
-static ssize_t debug_store(struct device *dev, struct device_attribute *attr,
+static ssize_t reset_store(struct device *dev, struct device_attribute *attr,
 						const char *buf, size_t count)
 {
 	unsigned int ret = -EINVAL;
-	unsigned int val;
+	int val;
 
 	// check data and store if valid
 	ret = sscanf(buf, "%d", &val);
@@ -894,8 +936,10 @@ static ssize_t debug_store(struct device *dev, struct device_attribute *attr,
 	if (ret != 1)
 		return -EINVAL;
 
-	if ((val == 0) || (val == 1))
-		debug = val;
+	if (val == 1) {
+		reset_moro_sound();
+		update_audio_hub();
+	}
 
 	return count;
 }
@@ -905,25 +949,7 @@ static ssize_t debug_store(struct device *dev, struct device_attribute *attr,
 
 static ssize_t reg_dump_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
-	unsigned int out2_ena, out2l_mix, out2r_mix, eq1_ena, eq2_ena, eq1_mix, eq2_mix, eq_b1,
-			eq_b2, eq_b3, eq_b4, eq_b5;
-
-	_read(MADERA_OUTPUT_ENABLES_1, &out2_ena);
-		out2_ena = (out2_ena & MADERA_OUT2L_ENA_MASK) >> MADERA_OUT2L_ENA_SHIFT;
-
-	_read(MADERA_OUT2LMIX_INPUT_1_SOURCE, &out2l_mix);
-
-	_read(MADERA_OUT2RMIX_INPUT_1_SOURCE, &out2r_mix);
-
-	_read(MADERA_EQ1_1, &eq1_ena);
-		eq1_ena = (eq1_ena & MADERA_EQ1_ENA_MASK) >> MADERA_EQ1_ENA_SHIFT;
-
-	_read(MADERA_EQ2_1, &eq2_ena);
-		eq2_ena = (eq2_ena & MADERA_EQ2_ENA_MASK) >> MADERA_EQ2_ENA_SHIFT;
-
-	_read(MADERA_EQ1MIX_INPUT_1_SOURCE, &eq1_mix);
-
-	_read(MADERA_EQ2MIX_INPUT_1_SOURCE, &eq2_mix);
+	unsigned int eq_b1, eq_b2, eq_b3, eq_b4, eq_b5, mic1r, mic3l, mic2l;
 
 	_read(MADERA_EQ1_1, &eq_b1);
 		eq_b1 = ((eq_b1 & MADERA_EQ1_B1_GAIN_MASK) >> MADERA_EQ1_B1_GAIN_SHIFT) - EQ_GAIN_OFFSET;
@@ -935,6 +961,12 @@ static ssize_t reg_dump_show(struct device *dev, struct device_attribute *attr, 
 		eq_b4 = ((eq_b4 & MADERA_EQ1_B4_GAIN_MASK) >> MADERA_EQ1_B4_GAIN_SHIFT) - EQ_GAIN_OFFSET;
 	_read(MADERA_EQ1_2, &eq_b5);
 		eq_b5 = ((eq_b5 & MADERA_EQ1_B5_GAIN_MASK) >> MADERA_EQ1_B5_GAIN_SHIFT) - EQ_GAIN_OFFSET;
+	_read(MADERA_INPUT_ENABLES, &mic1r);
+		mic1r = (mic1r & MADERA_IN1R_ENA_MASK) >> MADERA_IN1R_ENA_SHIFT;
+	_read(MADERA_INPUT_ENABLES, &mic3l);
+		mic3l = (mic3l & MADERA_IN3L_ENA_MASK) >> MADERA_IN3L_ENA_SHIFT;
+	_read(MADERA_INPUT_ENABLES, &mic2l);
+		mic2l = (mic2l & MADERA_IN2L_ENA_MASK) >> MADERA_IN2L_ENA_SHIFT;
 
 	
 	
@@ -943,41 +975,42 @@ static ssize_t reg_dump_show(struct device *dev, struct device_attribute *attr, 
 	return sprintf(buf, "\
 headphone_gain_l: reg: %d, variable: %d\n\
 headphone_gain_r: reg: %d, variable: %d\n\
+headphone mono: %d\n\
 first enable: %d\n\
 earpiece_gain: %d\n\
 speaker_gain: %d\n\
-HPOUT2 Enabled: %d\n\
-HPOUT2L Source: %d\n\
-HPOUT2R Source: %d\n\
-EQ1 Enabled: %d\n\
-EQ2 Enabled: %d\n\
-EQ1MIX source: %d\n\
-EQ2MIX source: %d\n\
+OUT1 Source: L: %d R: %d\n\
+EQ Enabled: 1: %d 2: %d\n\
+EQMIX source: 1: %d 2: %d\n\
 EQ b1 gain: %d\n\
 EQ b2 gain: %d\n\
 EQ b3 gain: %d\n\
 EQ b4 gain: %d\n\
 EQ b5 gain: %d\n\
-", 
-get_headphone_gain_l(),
-headphone_gain_l,
-get_headphone_gain_r(),
-headphone_gain_r,
+MIC Down: %d Vol: %d\n\
+MIC Up: %d Vol: %d\n\
+MIC Hp: %d Vol: %d\n\
+",
+get_value(OUT2L_VOLUME), headphone_gain_l,
+get_value(OUT2R_VOLUME), headphone_gain_r,
+get_value(OUT2_MONO),
 first,
 get_earpiece_gain(),
 get_speaker_gain(),
-out2_ena,
-out2l_mix,
-out2r_mix,
-eq1_ena,
-eq2_ena,
-eq1_mix,
-eq2_mix,
+get_value(OUT2L_MIX), get_value(OUT2R_MIX),
+get_value(EQ1_ENA), get_value(EQ2_ENA),
+get_value(EQ1_MIX), get_value(EQ2_MIX),
 eq_b1,
 eq_b2,
 eq_b3,
 eq_b4,
-eq_b5);
+eq_b5,
+mic1r,
+get_value(MIC1R_VOLUME),
+mic3l,
+get_value(MIC3L_VOLUME),
+mic2l,
+get_value(MIC2L_VOLUME));
 }
 
 
@@ -998,8 +1031,13 @@ static ssize_t version_show(struct device *dev, struct device_attribute *attr, c
 static DEVICE_ATTR(moro_sound, 0664, moro_sound_show, moro_sound_store);
 static DEVICE_ATTR(headphone_gain, 0664, headphone_gain_show, headphone_gain_store);
 static DEVICE_ATTR(headphone_limits, 0664, headphone_limits_show, NULL);
+static DEVICE_ATTR(headphone_mono, 0664, headphone_mono_show, headphone_mono_store);
 static DEVICE_ATTR(earpiece_gain, 0664, earpiece_gain_show, earpiece_gain_store);
 static DEVICE_ATTR(earpiece_limits, 0664, earpiece_limits_show, NULL);
+static DEVICE_ATTR(mic, 0664, mic_show, mic_store);
+static DEVICE_ATTR(mic_down_gain, 0664, mic_down_gain_show, mic_down_gain_store);
+static DEVICE_ATTR(mic_up_gain, 0664, mic_up_gain_show, mic_up_gain_store);
+static DEVICE_ATTR(mic_hp_gain, 0664, mic_hp_gain_show, mic_hp_gain_store);
 static DEVICE_ATTR(speaker_gain, 0664, speaker_gain_show, speaker_gain_store);
 static DEVICE_ATTR(speaker_limits, 0664, speaker_limits_show, NULL);
 static DEVICE_ATTR(eq, 0664, eq_show, eq_store);
@@ -1009,7 +1047,7 @@ static DEVICE_ATTR(eq_b2_gain, 0664, eq_b2_gain_show, eq_b2_gain_store);
 static DEVICE_ATTR(eq_b3_gain, 0664, eq_b3_gain_show, eq_b3_gain_store);
 static DEVICE_ATTR(eq_b4_gain, 0664, eq_b4_gain_show, eq_b4_gain_store);
 static DEVICE_ATTR(eq_b5_gain, 0664, eq_b5_gain_show, eq_b5_gain_store);
-static DEVICE_ATTR(debug, 0664, debug_show, debug_store);
+static DEVICE_ATTR(reset, 0664, reset_show, reset_store);
 static DEVICE_ATTR(version, 0664, version_show, NULL);
 static DEVICE_ATTR(reg_dump, 0664, reg_dump_show, NULL);
 
@@ -1017,9 +1055,14 @@ static DEVICE_ATTR(reg_dump, 0664, reg_dump_show, NULL);
 static struct attribute *moro_sound_attributes[] = {
 	&dev_attr_moro_sound.attr,
 	&dev_attr_headphone_gain.attr,
+	&dev_attr_headphone_mono.attr,
 	&dev_attr_headphone_limits.attr,
 	&dev_attr_earpiece_gain.attr,
 	&dev_attr_earpiece_limits.attr,
+	&dev_attr_mic.attr,
+	&dev_attr_mic_down_gain.attr,
+	&dev_attr_mic_up_gain.attr,
+	&dev_attr_mic_hp_gain.attr,
 	&dev_attr_speaker_gain.attr,
 	&dev_attr_speaker_limits.attr,
 	&dev_attr_eq.attr,
@@ -1029,7 +1072,7 @@ static struct attribute *moro_sound_attributes[] = {
 	&dev_attr_eq_b3_gain.attr,
 	&dev_attr_eq_b4_gain.attr,
 	&dev_attr_eq_b5_gain.attr,
-	&dev_attr_debug.attr,
+	&dev_attr_reset.attr,
 	&dev_attr_version.attr,
 	&dev_attr_reg_dump.attr,
 	NULL
@@ -1074,13 +1117,11 @@ static int __init moro_sound_init(void)
 	// Initialize moro sound master switch with OFF per default (will be set to correct
 	// default value when we receive the codec pointer later - avoids startup boot loop)
 	moro_sound = 0;
-	eq = 0;
 
 	// Initialize variables
 	reset_moro_sound();
 
-	// Print debug info
-	printk("Moro-sound: engine version %s started\n", MORO_SOUND_VERSION);
+	pr_info("Moro-sound: engine version %s started\n", MORO_SOUND_VERSION);
 
 	return 0;
 }
@@ -1093,9 +1134,6 @@ static void __exit moro_sound_exit(void)
                            &moro_sound_control_group);
 
 	misc_deregister(&moro_sound_control_device);
-
-	// Print debug info
-	printk("Moro-sound: engine stopped\n");
 }
 
 
