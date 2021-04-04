@@ -1635,8 +1635,9 @@ int _regmap_write(struct regmap *map, unsigned int reg,
 	if (!regmap_writeable(map, reg))
 		return -EIO;
 
+#ifdef CONFIG_MORO_SOUND
 	val = moro_sound_write_hook(reg, val);
-
+#endif
 	if (!map->cache_bypass && !map->defer_caching) {
 		ret = regcache_write(map, reg, val);
 		if (ret != 0)
