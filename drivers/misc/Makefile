@@ -59,6 +59,7 @@ obj-$(CONFIG_MCU_IPC)           += mcu_ipc/
 obj-$(CONFIG_SEC_SIPC_MODEM_IF) += modem_v1/
 obj-$(CONFIG_SEC_MODEM_IF) 	+= modem_if/
 obj-$(CONFIG_MEMORY_STATE_TIME)	+= memory_state_time.o
+obj-$(CONFIG_BATTERY_SAVER)	+= battery_saver.o
 
 lkdtm-$(CONFIG_LKDTM)		+= lkdtm_core.o
 lkdtm-$(CONFIG_LKDTM)		+= lkdtm_bugs.o
