@@ -20,6 +20,7 @@
 #include <linux/ems.h>
 #include <trace/events/power.h>
 
+#include <linux/battery_saver.h>
 #include "sched.h"
 #include "tune.h"
 #include "ems/ems.h"
@@ -386,7 +387,7 @@ static void sugov_set_iowait_boost(struct sugov_cpu *sg_cpu, u64 time,
 	struct sugov_policy *sg_policy = sg_cpu->sg_policy;
 
 	if (!sg_policy->tunables->iowait_boost_enable ||
-	     sg_policy->is_panel_blank)
+	     sg_policy->is_panel_blank || is_battery_saver_on())
 		return;
 
 	if (sg_cpu->iowait_boost) {
@@ -755,7 +756,8 @@ static ssize_t iowait_boost_enable_show(struct gov_attr_set *attr_set,
 {
 	struct sugov_tunables *tunables = to_sugov_tunables(attr_set);
 
-	return sprintf(buf, "%u\n", tunables->iowait_boost_enable);
+	return sprintf(buf, "%u\n", is_battery_saver_on() ?
+				0 : tunables->iowait_boost_enable);
 }
 
 static ssize_t iowait_boost_enable_store(struct gov_attr_set *attr_set,
