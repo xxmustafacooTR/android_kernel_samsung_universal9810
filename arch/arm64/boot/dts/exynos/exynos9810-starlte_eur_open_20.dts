@@ -12946,7 +12946,7 @@
 					dev = "/dev/block/platform/11120000.ufs/by-name/SYSTEM";
 					type = "ext4";
 					mnt_flags = "ro";
-					fsmgr_flags = "wait,verify";
+					fsmgr_flags = "wait";
 				};
 
 				vendor {
@@ -12954,7 +12954,7 @@
 					dev = "/dev/block/platform/11120000.ufs/by-name/VENDOR";
 					type = "ext4";
 					mnt_flags = "ro";
-					fsmgr_flags = "wait,verify";
+					fsmgr_flags = "wait";
 				};
 
 				odm {
@@ -12962,7 +12962,7 @@
 					dev = "/dev/block/platform/11120000.ufs/by-name/ODM";
 					type = "ext4";
 					mnt_flags = "ro";
-					fsmgr_flags = "wait,verify";
+					fsmgr_flags = "wait";
 				};
 			};
 		};
