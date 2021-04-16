@@ -664,7 +664,6 @@ out:
 	return ret;
 }
 
-#ifdef CONFIG_KNOX_NCM
 /** The function sets the uid associated with the dns socket. **/
 static int sock_set_dns_uid(struct sock *sk, char __user *optval, int optlen)
 {
@@ -686,6 +685,7 @@ out:
 	return ret;
 }
 
+#ifdef CONFIG_KNOX_NCM
 /** The function sets the pid and the process name associated with the dns socket. **/
 static int sock_set_dns_pid(struct sock *sk, char __user *optval, int optlen)
 {
