@@ -66,7 +66,7 @@ config MALI_BIFROST_R19P0_Q
 	bool "Bifrost r19p0 driver for Android Q"
 
 config MALI_BIFROST_R26P0
-	depends on MALI_DDK_VERSION
+	depends on MALI_THEX
 	bool "Bifrost r26p0 driver for Android R"
 
 endchoice
