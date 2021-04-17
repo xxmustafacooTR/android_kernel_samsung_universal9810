@@ -7,6 +7,13 @@
 # command after changing this file, to see if there are
 # any tracked files which get ignored after the change.
 #
+# DTB
+#
+arch/arm64/boot/dtb.img
+scripts/dtbtool_exynos/dtbtool
+arch/arm64/boot/dts/exynos/*dtb*
+
+#
 # Normal rules
 #
 .*
