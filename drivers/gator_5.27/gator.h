@@ -1,5 +1,5 @@
 /**
- * Copyright (C) ARM Limited 2010-2016. All rights reserved.
+ * Copyright (C) Arm Limited 2010-2016. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -52,13 +52,13 @@ extern int gator_cluster_count;
  * Filesystem
  ******************************************************************************/
 struct dentry *gatorfs_mkdir(struct super_block *sb, struct dentry *root,
-		char const *name);
+                 char const *name);
 
 int gatorfs_create_ulong(struct super_block *sb, struct dentry *root,
-		char const *name, unsigned long *val);
+             char const *name, unsigned long *val);
 
 int gatorfs_create_ro_ulong(struct super_block *sb, struct dentry *root,
-		char const *name, unsigned long *val);
+                char const *name, unsigned long *val);
 
 /******************************************************************************
  * Tracepoints
@@ -128,5 +128,16 @@ int pcpu_to_lcpu(const int pcpu);
 
 #define get_logical_cpu() smp_processor_id()
 #define on_primary_core() (get_logical_cpu() == 0)
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
+#   define setup_deferrable_timer_on_stack(TIMER, HANDLER, VALUE)   \
+        timer_setup((TIMER), (HANDLER), TIMER_DEFERRABLE)
+#   define destroy_timer_on_stack(TIMER)
+#   define DECLARE_TIMER_HANDLER(NAME)  \
+        void NAME (struct timer_list * timers)
+#else
+#   define DECLARE_TIMER_HANDLER(NAME)  \
+        void NAME (unsigned long arg)
+#endif
 
 #endif /* GATOR_H_ */
