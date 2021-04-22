@@ -19,6 +19,33 @@
 
 #define USE_THREAD defined(CONFIG_PREEMPT_RT_FULL)
 
+/*
+ * Handle rename of global_page_state "c41f012ade0b95b0a6e25c7150673e0554736165 mm: rename global_page_state to global_zone_page_state"
+ */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 14, 0)
+#define GLOBAL_ZONE_PAGE_STATE(item)    global_page_state(item)
+#else
+#define GLOBAL_ZONE_PAGE_STATE(item)    global_zone_page_state(item)
+#endif
+
+#define GLOBAL_NODE_PAGE_STATE(item)    global_node_page_state(item)
+
+/* NR_SLAB_RECLAIMABLE / NR_SLAB_UNRECLAIMABLE are in node_stat_item from 4.13 */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 13, 0)
+#define READ_NR_SLAB_RECLAIMABLE        GLOBAL_ZONE_PAGE_STATE(NR_SLAB_RECLAIMABLE)
+#define READ_NR_SLAB_UNRECLAIMABLE      GLOBAL_ZONE_PAGE_STATE(NR_SLAB_UNRECLAIMABLE)
+#else
+#define READ_NR_SLAB_RECLAIMABLE        GLOBAL_NODE_PAGE_STATE(NR_SLAB_RECLAIMABLE)
+#define READ_NR_SLAB_UNRECLAIMABLE      GLOBAL_NODE_PAGE_STATE(NR_SLAB_UNRECLAIMABLE)
+#endif
+
+/* NR_FILE_PAGES is in node_stat_item from 4.8 */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 8, 0)
+#define READ_NR_FILE_PAGES              GLOBAL_ZONE_PAGE_STATE(NR_FILE_PAGES)
+#else
+#define READ_NR_FILE_PAGES              GLOBAL_NODE_PAGE_STATE(NR_FILE_PAGES)
+#endif
+
 enum {
     MEMINFO_MEMFREE,
     MEMINFO_MEMUSED,
@@ -83,7 +110,7 @@ static unsigned int mem_event;
 static void wq_sched_handler(struct work_struct *wsptr);
 static DECLARE_WORK(work, wq_sched_handler);
 static struct timer_list meminfo_wake_up_timer;
-static void meminfo_wake_up_handler(unsigned long unused_data);
+static DECLARE_TIMER_HANDLER(meminfo_wake_up_handler);
 
 static void notify(void)
 {
@@ -237,10 +264,10 @@ static void do_read(void)
                 break;
             case MEMINFO_CACHED:
                 // total_swapcache_pages is not exported so the result is slightly different, but hopefully not too much
-                value = (global_page_state(NR_FILE_PAGES) /*- total_swapcache_pages()*/ - info.bufferram) * PAGE_SIZE;
+                value = (READ_NR_FILE_PAGES /*- total_swapcache_pages()*/ - info.bufferram) * PAGE_SIZE;
                 break;
             case MEMINFO_SLAB:
-                value = (global_page_state(NR_SLAB_RECLAIMABLE) + global_page_state(NR_SLAB_UNRECLAIMABLE)) * PAGE_SIZE;
+                value = (READ_NR_SLAB_RECLAIMABLE + READ_NR_SLAB_UNRECLAIMABLE) * PAGE_SIZE;
                 break;
             default:
                 value = 0;
@@ -284,7 +311,7 @@ static void wq_sched_handler(struct work_struct *wsptr)
     do_read();
 }
 
-static void meminfo_wake_up_handler(unsigned long unused_data)
+static DECLARE_TIMER_HANDLER(meminfo_wake_up_handler)
 {
     /* had to delay scheduling work as attempting to schedule work during the context switch is illegal in kernel versions 3.5 and greater */
     schedule_work(&work);

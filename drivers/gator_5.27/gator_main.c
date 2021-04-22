@@ -1,5 +1,5 @@
 /**
- * Copyright (C) ARM Limited 2010-2016. All rights reserved.
+ * Copyright (C) Arm Limited 2010-2016. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -8,7 +8,7 @@
  */
 
 /* This version must match the gator daemon version */
-#define PROTOCOL_VERSION 630
+#define PROTOCOL_VERSION    690
 static unsigned long gator_protocol_version = PROTOCOL_VERSION;
 
 #include <linux/version.h>
@@ -36,7 +36,7 @@ static unsigned long gator_protocol_version = PROTOCOL_VERSION;
 #endif
 
 #include "gator.h"
-#include "gator_src_md5.h"
+#include "generated_gator_src_md5.h"
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 4, 0)
 #error Kernels prior to 3.4 not supported. DS-5 v5.21 and earlier supported 2.6.32 and later.
@@ -144,7 +144,6 @@ enum {
 /******************************************************************************
  * Globals
  ******************************************************************************/
-static unsigned long gator_cpu_cores;
 /* Size of the largest buffer. Effectively constant, set in gator_op_create_files */
 static unsigned long userspace_buffer_size;
 static unsigned long gator_backtrace_depth;
@@ -292,7 +291,7 @@ u32 gator_cpuid(void)
 #endif
 }
 
-static void gator_buffer_wake_up(unsigned long data)
+static DECLARE_TIMER_HANDLER(gator_buffer_wake_up)
 {
     wake_up(&gator_buffer_wait);
 }
@@ -800,10 +799,13 @@ static void gator_summary(void)
         if (m2b)
             m2b(&ts);
     }
-#else
-    get_monotonic_boottime(&ts);
-#endif
     uptime = timespec_to_ns(&ts);
+#elif LINUX_VERSION_CODE < KERNEL_VERSION(4, 20, 0)
+    get_monotonic_boottime(&ts);
+    uptime = timespec_to_ns(&ts);
+#else
+    uptime = ktime_to_ns(ktime_get_boottime());
+#endif
 
     /* Disable preemption as gator_get_time calls smp_processor_id to verify time is monotonic */
     preempt_disable();
@@ -1126,8 +1128,8 @@ static ssize_t enable_read(struct file *file, char __user *buf, size_t count, lo
 
 static ssize_t enable_write(struct file *file, char const __user *buf, size_t count, loff_t *offset)
 {
-    unsigned long val;
-    int retval;
+    unsigned long val = 0;
+    int retval = 0;
 
     if (*offset)
         return -EINVAL;
@@ -1292,13 +1294,7 @@ static const struct file_operations depth_fops = {
 static void gator_op_create_files(struct super_block *sb, struct dentry *root)
 {
     struct dentry *dir;
-    int cpu;
 
-    /* reinitialize default values */
-    gator_cpu_cores = 0;
-    for_each_present_cpu(cpu) {
-        gator_cpu_cores++;
-    }
     userspace_buffer_size = BACKTRACE_BUFFER_SIZE;
     gator_response_type = 1;
     gator_live_rate = 0;
@@ -1306,7 +1302,6 @@ static void gator_op_create_files(struct super_block *sb, struct dentry *root)
     gatorfs_create_file(sb, root, "enable", &enable_fops);
     gatorfs_create_file(sb, root, "buffer", &gator_event_buffer_fops);
     gatorfs_create_file(sb, root, "backtrace_depth", &depth_fops);
-    gatorfs_create_ro_ulong(sb, root, "cpu_cores", &gator_cpu_cores);
     gatorfs_create_ro_ulong(sb, root, "buffer_size", &userspace_buffer_size);
     gatorfs_create_ulong(sb, root, "tick", &gator_timer_count);
     gatorfs_create_ulong(sb, root, "response_type", &gator_response_type);
@@ -1393,21 +1388,34 @@ GATOR_TRACEPOINTS;
 int gator_new_tracepoint_module(struct notifier_block * nb, unsigned long action, void * data)
 {
     struct tp_module * tp_mod = (struct tp_module *) data;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 19, 0)
+    tracepoint_ptr_t * begin = tp_mod->mod->tracepoints_ptrs;
+    tracepoint_ptr_t * end = tp_mod->mod->tracepoints_ptrs + tp_mod->mod->num_tracepoints;
+#else
     struct tracepoint * const * begin = tp_mod->mod->tracepoints_ptrs;
     struct tracepoint * const * end = tp_mod->mod->tracepoints_ptrs + tp_mod->mod->num_tracepoints;
+#endif
 
     pr_debug("gator: new tracepoint module registered %s\n", tp_mod->mod->name);
 
     if (action == MODULE_STATE_COMING)
     {
         for (; begin != end; ++begin) {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 19, 0)
+            gator_save_tracepoint(tracepoint_ptr_deref(begin), NULL);
+#else
             gator_save_tracepoint(*begin, NULL);
+#endif
         }
     }
     else if (action == MODULE_STATE_GOING)
     {
         for (; begin != end; ++begin) {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 19, 0)
+            gator_unsave_tracepoint(tracepoint_ptr_deref(begin), NULL);
+#else
             gator_unsave_tracepoint(*begin, NULL);
+#endif
         }
     }
     else
@@ -1426,10 +1434,17 @@ static struct notifier_block tracepoint_notifier_block = {
 
 #endif
 
+
+/* The user may define 'CONFIG_GATOR_DO_NOT_ONLINE_CORES_AT_STARTUP' to prevent offline cores from being
+ * started when gator is loaded, or alternatively they can set 'disable_cpu_onlining' when module is loaded */
+#if defined(CONFIG_SMP) && !defined(CONFIG_GATOR_DO_NOT_ONLINE_CORES_AT_STARTUP)
+MODULE_PARM_DESC(disable_cpu_onlining, "Do not online all cores when module starts");
+static bool disable_cpu_onlining;
+module_param(disable_cpu_onlining, bool, 0644);
+#endif
+
 static int __init gator_module_init(void)
 {
-    int cpu;
-
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 15, 0)
     /* scan kernel built in tracepoints */
     for_each_kernel_tracepoint(gator_save_tracepoint, NULL);
@@ -1449,12 +1464,15 @@ static int __init gator_module_init(void)
 
     setup_deferrable_timer_on_stack(&gator_buffer_wake_up_timer, gator_buffer_wake_up, 0);
 
-#if defined(CONFIG_SMP)
+#if defined(CONFIG_SMP) && !defined(CONFIG_GATOR_DO_NOT_ONLINE_CORES_AT_STARTUP)
     /* Online all cores */
-    for_each_present_cpu(cpu) {
-        if (!cpu_online(cpu)) {
-            pr_notice("gator: Onlining cpu %i\n", cpu);
-            cpu_up(cpu);
+    if (!disable_cpu_onlining) {
+        int cpu;
+        for_each_present_cpu(cpu) {
+            if (!cpu_online(cpu)) {
+                pr_notice("gator: Onlining cpu %i\n", cpu);
+                cpu_up(cpu);
+            }
         }
     }
 #endif
@@ -1484,7 +1502,7 @@ module_init(gator_module_init);
 module_exit(gator_module_exit);
 
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("ARM Ltd");
+MODULE_AUTHOR("Arm Ltd");
 MODULE_DESCRIPTION("Gator system profiler");
 #define STRIFY2(ARG) #ARG
 #define STRIFY(ARG) STRIFY2(ARG)

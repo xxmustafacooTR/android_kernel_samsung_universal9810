@@ -1,5 +1,5 @@
 /**
- * Copyright (C) ARM Limited 2012-2016. All rights reserved.
+ * Copyright (C) Arm Limited 2012-2016. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -37,7 +37,7 @@
 #endif
 
 #if (MALI_DDK_GATOR_API_VERSION != 1) && (MALI_DDK_GATOR_API_VERSION != 2) && (MALI_DDK_GATOR_API_VERSION != 3)
-#error MALI_DDK_GATOR_API_VERSION is invalid (must be 1 for r1/r2 DDK, or 2 for r3/r4 DDK, or 3 for r5 and later DDK).
+#error Your version of the Mali DDK is unsupported. Mali support in gator.ko is not supported past m_r28/b_r16. Support for Mali counters for future DDK versions is provided by gatord.
 #endif
 
 #include "gator_events_mali_common.h"
@@ -964,9 +964,31 @@ int gator_events_mali_midgard_hw_init(void)
         return 1;
     }
 
+    // Also get kbase_gator_hwcnt_term symbol as will need this to cleanup after call kbase_gator_hwcnt_init
+    SYMBOL_GET(kbase_gator_hwcnt_term, error_count);
+    if (error_count > 0)
+    {
+        // Could not find the symbol in the kernel. Can't proceed.
+        SYMBOL_CLEANUP(kbase_gator_hwcnt_term);
+        SYMBOL_CLEANUP(kbase_gator_hwcnt_init);
+        return 1;
+    }
+
     // a temporary structure that we'll use to obtain gpu id
     result = kbase_gator_hwcnt_init_symbol(&info);
+    gpu_id = info.gpu_id;
+
+    // terminate session
+    if (result != NULL)
+    {
+        kbase_gator_hwcnt_term_symbol(&info, result);
+    }
+
+    // clean up symbols
+    SYMBOL_CLEANUP(kbase_gator_hwcnt_term);
     SYMBOL_CLEANUP(kbase_gator_hwcnt_init);
+
+    // validate result
     if (result == NULL)
     {
         // Could not get the info about the GPU. Can't proceed.
@@ -974,7 +996,6 @@ int gator_events_mali_midgard_hw_init(void)
     }
 
     // now, the info struct has a gpu_id field set to a number, that is architecture-specific
-    gpu_id = info.gpu_id;
     pr_info("gator: Detected GPU ID: %d.\n", gpu_id);
 
     // Identifying the GPU architecture. Version 6 Bifrost.

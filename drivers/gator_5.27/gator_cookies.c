@@ -1,5 +1,5 @@
 /**
- * Copyright (C) ARM Limited 2010-2016. All rights reserved.
+ * Copyright (C) Arm Limited 2010-2016. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -8,8 +8,9 @@
  */
 
 #include <linux/mount.h>
-
-
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0)
+#   include <linux/sched/mm.h>
+#endif
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 10, 0)
 /* Kernel version 4.10.0 adds locked argument
@@ -66,7 +67,7 @@ static uint32_t get_cookie(int cpu, struct task_struct *task, const char *text, 
 static void wq_cookie_handler(struct work_struct *unused);
 static DECLARE_WORK(cookie_work, wq_cookie_handler);
 static struct timer_list app_process_wake_up_timer;
-static void app_process_wake_up_handler(unsigned long unused_data);
+static DECLARE_TIMER_HANDLER(app_process_wake_up_handler);
 
 static uint32_t cookiemap_code(uint64_t value64)
 {
@@ -207,7 +208,7 @@ static void wq_cookie_handler(struct work_struct *unused)
     mutex_unlock(&start_mutex);
 }
 
-static void app_process_wake_up_handler(unsigned long unused_data)
+static DECLARE_TIMER_HANDLER(app_process_wake_up_handler)
 {
     /* had to delay scheduling work as attempting to schedule work during the context switch is illegal in kernel versions 3.5 and greater */
     schedule_work(&cookie_work);
