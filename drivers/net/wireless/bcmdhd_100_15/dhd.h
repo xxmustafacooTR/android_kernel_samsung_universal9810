@@ -512,6 +512,9 @@ enum dhd_hang_reason {
 	HANG_REASON_BSS_UP_FAILURE			= 0x8010,
 	HANG_REASON_BSS_DOWN_FAILURE			= 0x8011,
 	HANG_REASON_IOCTL_SUSPEND_ERROR			= 0x8012,
+	HANG_REASON_ESCAN_SYNCID_MISMATCH		= 0x8013,
+	HANG_REASON_SCAN_TIMEOUT			= 0x8014,
+	HANG_REASON_SCAN_TIMEOUT_SCHED_ERROR		= 0x8015,
 	HANG_REASON_PCIE_LINK_DOWN_RC_DETECT		= 0x8805,
 	HANG_REASON_INVALID_EVENT_OR_DATA		= 0x8806,
 	HANG_REASON_UNKNOWN				= 0x8807,
@@ -890,7 +893,12 @@ typedef enum dhd_induce_error_states
 	DHD_INDUCE_LIVELOCK		= 0x3,
 	DHD_INDUCE_DROP_OOB_IRQ		= 0x4,
 	DHD_INDUCE_DROP_AXI_SIG		= 0x5,
-	DHD_INDUCE_IOCTL_SUSPEND_ERROR	= 0x6,
+	DHD_INDUCE_TX_BIG_PKT           = 0x6,
+	DHD_INDUCE_IOCTL_SUSPEND_ERROR	= 0x7,
+	DHD_INDUCE_SCAN_TIMEOUT         = 0x8,
+	DHD_INDUCE_SCAN_TIMEOUT_SCHED_ERROR     = 0x9,
+	DHD_INDUCE_PKTID_INVALID_SAVE   = 0xA,
+	DHD_INDUCE_PKTID_INVALID_FREE   = 0xB,
 	DHD_INDUCE_ERROR_MAX
 } dhd_induce_error_states_t;
 
@@ -1179,7 +1187,7 @@ typedef struct dhd_pub {
 	void    *flowid_lock;       /* per os lock for flowid info protection */
 	void    *flowring_list_lock;       /* per os lock for flowring list protection */
 	uint8	max_multi_client_flow_rings;
-	uint8	multi_client_flow_rings;
+	osl_atomic_t multi_client_flow_rings;
 	uint32  num_flow_rings;
 	cumm_ctr_t cumm_ctr;        /* cumm queue length placeholder  */
 	cumm_ctr_t l2cumm_ctr;      /* level 2 cumm queue length placeholder */

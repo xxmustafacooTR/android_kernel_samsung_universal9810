@@ -91,6 +91,7 @@
 
 #define WPS_ATTR_REQ_TYPE 0x103a
 #define WPS_REQ_TYPE_ENROLLEE 0x01
+#define SCAN_WAKE_LOCK_MARGIN_MS 500
 
 #if defined(USE_INITIAL_2G_SCAN) || defined(USE_INITIAL_SHORT_DWELL_TIME)
 #define FIRST_SCAN_ACTIVE_DWELL_TIME_MS 40
@@ -647,6 +648,13 @@ wl_escan_handler(struct bcm_cfg80211 *cfg, bcm_struct_cfgdev *cfgdev,
 		}
 	}
 	else if (status == WLC_E_STATUS_SUCCESS) {
+		dhd_pub_t *dhdp = (dhd_pub_t *)(cfg->pub);
+		if ((dhdp->dhd_induce_error == DHD_INDUCE_SCAN_TIMEOUT) ||
+			(dhdp->dhd_induce_error == DHD_INDUCE_SCAN_TIMEOUT_SCHED_ERROR)) {
+			WL_ERR(("%s: Skip escan complete to induce scantimeout\n", __FUNCTION__));
+			err = BCME_ERROR;
+			goto exit;
+		}
 		cfg->escan_info.escan_state = WL_ESCAN_STATE_IDLE;
 		wl_escan_print_sync_id(status, cfg->escan_info.cur_sync_id,
 			escan_result->sync_id);
@@ -1841,12 +1849,10 @@ __wl_cfg80211_scan(struct wiphy *wiphy, struct net_device *ndev,
 		ssids = this_ssid;
 	}
 
-	if (request && cfg->p2p_supported) {
-		WL_TRACE_HW4(("START SCAN\n"));
-		DHD_OS_SCAN_WAKE_LOCK_TIMEOUT((dhd_pub_t *)(cfg->pub),
-			SCAN_WAKE_LOCK_TIMEOUT);
-		DHD_DISABLE_RUNTIME_PM((dhd_pub_t *)(cfg->pub));
-	}
+	WL_TRACE_HW4(("START SCAN\n"));
+	DHD_OS_SCAN_WAKE_LOCK_TIMEOUT((dhd_pub_t *)(cfg->pub),
+		wl_get_scan_timeout_val(cfg) + SCAN_WAKE_LOCK_MARGIN_MS);
+	DHD_DISABLE_RUNTIME_PM((dhd_pub_t *)(cfg->pub));
 
 	if (cfg->p2p_supported) {
 		if (request && p2p_on(cfg) && p2p_scan(cfg)) {
@@ -1897,12 +1903,14 @@ scan_out:
 		if (scanbusy_err == BCME_NOTREADY) {
 			/* In case of bus failures avoid ioctl calls */
 			DHD_OS_SCAN_WAKE_UNLOCK((dhd_pub_t *)(cfg->pub));
+			DHD_ENABLE_RUNTIME_PM((dhd_pub_t *)(cfg->pub));
 			return -ENODEV;
 		}
 		err = scanbusy_err;
 	}
 
 	DHD_OS_SCAN_WAKE_UNLOCK((dhd_pub_t *)(cfg->pub));
+	DHD_ENABLE_RUNTIME_PM((dhd_pub_t *)(cfg->pub));
 	return err;
 }
 
@@ -3062,13 +3070,16 @@ static void wl_scan_timeout(unsigned long data)
 	if (dhd_query_bus_erros(dhdp)) {
 		return;
 	}
+
+	if (dhdp->memdump_enabled) {
+		dhdp->hang_reason = HANG_REASON_SCAN_TIMEOUT;
+	}
+
 #if defined(DHD_KERNEL_SCHED_DEBUG) && defined(DHD_FW_COREDUMP)
-	if (dhdp->memdump_enabled == DUMP_MEMFILE_BUGON &&
-		((cfg->scan_deq_time < cfg->scan_enq_time) ||
-		dhd_bus_query_dpc_sched_errors(dhdp))) {
+	if ((cfg->scan_deq_time < cfg->scan_enq_time) ||
+		dhd_bus_query_dpc_sched_errors(dhdp) ||
+		(dhdp->dhd_induce_error == DHD_INDUCE_SCAN_TIMEOUT_SCHED_ERROR)) {
 		WL_ERR(("****SCAN event timeout due to scheduling problem\n"));
-		/* change g_assert_type to trigger Kernel panic */
-		g_assert_type = 2;
 #ifdef RTT_SUPPORT
 		rtt_status = GET_RTTSTATE(dhdp);
 #endif /* RTT_SUPPORT */
@@ -3100,9 +3111,16 @@ static void wl_scan_timeout(unsigned long data)
 			mutex_is_locked(&(rtt_status)->geofence_mutex)));
 #endif /* WL_NAN */
 #endif /* RTT_SUPPORT */
+		if (dhdp->memdump_enabled == DUMP_MEMFILE_BUGON) {
+			/* change g_assert_type to trigger Kernel panic */
+			g_assert_type = 2;
+			/* use ASSERT() to trigger panic */
+			ASSERT(0);
+		}
 
-		/* use ASSERT() to trigger panic */
-		ASSERT(0);
+		if (dhdp->memdump_enabled) {
+			dhdp->hang_reason = HANG_REASON_SCAN_TIMEOUT_SCHED_ERROR;
+		}
 	}
 #endif /* DHD_KERNEL_SCHED_DEBUG && DHD_FW_COREDUMP */
 	dhd_bus_intr_count_dump(dhdp);
@@ -3153,7 +3171,9 @@ static void wl_scan_timeout(unsigned long data)
 	 * For the memdump sanity, blocking bus transactions for a while
 	 * Keeping it TRUE causes the sequential private cmd error
 	 */
-	dhdp->scan_timeout_occurred = FALSE;
+	if (!dhdp->memdump_enabled) {
+		dhdp->scan_timeout_occurred = FALSE;
+	}
 #endif /* DHD_FW_COREDUMP */
 	msg.event_type = hton32(WLC_E_ESCAN_RESULT);
 	msg.status = hton32(WLC_E_STATUS_TIMEOUT);
@@ -3163,6 +3183,18 @@ static void wl_scan_timeout(unsigned long data)
 	if (!wl_scan_timeout_dbg_enabled)
 		wl_scan_timeout_dbg_set();
 #endif /* CUSTOMER_HW4_DEBUG */
+
+	DHD_ENABLE_RUNTIME_PM(dhdp);
+
+#if defined(DHD_FW_COREDUMP)
+	if (dhdp->memdump_enabled) {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 27)
+		dhd_os_send_hang_message(dhdp);
+#else
+		WL_ERR(("%s: HANG event is unsupported\n", __FUNCTION__));
+#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 27) && OEM_ANDROID */
+	}
+#endif /* DHD_FW_COREDUMP */
 }
 
 s32 wl_init_scan(struct bcm_cfg80211 *cfg)
