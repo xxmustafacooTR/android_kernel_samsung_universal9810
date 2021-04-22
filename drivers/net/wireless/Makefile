@@ -39,14 +39,14 @@ $(warning MAJOR_VERSION version 2: $(MAJOR_VERSION))
 endif
 endif
 ifneq ($(CONFIG_BCM4361),)
-ifeq ($(shell expr $(MAJOR_VERSION) \>= 11),1)
-$(warning platform version 3 : $(PLATFORM_VERSION))
-$(warning MAJOR_VERSION version 3: $(MAJOR_VERSION))
-obj-$(CONFIG_BCM4361)   += bcmdhd_101_16/
-obj-$(CONFIG_SOC_EXYNOS9810) += bcmdhd_101_16/dhd_custom_memprealloc.o
-obj-$(CONFIG_SOC_EXYNOS9810) += bcmdhd_101_16/dhd_custom_exynos.o
-else
-ifeq ($(shell expr $(MAJOR_VERSION) \= 10),1)
+#ifeq ($(shell expr $(MAJOR_VERSION) \>= 11),1)
+#$(warning platform version 3 : $(PLATFORM_VERSION))
+#$(warning MAJOR_VERSION version 3: $(MAJOR_VERSION))
+#obj-$(CONFIG_BCM4361)   += bcmdhd_101_16/
+#obj-$(CONFIG_SOC_EXYNOS9810) += bcmdhd_101_16/dhd_custom_memprealloc.o
+#obj-$(CONFIG_SOC_EXYNOS9810) += bcmdhd_101_16/dhd_custom_exynos.o
+#else
+ifeq ($(shell expr $(MAJOR_VERSION) \>= 10),1)
 $(warning platform version 4 : $(PLATFORM_VERSION))
 $(warning MAJOR_VERSION version 4: $(MAJOR_VERSION))
 obj-$(CONFIG_BCM4361)   += bcmdhd_100_15/
@@ -60,7 +60,7 @@ obj-$(CONFIG_SOC_EXYNOS9810) += bcmdhd_100_10/dhd_custom_memprealloc.o
 obj-$(CONFIG_SOC_EXYNOS9810) += bcmdhd_100_10/dhd_custom_exynos.o
 endif
 endif
-endif
+#endif
 
 # 16-bit wireless PCMCIA client drivers
 obj-$(CONFIG_PCMCIA_RAYCS)	+= ray_cs.o
