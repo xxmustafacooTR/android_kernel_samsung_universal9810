@@ -173,7 +173,7 @@ static void sugov_update_commit(struct sugov_policy *sg_policy, u64 time,
 	if (sugov_up_down_rate_limit(sg_policy, time, next_freq))
 		return;
 
-	if (sg_policy->next_freq == next_freq)
+	if (policy->cur == next_freq)
 		return;
 
 	sg_policy->next_freq = next_freq;
@@ -251,7 +251,7 @@ static inline bool use_pelt(void)
 #endif
 }
 
-extern unsigned int sched_rt_remove_ratio_for_freq;
+unsigned int sched_rt_remove_ratio_for_freq = 0;
 
 static void sugov_get_util(unsigned long *util, unsigned long *max, u64 time)
 {
