@@ -2,6 +2,12 @@
 # Makefile for the Linux Wireless network device drivers.
 #
 
+# optimise for size for compiling errors
+subdir-ccflags-y += $(call cc-option, -g0)
+subdir-ccflags-y += $(call cc-option, -Os)
+
+subdir-ccflags-y += $(call cc-disable-warning, restrict)
+
 obj-$(CONFIG_WLAN_VENDOR_ADMTEK) += admtek/
 obj-$(CONFIG_WLAN_VENDOR_ATH) += ath/
 obj-$(CONFIG_WLAN_VENDOR_ATMEL) += atmel/

@@ -1300,7 +1300,7 @@ static ssize_t poc_mca_show(struct device *dev,
 	len = get_resource_size_by_name(&panel->panel_data, "poc_mca_chksum");
 	buf[0] = '\0';
 	for (i = 0; i < len; i++)
-		snprintf(buf, PAGE_SIZE, "%s%02X ", buf, chksum_data[i]);
+		snprintf(buf, PAGE_SIZE, "[buf]%02X ", chksum_data[i]);
 
 	dev_info(dev, "%s poc_mca_checksum: %s\n", __func__, buf);
 
