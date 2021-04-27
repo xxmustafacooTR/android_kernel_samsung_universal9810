@@ -10464,7 +10464,7 @@ static void attach_task_cfs_rq(struct task_struct *p)
 		se->vruntime += cfs_rq->min_vruntime;
 }
 
-unsigned int sched_switch_to_fair_load_ratio = 0;
+extern unsigned int sched_switch_to_fair_load_ratio;
 
 #ifdef CONFIG_SMP
 void copy_sched_avg(struct sched_avg *from, struct sched_avg *to, unsigned int ratio)

@@ -251,7 +251,7 @@ static inline bool use_pelt(void)
 #endif
 }
 
-unsigned int sched_rt_remove_ratio_for_freq = 0;
+extern unsigned int sched_rt_remove_ratio_for_freq;
 
 static void sugov_get_util(unsigned long *util, unsigned long *max, u64 time)
 {
