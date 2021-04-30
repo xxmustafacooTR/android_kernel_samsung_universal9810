@@ -23,6 +23,8 @@
 
 #include "exynos-acme.h"
 
+#define SUSTAINABLE_FREQ 1794000
+
 /*********************************************************************
  *                          SYSFS INTERFACES                         *
  *********************************************************************/
@@ -499,6 +501,9 @@ static ssize_t store_cpufreq_max_limit(struct kobject *kobj, struct attribute *a
 
 	if (!sscanf(buf, "%8d", &input))
 		return -EINVAL;
+
+	if (input < SUSTAINABLE_FREQ && input != -1)
+		input = SUSTAINABLE_FREQ;
 
 	last_max_limit = input;
 	cpufreq_max_limit_update(input);
