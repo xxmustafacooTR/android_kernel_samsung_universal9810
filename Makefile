@@ -767,7 +767,6 @@ KBUILD_CFLAGS += $(call cc-ifversion, -gt, 0900, \
 			$(call cc-disable-warning,array-bounds,) \
 			$(call cc-disable-warning,stringop-overflow,))
 
-ifeq ($(cc-name),clang)
 ifdef CONFIG_LLVM_POLLY
 KBUILD_CFLAGS	+= -mllvm -polly \
 		   -mllvm -polly-run-dce \
@@ -778,10 +777,9 @@ KBUILD_CFLAGS	+= -mllvm -polly \
 		   -mllvm -polly-vectorizer=stripmine \
 		   -mllvm -polly-invariant-load-hoisting
 endif
-else ifeq ($(cc-name),gcc)
+
 ifdef CONFIG_GCC_GRAPHITE
 KBUILD_CFLAGS   += -fgraphite-identity
-endif
 endif
 
 # Tell gcc to never replace conditional load with a non-conditional one
