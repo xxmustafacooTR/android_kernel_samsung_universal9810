@@ -779,7 +779,7 @@ KBUILD_CFLAGS	+= -mllvm -polly \
 endif
 
 ifdef CONFIG_GCC_GRAPHITE
-KBUILD_CFLAGS   += -fgraphite-identity
+KBUILD_CFLAGS   += -fgraphite-identity -floop-nest-optimize -ftree-loop-distribution -ftree-vectorize
 endif
 
 # Tell gcc to never replace conditional load with a non-conditional one
