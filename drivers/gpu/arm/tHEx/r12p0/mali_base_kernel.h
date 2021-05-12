@@ -139,8 +139,13 @@ typedef u32 base_mem_alloc_flags;
 	 */
 #define BASE_MEM_RESERVED_BIT_5 ((base_mem_alloc_flags)1 << 5)
 #define BASE_MEM_RESERVED_BIT_6 ((base_mem_alloc_flags)1 << 6)
-#define BASE_MEM_RESERVED_BIT_7 ((base_mem_alloc_flags)1 << 7)
 #define BASE_MEM_RESERVED_BIT_8 ((base_mem_alloc_flags)1 << 8)
+
+/*
+ * Userspace is not allowed to free this memory.
+ * Flag is only allowed on allocations originating from kbase.
+ */
+#define BASEP_MEM_NO_USER_FREE ((base_mem_alloc_flags)1 << 7)
 
 /* Grow backing store on GPU Page Fault
  */
@@ -227,7 +232,7 @@ typedef u32 base_mem_alloc_flags;
  */
 #define BASE_MEM_FLAGS_RESERVED \
 	(BASE_MEM_RESERVED_BIT_5 | BASE_MEM_RESERVED_BIT_6 | \
-		BASE_MEM_RESERVED_BIT_7 | BASE_MEM_RESERVED_BIT_8 | \
+		BASE_MEM_RESERVED_BIT_8 | \
 		BASE_MEM_RESERVED_BIT_19)
 
 /* A mask of all the flags that can be returned via the base_mem_get_flags()
