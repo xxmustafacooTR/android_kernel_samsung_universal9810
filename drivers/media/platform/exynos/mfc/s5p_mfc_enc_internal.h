@@ -710,8 +710,8 @@ static struct v4l2_queryctrl controls[] = {
 		.id = V4L2_CID_MPEG_VIDEO_H264_HIERARCHICAL_CODING_LAYER_QP,
 		.type = V4L2_CTRL_TYPE_INTEGER,
 		.name = "Hierarchical Coding Layer QP",
-		.minimum = INT_MIN,
-		.maximum = INT_MAX,
+		.minimum = 0,
+		.maximum = ((6 << 16) | 0xFFFF), /* (index << 16) | value */
 		.step = 1,
 		.default_value = 0,
 	},
@@ -1044,8 +1044,8 @@ static struct v4l2_queryctrl controls[] = {
 		.id = V4L2_CID_MPEG_MFC70_VIDEO_VP8_HIERARCHY_QP_LAYER0,
 		.type = V4L2_CTRL_TYPE_INTEGER,
 		.name = "VP8 layer0 QP value",
-		.minimum = INT_MIN,
-		.maximum = INT_MAX,
+		.minimum = 0,
+		.maximum = ((2 << 16) | 0xFFFF), /* (index << 16) | value */
 		.step = 1,
 		.default_value = 0,
 	},
@@ -1053,8 +1053,8 @@ static struct v4l2_queryctrl controls[] = {
 		.id = V4L2_CID_MPEG_MFC70_VIDEO_VP8_HIERARCHY_QP_LAYER1,
 		.type = V4L2_CTRL_TYPE_INTEGER,
 		.name = "VP8 layer1 QP value",
-		.minimum = INT_MIN,
-		.maximum = INT_MAX,
+		.minimum = 0,
+		.maximum = ((2 << 16) | 0xFFFF), /* (index << 16) | value */
 		.step = 1,
 		.default_value = 0,
 	},
@@ -1062,8 +1062,8 @@ static struct v4l2_queryctrl controls[] = {
 		.id = V4L2_CID_MPEG_MFC70_VIDEO_VP8_HIERARCHY_QP_LAYER2,
 		.type = V4L2_CTRL_TYPE_INTEGER,
 		.name = "VP8 layer2 QP value",
-		.minimum = INT_MIN,
-		.maximum = INT_MAX,
+		.minimum = 0,
+		.maximum = ((2 << 16) | 0xFFFF), /* (index << 16) | value */
 		.step = 1,
 		.default_value = 0,
 	},
@@ -1161,8 +1161,8 @@ static struct v4l2_queryctrl controls[] = {
 		.id = V4L2_CID_MPEG_VIDEO_VP9_HIERARCHICAL_CODING_LAYER_QP,
 		.type = V4L2_CTRL_TYPE_INTEGER,
 		.name = "VP9 layer0 QP value",
-		.minimum = INT_MIN,
-		.maximum = INT_MAX,
+		.minimum = 0,
+		.maximum = ((2 << 16) | 0xFFFF), /* (index << 16) | value */
 		.step = 1,
 		.default_value = 0,
 	},
@@ -1458,8 +1458,8 @@ static struct v4l2_queryctrl controls[] = {
 		.id = V4L2_CID_MPEG_VIDEO_HEVC_HIERARCHICAL_CODING_LAYER_QP,
 		.type = V4L2_CTRL_TYPE_INTEGER,
 		.name = "Hierarchical Coding Layer QP",
-		.minimum = INT_MIN,
-		.maximum = INT_MAX,
+		.minimum = 0,
+		.maximum = ((6 << 16) | 0xFFFF), /* (index << 16) | value */
 		.step = 1,
 		.default_value = 0, /* need to check defualt value */
 	},

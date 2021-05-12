@@ -499,6 +499,7 @@ int dwc3_event_buffers_setup(struct dwc3 *dwc)
 void dwc3_event_buffers_cleanup(struct dwc3 *dwc)
 {
 	struct dwc3_event_buffer	*evt;
+	u32 left = 0;
 
 	evt = dwc->ev_buf;
 
@@ -506,7 +507,13 @@ void dwc3_event_buffers_cleanup(struct dwc3 *dwc)
 
 	dwc3_writel(dwc->regs, DWC3_GEVNTSIZ(0), DWC3_GEVNTSIZ_INTMASK
 			| DWC3_GEVNTSIZ_SIZE(0));
-	dwc3_writel(dwc->regs, DWC3_GEVNTCOUNT(0), 0);
+
+	left = dwc3_readl(dwc->regs, DWC3_GEVNTCOUNT(0));
+	left &= DWC3_GEVNTCOUNT_MASK;
+	while (left > 0) {
+		dwc3_writel(dwc->regs, DWC3_GEVNTCOUNT(0), 4);
+		left -= 4;
+	}
 }
 
 static int dwc3_alloc_scratch_buffers(struct dwc3 *dwc)
