@@ -54,7 +54,7 @@ int get_earpiece_gain(void);
 #define SPEAKER_MAX 			18
 
 // Mixers sources
-#define OUT2L_MIX_DEFAULT		33
+#define OUT2L_MIX_DEFAULT		32
 #define OUT2R_MIX_DEFAULT		33
 #define EQ1_MIX_DEFAULT			0
 #define EQ2_MIX_DEFAULT			0

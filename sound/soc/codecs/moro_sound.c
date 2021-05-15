@@ -94,10 +94,10 @@ static void set_eq(bool reset)
 	// If EQ is enabled
 	if (eq & moro_sound) {
 		// Set mixers
-		eq1_mix_source = 33;	// EQ1 -> AIF1 RX1 left
+		eq1_mix_source = 32;	// EQ1 -> AIF1 RX1 left
 		eq2_mix_source = 33;	// EQ2 -> AIF1 RX2 right
 
-		out2l_mix_source = 81;	// OUT2L -> EQ1 left
+		out2l_mix_source = 80;	// OUT2L -> EQ1 left
 		out2r_mix_source = 81;	// OUT2R -> EQ2 right
 
 	} else {
