@@ -854,12 +854,6 @@ struct rq {
 #endif
 };
 
-#ifdef CONFIG_SCHEDSTATS
-extern void set_schedstats(bool enabled);
-#else
-static inline void set_scedstats(bool enabled) { }
-#endif
-
 static inline int cpu_of(struct rq *rq)
 {
 #ifdef CONFIG_SMP

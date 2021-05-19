@@ -45,9 +45,16 @@
 #include <linux/profile.h>
 #include <linux/notifier.h>
 #include <linux/ratelimit.h>
+	#include <linux/circ_buf.h>
+#include <linux/proc_fs.h>
+#include <linux/slab.h>
+#include <linux/poll.h>
 
 #define CREATE_TRACE_POINTS
 #include "trace/lowmemorykiller.h"
+
+static int lmkd_count;
+static int lmkd_cricount;
 
 static u32 lowmem_debug_level = 1;
 static short lowmem_adj[6] = {
@@ -67,14 +74,7 @@ static int lowmem_minfree[6] = {
 
 static int lowmem_minfree_size = 4;
 
-static short lowmem_direct_adj[6];
-static int lowmem_direct_adj_size;
-static int lowmem_direct_minfree[6];
-static int lowmem_direct_minfree_size;
-
 static u32 lowmem_lmkcount;
-static int lmkd_count;
-static int lmkd_cricount;
 
 static unsigned long lowmem_deathpending_timeout;
 
@@ -157,6 +157,114 @@ static void show_memory(void)
 #undef K
 }
 
+static DECLARE_WAIT_QUEUE_HEAD(event_wait);
+static DEFINE_SPINLOCK(lmk_event_lock);
+static struct circ_buf event_buffer;
+#define MAX_BUFFERED_EVENTS 8
+#define MAX_TASKNAME 128
+struct lmk_event {
+	char taskname[MAX_TASKNAME];
+	pid_t pid;
+	uid_t uid;
+	pid_t group_leader_pid;
+	unsigned long min_flt;
+	unsigned long maj_flt;
+	unsigned long rss_in_pages;
+	short oom_score_adj;
+	short min_score_adj;
+	unsigned long long start_time;
+	struct list_head list;
+};
+void handle_lmk_event(struct task_struct *selected, int selected_tasksize,
+		      short min_score_adj)
+{
+	int head;
+	int tail;
+	struct lmk_event *events;
+	struct lmk_event *event;
+	spin_lock(&lmk_event_lock);
+	head = event_buffer.head;
+	tail = READ_ONCE(event_buffer.tail);
+	/* Do not continue to log if no space remains in the buffer. */
+	if (CIRC_SPACE(head, tail, MAX_BUFFERED_EVENTS) < 1) {
+		spin_unlock(&lmk_event_lock);
+		return;
+	}
+	events = (struct lmk_event *) event_buffer.buf;
+	event = &events[head];
+	strncpy(event->taskname, selected->comm, MAX_TASKNAME);
+	event->pid = selected->pid;
+	event->uid = from_kuid_munged(current_user_ns(), task_uid(selected));
+	if (selected->group_leader)
+		event->group_leader_pid = selected->group_leader->pid;
+	else
+		event->group_leader_pid = -1;
+	event->min_flt = selected->min_flt;
+	event->maj_flt = selected->maj_flt;
+	event->oom_score_adj = selected->signal->oom_score_adj;
+	event->start_time = nsec_to_clock_t(selected->real_start_time);
+	event->rss_in_pages = selected_tasksize;
+	event->min_score_adj = min_score_adj;
+	event_buffer.head = (head + 1) & (MAX_BUFFERED_EVENTS - 1);
+	spin_unlock(&lmk_event_lock);
+	wake_up_interruptible(&event_wait);
+}
+static int lmk_event_show(struct seq_file *s, void *unused)
+{
+	struct lmk_event *events = (struct lmk_event *) event_buffer.buf;
+	int head;
+	int tail;
+	struct lmk_event *event;
+	spin_lock(&lmk_event_lock);
+	head = event_buffer.head;
+	tail = event_buffer.tail;
+	if (head == tail) {
+		spin_unlock(&lmk_event_lock);
+		return -EAGAIN;
+	}
+	event = &events[tail];
+	seq_printf(s, "%lu %lu %lu %lu %lu %lu %hd %hd %llu\n%s\n",
+		(unsigned long) event->pid, (unsigned long) event->uid,
+		(unsigned long) event->group_leader_pid, event->min_flt,
+		event->maj_flt, event->rss_in_pages, event->oom_score_adj,
+		event->min_score_adj, event->start_time, event->taskname);
+	event_buffer.tail = (tail + 1) & (MAX_BUFFERED_EVENTS - 1);
+	spin_unlock(&lmk_event_lock);
+	return 0;
+}
+static unsigned int lmk_event_poll(struct file *file, poll_table *wait)
+{
+	int ret = 0;
+	poll_wait(file, &event_wait, wait);
+	spin_lock(&lmk_event_lock);
+	if (event_buffer.head != event_buffer.tail)
+		ret = POLLIN;
+	spin_unlock(&lmk_event_lock);
+	return ret;
+}
+static int lmk_event_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, lmk_event_show, inode->i_private);
+}
+static const struct file_operations event_file_ops = {
+	.open = lmk_event_open,
+	.poll = lmk_event_poll,
+	.read = seq_read
+};
+static void lmk_event_init(void)
+{
+	struct proc_dir_entry *entry;
+	event_buffer.head = 0;
+	event_buffer.tail = 0;
+	event_buffer.buf = kmalloc(
+		sizeof(struct lmk_event) * MAX_BUFFERED_EVENTS, GFP_KERNEL);
+	if (!event_buffer.buf)
+		return;
+	entry = proc_create("lowmemorykiller", 0, NULL, &event_file_ops);
+	if (!entry)
+		pr_err("error creating kernel lmk event file\n");
+}
+
 static unsigned long lowmem_count(struct shrinker *s,
 				  struct shrink_control *sc)
 {
@@ -213,31 +321,15 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 		other_file -= nr_rbin_file;
 	}
 
-	if (!current_is_kswapd() && is_mem_boost_high() &&
-			lowmem_direct_minfree_size && lowmem_direct_adj_size) {
-		array_size = ARRAY_SIZE(lowmem_direct_adj);
-		if (lowmem_direct_adj_size < array_size)
-			array_size = lowmem_direct_adj_size;
-		if (lowmem_direct_minfree_size < array_size)
-			array_size = lowmem_direct_minfree_size;
-		for (i = 0; i < array_size; i++) {
-			minfree = lowmem_direct_minfree[i];
-			if (other_free < minfree && other_file < minfree) {
-				min_score_adj = lowmem_direct_adj[i];
-				break;
-			}
-		}
-	} else {
-		if (lowmem_adj_size < array_size)
-			array_size = lowmem_adj_size;
-		if (lowmem_minfree_size < array_size)
-			array_size = lowmem_minfree_size;
-		for (i = 0; i < array_size; i++) {
-			minfree = lowmem_minfree[i];
-			if (other_free < minfree && other_file < minfree) {
-				min_score_adj = lowmem_adj[i];
-				break;
-			}
+	if (lowmem_adj_size < array_size)
+		array_size = lowmem_adj_size;
+	if (lowmem_minfree_size < array_size)
+		array_size = lowmem_minfree_size;
+	for (i = 0; i < array_size; i++) {
+		minfree = lowmem_minfree[i];
+		if (other_free < minfree && other_file < minfree) {
+			min_score_adj = lowmem_adj[i];
+			break;
 		}
 	}
 
@@ -370,12 +462,18 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 
 		lowmem_deathpending_timeout = jiffies + HZ;
 		rem += selected_tasksize;
+		get_task_struct(selected);
 		lowmem_lmkcount++;
 	}
 
 	lowmem_print(4, "lowmem_scan %lu, %x, return %lu\n",
 		     sc->nr_to_scan, sc->gfp_mask, rem);
 	rcu_read_unlock();
+
+	if (selected) {
+		handle_lmk_event(selected, selected_tasksize, min_score_adj);
+		put_task_struct(selected);
+	}
 
 	if (!rem)
 		rem = SHRINK_STOP;
@@ -392,6 +490,7 @@ static struct shrinker lowmem_shrinker = {
 static int __init lowmem_init(void)
 {
 	register_shrinker(&lowmem_shrinker);
+	lmk_event_init();
 	return 0;
 }
 
@@ -409,12 +508,12 @@ static short lowmem_oom_adj_to_oom_score_adj(short oom_adj)
 		return (oom_adj * OOM_SCORE_ADJ_MAX) / -OOM_DISABLE;
 }
 
-static void lowmem_autodetect_oom_adj_values(short *lowmem_adj, int array_size,
-					     int lowmem_adj_size)
+static void lowmem_autodetect_oom_adj_values(void)
 {
 	int i;
 	short oom_adj;
 	short oom_score_adj;
+	int array_size = ARRAY_SIZE(lowmem_adj);
 
 	if (lowmem_adj_size < array_size)
 		array_size = lowmem_adj_size;
@@ -443,27 +542,11 @@ static void lowmem_autodetect_oom_adj_values(short *lowmem_adj, int array_size,
 static int lowmem_adj_array_set(const char *val, const struct kernel_param *kp)
 {
 	int ret;
-	int array_size = ARRAY_SIZE(lowmem_adj);
 
 	ret = param_array_ops.set(val, kp);
 
 	/* HACK: Autodetect oom_adj values in lowmem_adj array */
-	lowmem_autodetect_oom_adj_values(lowmem_adj, array_size,
-					 lowmem_adj_size);
-
-	return ret;
-}
-
-static int lowmem_direct_adj_array_set(const char *val, const struct kernel_param *kp)
-{
-	int ret;
-	int array_size = ARRAY_SIZE(lowmem_direct_adj);
-
-	ret = param_array_ops.set(val, kp);
-
-	/* HACK: Autodetect oom_adj values in lowmem_adj array */
-	lowmem_autodetect_oom_adj_values(lowmem_direct_adj, array_size,
-					 lowmem_direct_adj_size);
+	lowmem_autodetect_oom_adj_values();
 
 	return ret;
 }
@@ -491,20 +574,6 @@ static const struct kparam_array __param_arr_adj = {
 	.elemsize = sizeof(lowmem_adj[0]),
 	.elem = lowmem_adj,
 };
-
-static struct kernel_param_ops lowmem_direct_adj_array_ops = {
-	.set = lowmem_direct_adj_array_set,
-	.get = lowmem_adj_array_get,
-	.free = lowmem_adj_array_free,
-};
-
-static const struct kparam_array __param_direct_arr_adj = {
-	.max = ARRAY_SIZE(lowmem_direct_adj),
-	.num = &lowmem_direct_adj_size,
-	.ops = &param_ops_short,
-	.elemsize = sizeof(lowmem_direct_adj[0]),
-	.elem = lowmem_direct_adj,
-};
 #endif
 
 /*
@@ -517,19 +586,12 @@ module_param_cb(adj, &lowmem_adj_array_ops,
 		.arr = &__param_arr_adj,
 		0644);
 __MODULE_PARM_TYPE(adj, "array of short");
-module_param_cb(direct_adj, &lowmem_direct_adj_array_ops,
-		.arr = &__param_direct_arr_adj,
-		S_IRUGO | S_IWUSR);
-__MODULE_PARM_TYPE(direct_adj, "array of short");
 #else
-module_param_array_named(adj, lowmem_adj, short, &lowmem_adj_size, 0644);
 module_param_array_named(direct_adj, direct_lowmem_adj, short, &lowmem_direct_adj_size,
 			 0644);
 #endif
 module_param_array_named(minfree, lowmem_minfree, uint, &lowmem_minfree_size,
 			 0644);
-module_param_array_named(direct_minfree, lowmem_direct_minfree, uint,
-			 &lowmem_direct_minfree_size, 0644);
 module_param_named(debug_level, lowmem_debug_level, uint, 0644);
 module_param_named(lmkcount, lowmem_lmkcount, uint, 0444);
 module_param_named(lmkd_count, lmkd_count, int, 0644);

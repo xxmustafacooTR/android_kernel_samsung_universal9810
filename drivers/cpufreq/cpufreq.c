@@ -30,10 +30,10 @@
 #include <linux/suspend.h>
 #include <linux/syscore_ops.h>
 #include <linux/tick.h>
+#include <linux/ologk.h>
 #ifdef CONFIG_SMP
 #include <linux/sched.h>
 #endif
-#include <linux/ologk.h>
 #include <trace/events/power.h>
 
 static LIST_HEAD(cpufreq_policy_list);
@@ -1907,14 +1907,9 @@ EXPORT_SYMBOL(cpufreq_unregister_notifier);
 unsigned int cpufreq_driver_fast_switch(struct cpufreq_policy *policy,
 					unsigned int target_freq)
 {
-	int ret;
 	target_freq = clamp_val(target_freq, policy->min, policy->max);
 
-        ret = cpufreq_driver->fast_switch(policy, target_freq);
-	if (ret)
-		cpufreq_times_record_transition(policy, ret);
-
-	return ret;
+	return cpufreq_driver->fast_switch(policy, target_freq);
 }
 EXPORT_SYMBOL_GPL(cpufreq_driver_fast_switch);
 

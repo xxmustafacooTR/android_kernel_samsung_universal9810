@@ -36,9 +36,28 @@
 #include <asm/tlbflush.h>
 #include <asm/shmparam.h>
 
+#include "internal.h"
+
 atomic_long_t nr_vmalloc_pages;
 
-#include "internal.h"
+	static int vmalloc_size_notifier(struct notifier_block *nb,
+					unsigned long action, void *data)
+{
+	struct seq_file *s;
+	s = (struct seq_file *)data;
+	if (s != NULL)
+		seq_printf(s, "VmallocAPIsize: %8lu kB\n",
+			   atomic_long_read(&nr_vmalloc_pages)
+				 << (PAGE_SHIFT - 10));
+	else
+		pr_cont("VmallocAPIsize:%lukB ",
+			atomic_long_read(&nr_vmalloc_pages)
+				<< (PAGE_SHIFT - 10));
+	return 0;
+}
+static struct notifier_block vmalloc_size_nb = {
+	.notifier_call = vmalloc_size_notifier,
+};
 
 struct vfree_deferred {
 	struct llist_head list;
@@ -289,11 +308,11 @@ EXPORT_SYMBOL(vmalloc_to_pfn);
 
 #define VM_VM_AREA	0x04
 
-static DEFINE_SPINLOCK(vmap_area_lock);
+DEFINE_SPINLOCK(vmap_area_lock);
 /* Export for kexec only */
 LIST_HEAD(vmap_area_list);
 static LLIST_HEAD(vmap_purge_list);
-static struct rb_root vmap_area_root = RB_ROOT;
+struct rb_root vmap_area_root = RB_ROOT;
 
 /* The vmap cache globals are protected by vmap_area_lock */
 static struct rb_node *free_vmap_cache;
@@ -461,7 +480,11 @@ nocache:
 	}
 
 found:
-	if (addr + size > vend)
+	/*
+	 * Check also calculated address against the vstart,
+	 * because it can be 0 because of big align request.
+	 */
+	if (addr + size > vend || addr < vstart)
 		goto overflow;
 
 	va->va_start = addr;
@@ -1660,8 +1683,8 @@ static void *__vmalloc_area_node(struct vm_struct *area, gfp_t gfp_mask,
 		if (gfpflags_allow_blocking(gfp_mask))
 			cond_resched();
 	}
-	atomic_long_add(area->nr_pages, &nr_vmalloc_pages);
 
+	atomic_long_add(area->nr_pages, &nr_vmalloc_pages);
 	if (map_vm_area(area, prot, pages))
 		goto fail;
 	return area->addr;
@@ -1689,6 +1712,13 @@ fail:
  *	Allocate enough pages to cover @size from the page level
  *	allocator with @gfp_mask flags.  Map them into contiguous
  *	kernel virtual space, using a pagetable protection of @prot.
+ *
+ *	Reclaim modifiers in @gfp_mask - __GFP_NORETRY, __GFP_REPEAT
+ *	and __GFP_NOFAIL are not supported
+ *
+ *	Any use of gfp flags outside of GFP_KERNEL should be consulted
+ *	with mm people.
+ *
  */
 void *__vmalloc_node_range(unsigned long size, unsigned long align,
 			unsigned long start, unsigned long end, gfp_t gfp_mask,
@@ -1767,6 +1797,12 @@ static inline void *__vmalloc_node_flags(unsigned long size,
 {
 	return __vmalloc_node(size, 1, flags, PAGE_KERNEL,
 					node, __builtin_return_address(0));
+}
+
+void *__vmalloc_node_flags_caller(unsigned long size, int node, gfp_t flags,
+				  void *caller)
+{
+	return __vmalloc_node(size, 1, flags, PAGE_KERNEL, node, caller);
 }
 
 /**
@@ -2200,7 +2236,7 @@ int remap_vmalloc_range_partial(struct vm_area_struct *vma, unsigned long uaddr,
 	if (!(area->flags & VM_USERMAP))
 		return -EINVAL;
 
-	if (kaddr + size > area->addr + area->size)
+	if (kaddr + size > area->addr + get_vm_area_size(area))
 		return -EINVAL;
 
 	do {
@@ -2719,27 +2755,6 @@ static const struct file_operations proc_vmalloc_operations = {
 	.read		= seq_read,
 	.llseek		= seq_lseek,
 	.release	= seq_release_private,
-};
-
-static int vmalloc_size_notifier(struct notifier_block *nb,
-					unsigned long action, void *data)
-{
-	struct seq_file *s;
-
-	s = (struct seq_file *)data;
-	if (s != NULL)
-		seq_printf(s, "VmallocAPIsize: %8lu kB\n",
-			   atomic_long_read(&nr_vmalloc_pages)
-				 << (PAGE_SHIFT - 10));
-	else
-		pr_cont("VmallocAPIsize:%lukB ",
-			atomic_long_read(&nr_vmalloc_pages)
-				<< (PAGE_SHIFT - 10));
-	return 0;
-}
-
-static struct notifier_block vmalloc_size_nb = {
-	.notifier_call = vmalloc_size_notifier,
 };
 
 static int __init proc_vmalloc_init(void)

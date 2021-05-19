@@ -76,7 +76,6 @@
 #include <linux/frame.h>
 #include <linux/prefetch.h>
 #include <linux/exynos-ss.h>
-#include <linux/cpufreq_times.h>
 
 #include <asm/switch_to.h>
 #include <asm/tlb.h>
@@ -85,8 +84,6 @@
 #ifdef CONFIG_PARAVIRT
 #include <asm/paravirt.h>
 #endif
-
-#include <linux/sec_debug.h>
 
 #include "sched.h"
 #include "../workqueue_internal.h"
@@ -2349,7 +2346,7 @@ int sysctl_numa_balancing(struct ctl_table *table, int write,
 DEFINE_STATIC_KEY_FALSE(sched_schedstats);
 static bool __initdata __sched_schedstats = false;
 
-void set_schedstats(bool enabled)
+static void set_schedstats(bool enabled)
 {
 	if (enabled)
 		static_branch_enable(&sched_schedstats);
@@ -3396,7 +3393,7 @@ static noinline void __schedule_bug(struct task_struct *prev)
 	if (oops_in_progress)
 		return;
 
-	pr_auto(ASL6, "BUG: scheduling while atomic: %s/%d/0x%08x\n",
+	printk(KERN_ERR "BUG: scheduling while atomic: %s/%d/0x%08x\n",
 		prev->comm, prev->pid, preempt_count());
 
 	debug_show_held_locks(prev);
@@ -3413,9 +3410,6 @@ static noinline void __schedule_bug(struct task_struct *prev)
 		panic("scheduling while atomic\n");
 
 	dump_stack();
-#ifdef CONFIG_DEBUG_ATOMIC_SLEEP_PANIC
-	BUG();
-#endif
 	add_taint(TAINT_WARN, LOCKDEP_STILL_OK);
 }
 
@@ -8043,7 +8037,7 @@ void ___might_sleep(const char *file, int line, int preempt_offset)
 	/* Save this before calling printk(), since that will clobber it */
 	preempt_disable_ip = get_preempt_disable_ip(current);
 
-	pr_auto(ASL6,
+	printk(KERN_ERR
 		"BUG: sleeping function called from invalid context at %s:%d\n",
 			file, line);
 	printk(KERN_ERR
@@ -8064,9 +8058,6 @@ void ___might_sleep(const char *file, int line, int preempt_offset)
 		pr_cont("\n");
 	}
 	dump_stack();
-#ifdef CONFIG_DEBUG_ATOMIC_SLEEP_PANIC
-	BUG();
-#endif
 	add_taint(TAINT_WARN, LOCKDEP_STILL_OK);
 }
 EXPORT_SYMBOL(___might_sleep);

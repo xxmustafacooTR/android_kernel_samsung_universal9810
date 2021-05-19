@@ -2315,12 +2315,22 @@ no_join:
 	return;
 }
 
-void task_numa_free(struct task_struct *p)
+/*
+ * Get rid of NUMA staticstics associated with a task (either current or dead).
+ * If @final is set, the task is dead and has reached refcount zero, so we can
+ * safely free all relevant data structures. Otherwise, there might be
+ * concurrent reads from places like load balancing and procfs, and we should
+ * reset the data back to default state without freeing ->numa_faults.
+ */
+void task_numa_free(struct task_struct *p, bool final)
 {
 	struct numa_group *grp = p->numa_group;
-	void *numa_faults = p->numa_faults;
+	unsigned long *numa_faults = p->numa_faults;
 	unsigned long flags;
 	int i;
+
+	if (!numa_faults)
+		return;
 
 	if (grp) {
 		spin_lock_irqsave(&grp->lock, flags);
@@ -2334,8 +2344,14 @@ void task_numa_free(struct task_struct *p)
 		put_numa_group(grp);
 	}
 
-	p->numa_faults = NULL;
-	kfree(numa_faults);
+	if (final) {
+		p->numa_faults = NULL;
+		kfree(numa_faults);
+	} else {
+		p->total_numa_faults = 0;
+		for (i = 0; i < NR_NUMA_HINT_FAULT_STATS * nr_node_ids; i++)
+			numa_faults[i] = 0;
+	}
 }
 
 /*
@@ -3542,34 +3558,23 @@ static void check_enqueue_throttle(struct cfs_rq *cfs_rq);
 static inline void check_schedstat_required(void)
 {
 #ifdef CONFIG_SCHEDSTATS
-	if (schedstat_enabled()) {
-		if (!trace_sched_stat_wait_enabled()    &&
-			!trace_sched_stat_sleep_enabled()   &&
-			!trace_sched_stat_iowait_enabled()  &&
-			!trace_sched_stat_blocked_enabled() &&
-			!trace_sched_stat_runtime_enabled() &&
-			!trace_sched_blocked_reason_enabled()) {
-			set_schedstats(false);
-			return;
-		} else
-			return;
-	}
+	if (schedstat_enabled())
+		return;
 
 	/* Force schedstat enabled if a dependent tracepoint is active */
 	if (trace_sched_stat_wait_enabled()    ||
 			trace_sched_stat_sleep_enabled()   ||
 			trace_sched_stat_iowait_enabled()  ||
 			trace_sched_stat_blocked_enabled() ||
-			trace_sched_stat_runtime_enabled() ||
-			trace_sched_blocked_reason_enabled()) {
+			trace_sched_stat_runtime_enabled())  {
 		printk_deferred_once("Scheduler tracepoints stat_sleep, stat_iowait, "
 			     "stat_blocked and stat_runtime require the "
 			     "kernel parameter schedstats=enabled or "
 			     "kernel.sched_schedstats=1\n");
-		set_schedstats(true);
 	}
 #endif
 }
+
 
 /*
  * MIGRATION
@@ -9060,6 +9065,7 @@ static struct sched_group *find_busiest_group(struct lb_env *env)
 	} else {
 		skip_lb = energy_aware() && !env->dst_rq->rd->overutilized;
 	}
+
 	if (skip_lb)
 		goto out_balanced;
 
@@ -10445,6 +10451,8 @@ static void attach_task_cfs_rq(struct task_struct *p)
 		se->vruntime += cfs_rq->min_vruntime;
 }
 
+extern unsigned int sched_switch_to_fair_load_ratio;
+
 #ifdef CONFIG_SMP
 void copy_sched_avg(struct sched_avg *from, struct sched_avg *to, unsigned int ratio)
 {
@@ -10465,8 +10473,6 @@ static void switched_from_fair(struct rq *rq, struct task_struct *p)
 {
 	detach_task_cfs_rq(p);
 }
-
-extern unsigned int sched_switch_to_fair_load_ratio;
 
 static void switched_to_fair(struct rq *rq, struct task_struct *p)
 {
@@ -10842,4 +10848,5 @@ __init void init_sched_fair_class(void)
 	zalloc_cpumask_var(&nohz.idle_cpus_mask, GFP_NOWAIT);
 #endif
 #endif /* SMP */
+
 }
