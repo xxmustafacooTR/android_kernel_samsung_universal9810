@@ -6,6 +6,19 @@
 # NOTE! Please use 'git ls-files -i --exclude-standard'
 # command after changing this file, to see if there are
 # any tracked files which get ignored after the change.
+
+#
+# DTB
+#
+arch/arm64/boot/dtb.img
+scripts/dtbtool_exynos/dtbtool
+arch/arm64/boot/dts/exynos/*dtb*
+
+#
+# Gator
+#
+drivers/gator_5.27/generated_gator_src_md5.h
+
 #
 # Normal rules
 #
