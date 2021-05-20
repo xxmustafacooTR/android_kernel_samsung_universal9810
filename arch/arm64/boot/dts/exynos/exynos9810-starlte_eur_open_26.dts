@@ -8017,6 +8017,7 @@
 		pinctrl-0 = <0xf9 0xfa>;
 		clocks = <0x1a 0x2be 0x1a 0x2c5>;
 		clock-names = "GATE_UFS_EMBD", "UFS_EMBD";
+		ufs-pm-qos-int = <0x825f0>;
 		ufs-pm-qos-fsys0 = <0x30d40>;
 		dma-coherent;
 		freq-table-hz = <0x0 0x0 0x0 0x0>;
@@ -8344,7 +8345,7 @@
 		clock-names = "gate";
 		iommus = <0x10b>;
 		dma-coherent;
-		mscl_qos_table = <0x1b5fd0 0x825f0 0x20b41c 0x14a140 0x61a80 0x189228 0xf78f0 0x61a80 0x163f50 0xce4c8 0x52080 0x9e340 0xa50a0 0x412f8 0x59a60>;
+		mscl_qos_table = <0x1b5fd0 0x825f0 0x20b41c 0x14a140 0x61a80 0x189228 0xf78f0 0x61a80 0x163f50 0xce4c8 0x52080 0x9e340 0xa50a0 0x412f8 0x59a60 0x854d0 0x2b750 0x59a60>;
 		samsung,power-domain = <0x14>;
 		linux,phandle = <0x10a>;
 		phandle = <0x10a>;
@@ -9247,7 +9248,7 @@
 		devfreq_type = "disp";
 		devfreq_domain_name = "dvfs_disp";
 		use_delay_time = "false";
-		freq_info = <0x9c400 0x30d40 0x9c400 0x30d40 0x9c400 0x9c400>;
+		freq_info = <0x9c400 0x20b70 0x9c400 0x20b70 0x9c400 0x9c400>;
 		boot_info = <0x28 0x9c400>;
 		use_get_dev = "false";
 		polling_ms = <0x0>;
@@ -12920,7 +12921,7 @@
 	};
 
 	chosen {
-		bootargs = "console=ram root=/dev/ram0 clk_ignore_unused bcm_setup=0xffffff80f8e00000 androidboot.hardware=samsungexynos9810 androidboot.selinux=permissive androidboot.debug_level=0x4948 ecd_setup=disable pmic_info=0x3 ccic_info=0x1 firmware_class.path=/vendor/firmware reserve-fimc=0xffffff80fa000000";
+		bootargs = "console=ram root=/dev/ram0 clk_ignore_unused bcm_setup=0xffffff80f8e00000 androidboot.hardware=samsungexynos9810 androidboot.selinux=permissive androidboot.debug_level=0x4948 ecd_setup=disable pmic_info=0x3 ccic_info=0x1 firmware_class.path=/vendor/firmware reserve-fimc=0xffffff80fa000000 quiet norandmaps";
 		linux,initrd-start = <0x82000000>;
 		linux,initrd-end = <0x821fffff>;
 	};
@@ -12945,7 +12946,7 @@
 					compatible = "android,system";
 					dev = "/dev/block/platform/11120000.ufs/by-name/SYSTEM";
 					type = "ext4";
-					mnt_flags = "ro";
+					mnt_flags = "ro,noatime";
 					fsmgr_flags = "wait";
 				};
 
@@ -12953,7 +12954,7 @@
 					compatible = "android,vendor";
 					dev = "/dev/block/platform/11120000.ufs/by-name/VENDOR";
 					type = "ext4";
-					mnt_flags = "ro";
+					mnt_flags = "ro,noatime";
 					fsmgr_flags = "wait";
 				};
 
@@ -12961,7 +12962,7 @@
 					compatible = "android,odm";
 					dev = "/dev/block/platform/11120000.ufs/by-name/ODM";
 					type = "ext4";
-					mnt_flags = "ro";
+					mnt_flags = "ro,noatime";
 					fsmgr_flags = "wait";
 				};
 			};
