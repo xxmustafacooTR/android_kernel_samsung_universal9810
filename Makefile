@@ -778,7 +778,7 @@ KBUILD_CFLAGS	+= -mllvm -polly \
 endif
 else ifeq ($(cc-name),gcc)
 ifdef CONFIG_GCC_GRAPHITE
-KBUILD_CFLAGS   += -fgraphite-identity -floop-nest-optimize -ftree-loop-distribution -ftree-vectorize
+KBUILD_CFLAGS   += -fgraphite-identity -floop-nest-optimize -floop-parallelize-all -ftree-loop-if-convert -ftree-loop-distribution -floop-interchange -ftree-vectorize
 endif
 endif
 
