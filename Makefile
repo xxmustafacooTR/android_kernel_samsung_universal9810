@@ -404,10 +404,11 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -Wno-format-security \
 		   -std=gnu89
 
-KBUILD_CFLAGS	+= $(call cc-option, -march=armv8-a+crypto+crc,)
+KBUILD_AFLAGS	+= -march=armv8.2-a+crypto+fp16
+KBUILD_CFLAGS	+= -march=armv8.2-a+crypto+fp16
 ifeq ($(CONFIG_SOC_EXYNOS9810), y)
-KBUILD_CFLAGS	+= $(call cc-option, -mcpu=cortex-a55+crypto+crc,)
-KBUILD_CFLAGS	+= $(call cc-option, -mtune=exynos-m3+crypto+crc,)
+KBUILD_CFLAGS	+= $(call cc-option,-mcpu=exynos-m3.cortex-a55+fp+simd+crc+lse+rdma+crypto+fp16,$(call cc-option,-mcpu=cortex-a75.cortex-a55+fp+simd+crc+lse+rdma+crypto+fp16,$(call cc-option,-mcpu=cortex-a55+fp+simd+crc+lse+rdma+crypto+fp16)))
+KBUILD_CFLAGS	+= $(call cc-option,-mtune=exynos-m3.cortex-a55+fp+simd+crc+lse+rdma+crypto+fp16,$(call cc-option,-mtune=cortex-a75.cortex-a55+fp+simd+crc+lse+rdma+crypto+fp16,$(call cc-option,-mtune=exynos-m3+fp+simd+crc+lse+rdma+crypto+fp16)))
 endif
 
 KBUILD_CPPFLAGS := -D__KERNEL__
