@@ -240,24 +240,24 @@ unsigned int moro_sound_write_hook(unsigned int reg, unsigned int val)
 		}
 		if (mic){
 			// mic down
-			case MADERA_ADC_DIGITAL_VOLUME_1R:
-			{
-				val &= ~MADERA_IN1R_DIG_VOL_MASK;
-				val |= (mic_down_gain << MADERA_IN1R_DIG_VOL_SHIFT);
-				break;
-			}
-			// mic up
 			case MADERA_ADC_DIGITAL_VOLUME_3L:
 			{
 				val &= ~MADERA_IN3L_DIG_VOL_MASK;
-				val |= (mic_up_gain << MADERA_IN3L_DIG_VOL_SHIFT);
+				val |= (mic_down_gain << MADERA_IN3L_DIG_VOL_SHIFT);
+				break;
+			}
+			// mic up
+			case MADERA_ADC_DIGITAL_VOLUME_4L:
+			{
+				val &= ~MADERA_IN4L_DIG_VOL_MASK;
+				val |= (mic_up_gain << MADERA_IN4L_DIG_VOL_SHIFT);
 				break;
 			}
 			// mic hp
-			case MADERA_ADC_DIGITAL_VOLUME_2L:
+			case MADERA_ADC_DIGITAL_VOLUME_1L:
 			{
-				val &= ~MADERA_IN2L_DIG_VOL_MASK;
-				val |= (mic_hp_gain << MADERA_IN2L_DIG_VOL_SHIFT);
+				val &= ~MADERA_IN1L_DIG_VOL_MASK;
+				val |= (mic_hp_gain << MADERA_IN1L_DIG_VOL_SHIFT);
 				break;
 			}
 		}
@@ -317,9 +317,9 @@ static void reset_audio_hub(void)
 	set_value(EQ1_MIX, EQ1_MIX_DEFAULT);
 	set_value(EQ2_MIX, EQ2_MIX_DEFAULT);
 
-	set_value(MIC1R_VOLUME, MIC_DOWN_GAIN_DEFAULT);
-	set_value(MIC3L_VOLUME, MIC_UP_GAIN_DEFAULT);
-	set_value(MIC2L_VOLUME, MIC_HP_GAIN_DEFAULT);
+	set_value(MIC3L_VOLUME, MIC_DOWN_GAIN_DEFAULT);
+	set_value(MIC4L_VOLUME, MIC_UP_GAIN_DEFAULT);
+	set_value(MIC1L_VOLUME, MIC_HP_GAIN_DEFAULT);
 	set_eq(1);
 }
 
@@ -341,9 +341,9 @@ static void update_audio_hub(void)
 	set_value(EQ1_MIX, eq1_mix_source);
 	set_value(EQ2_MIX, eq1_mix_source);
 
-	set_value(MIC1R_VOLUME, mic_down_gain);
-	set_value(MIC3L_VOLUME, mic_up_gain);
-	set_value(MIC2L_VOLUME, mic_hp_gain);
+	set_value(MIC3L_VOLUME, mic_down_gain);
+	set_value(MIC4L_VOLUME, mic_up_gain);
+	set_value(MIC1L_VOLUME, mic_hp_gain);
 
 	set_eq(0);
 }
@@ -559,13 +559,13 @@ static ssize_t mic_store(struct device *dev, struct device_attribute *attr,
 
 			// set new values
 			if(mic) {
-				set_value(MIC1R_VOLUME, mic_down_gain);
-				set_value(MIC3L_VOLUME, mic_up_gain);
-				set_value(MIC2L_VOLUME, mic_hp_gain);
+				set_value(MIC3L_VOLUME, mic_down_gain);
+				set_value(MIC4L_VOLUME, mic_up_gain);
+				set_value(MIC1L_VOLUME, mic_hp_gain);
 			} else {
-				set_value(MIC1R_VOLUME, MIC_DOWN_GAIN_DEFAULT);
-				set_value(MIC3L_VOLUME, MIC_UP_GAIN_DEFAULT);
-				set_value(MIC2L_VOLUME, MIC_HP_GAIN_DEFAULT);
+				set_value(MIC3L_VOLUME, MIC_DOWN_GAIN_DEFAULT);
+				set_value(MIC4L_VOLUME, MIC_UP_GAIN_DEFAULT);
+				set_value(MIC1L_VOLUME, MIC_HP_GAIN_DEFAULT);
 			}
 		}
 	}
@@ -596,7 +596,7 @@ static ssize_t mic_down_gain_store(struct device *dev, struct device_attribute *
 
 	mic_down_gain = val;
 
-	set_value(MIC1R_VOLUME, mic_down_gain);
+	set_value(MIC3L_VOLUME, mic_down_gain);
 
 	return count;
 }
@@ -624,7 +624,7 @@ static ssize_t mic_up_gain_store(struct device *dev, struct device_attribute *at
 
 	mic_up_gain = val;
 
-	set_value(MIC3L_VOLUME, mic_up_gain);
+	set_value(MIC4L_VOLUME, mic_up_gain);
 
 	return count;
 }
@@ -652,7 +652,7 @@ static ssize_t mic_hp_gain_store(struct device *dev, struct device_attribute *at
 
 	mic_hp_gain = val;
 
-	set_value(MIC2L_VOLUME, mic_hp_gain);
+	set_value(MIC1L_VOLUME, mic_hp_gain);
 
 	return count;
 }
@@ -974,7 +974,7 @@ static ssize_t reset_store(struct device *dev, struct device_attribute *attr,
 
 static ssize_t reg_dump_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
-	unsigned int eq_b1, eq_b2, eq_b3, eq_b4, eq_b5, mic1r, mic3l, mic2l;
+	unsigned int eq_b1, eq_b2, eq_b3, eq_b4, eq_b5, mic3l, mic4l, mic1l;
 
 	_read(MADERA_EQ1_1, &eq_b1);
 		eq_b1 = ((eq_b1 & MADERA_EQ1_B1_GAIN_MASK) >> MADERA_EQ1_B1_GAIN_SHIFT) - EQ_GAIN_OFFSET;
@@ -986,12 +986,12 @@ static ssize_t reg_dump_show(struct device *dev, struct device_attribute *attr, 
 		eq_b4 = ((eq_b4 & MADERA_EQ1_B4_GAIN_MASK) >> MADERA_EQ1_B4_GAIN_SHIFT) - EQ_GAIN_OFFSET;
 	_read(MADERA_EQ1_2, &eq_b5);
 		eq_b5 = ((eq_b5 & MADERA_EQ1_B5_GAIN_MASK) >> MADERA_EQ1_B5_GAIN_SHIFT) - EQ_GAIN_OFFSET;
-	_read(MADERA_INPUT_ENABLES, &mic1r);
-		mic1r = (mic1r & MADERA_IN1R_ENA_MASK) >> MADERA_IN1R_ENA_SHIFT;
 	_read(MADERA_INPUT_ENABLES, &mic3l);
 		mic3l = (mic3l & MADERA_IN3L_ENA_MASK) >> MADERA_IN3L_ENA_SHIFT;
-	_read(MADERA_INPUT_ENABLES, &mic2l);
-		mic2l = (mic2l & MADERA_IN2L_ENA_MASK) >> MADERA_IN2L_ENA_SHIFT;
+	_read(MADERA_INPUT_ENABLES, &mic4l);
+		mic4l = (mic4l & MADERA_IN4L_ENA_MASK) >> MADERA_IN4L_ENA_SHIFT;
+	_read(MADERA_INPUT_ENABLES, &mic1l);
+		mic1l = (mic1l & MADERA_IN1L_ENA_MASK) >> MADERA_IN1L_ENA_SHIFT;
 
 	
 	
@@ -1030,12 +1030,12 @@ eq_b2,
 eq_b3,
 eq_b4,
 eq_b5,
-mic1r,
-get_value(MIC1R_VOLUME),
 mic3l,
 get_value(MIC3L_VOLUME),
-mic2l,
-get_value(MIC2L_VOLUME));
+mic4l,
+get_value(MIC4L_VOLUME),
+mic1l,
+get_value(MIC1L_VOLUME));
 }
 
 
