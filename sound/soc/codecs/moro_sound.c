@@ -59,6 +59,7 @@ static void reset_moro_sound(void);
 static void reset_audio_hub(void);
 static void update_audio_hub(void);
 
+static bool bool_check(int bool);
 
 /*****************************************/
 // Internal helper functions
@@ -120,10 +121,7 @@ static void set_eq(bool reset)
 	set_value(OUT2R_MIX, out2r_mix_source);
 
 	// If reset = true, then set the eq band gains to default values
-	if (reset)
-		set_eq_gains(1);
-	else
-		set_eq_gains(0);
+	set_eq_gains(!eq);
 }
 
 static void set_eq_gains(bool reset)
@@ -189,7 +187,7 @@ void moro_sound_hook_madera_pcm_probe(struct regmap *pmap)
 	eq_gains[2] = EQ_B3_GAIN_DEFAULT;
 	eq_gains[3] = EQ_B4_GAIN_DEFAULT;
 	eq_gains[4] = EQ_B5_GAIN_DEFAULT;
-	set_eq(0);
+	set_eq(!eq);
 
 	// If moro sound is enabled during driver start, reset to default configuration
 	if (moro_sound)
@@ -355,6 +353,14 @@ static void update_audio_hub(void)
 // sysfs interface functions
 /*****************************************/
 
+static bool bool_check(int bool)
+{
+	if ((bool == 0) || (bool == 1))
+		return true;
+	else
+		return false;
+}
+
 // Moro sound master switch
 
 static ssize_t moro_sound_show(struct device *dev, struct device_attribute *attr, char *buf)
@@ -377,7 +383,7 @@ static ssize_t moro_sound_store(struct device *dev, struct device_attribute *att
 		return -EINVAL;
 
 	// store if valid data
-	if (((val == 0) || (val == 1)))
+	if (bool_check(val))
 	{
 		// check if there was a change
 		if (moro_sound != val)
@@ -392,8 +398,10 @@ static ssize_t moro_sound_store(struct device *dev, struct device_attribute *att
 				first = 0;
 			}
 
-			if(val == 1) update_audio_hub();
-			if(val == 0) reset_audio_hub();
+			if(val)
+				update_audio_hub();
+			else
+				reset_audio_hub();
 		}
 	}
 
@@ -468,7 +476,7 @@ static ssize_t headphone_mono_store(struct device *dev, struct device_attribute 
 		return -EINVAL;
 
 	// store if valid data
-	if ((val == 0) || (val == 1)) {
+	if (bool_check(val)) {
 		// check if there was a change
 		if (headphone_mono != val) {
 			// set new status
@@ -542,11 +550,25 @@ static ssize_t mic_store(struct device *dev, struct device_attribute *attr,
 	if (ret != 1)
 		return -EINVAL;
 
-	mic = val;
+	// store if valid data
+	if (bool_check(val)) {
+		// check if there was a change
+		if (mic != val) {
+			// set new status
+			mic = val;
 
-	set_value(MIC1R_VOLUME, MIC_DOWN_GAIN_DEFAULT);
-	set_value(MIC3L_VOLUME, MIC_UP_GAIN_DEFAULT);
-	set_value(MIC2L_VOLUME, MIC_HP_GAIN_DEFAULT);
+			// set new values
+			if(mic) {
+				set_value(MIC1R_VOLUME, mic_down_gain);
+				set_value(MIC3L_VOLUME, mic_up_gain);
+				set_value(MIC2L_VOLUME, mic_hp_gain);
+			} else {
+				set_value(MIC1R_VOLUME, MIC_DOWN_GAIN_DEFAULT);
+				set_value(MIC3L_VOLUME, MIC_UP_GAIN_DEFAULT);
+				set_value(MIC2L_VOLUME, MIC_HP_GAIN_DEFAULT);
+			}
+		}
+	}
 
 	return count;
 }
@@ -691,8 +713,8 @@ static ssize_t eq_store(struct device *dev, struct device_attribute *attr,
 	if (ret != 1)
 		return -EINVAL;
 
-	// store if valid data
-	if (((val == 0) || (val == 1)))
+	// store if valid data and check if there was a change
+	if (bool_check(val))
 	{
 		// check if there was a change
 		if (eq != val)
@@ -700,7 +722,7 @@ static ssize_t eq_store(struct device *dev, struct device_attribute *attr,
 			// store new value
 			eq = val;
 
-			set_eq(1);
+			set_eq(!eq);
 		}
 	}
 
@@ -745,7 +767,7 @@ static ssize_t eq_gains_store(struct device *dev, struct device_attribute *attr,
 	}
 
 	// set new values
-	set_eq_gains(0);
+	set_eq_gains(!eq);
 
 	return count;
 }
@@ -778,7 +800,7 @@ static ssize_t eq_b1_gain_store(struct device *dev, struct device_attribute *att
 	eq_gains[0] = val;
 
 	// set new values
-	set_eq_gains(0);
+	set_eq_gains(!eq);
 
 	return count;
 }
@@ -811,7 +833,7 @@ static ssize_t eq_b2_gain_store(struct device *dev, struct device_attribute *att
 	eq_gains[1] = val;
 
 	// set new values
-	set_eq_gains(0);
+	set_eq_gains(!eq);
 
 	return count;
 }
@@ -844,7 +866,7 @@ static ssize_t eq_b3_gain_store(struct device *dev, struct device_attribute *att
 	eq_gains[2] = val;
 
 	// set new values
-	set_eq_gains(0);
+	set_eq_gains(!eq);
 
 	return count;
 }
@@ -877,7 +899,7 @@ static ssize_t eq_b4_gain_store(struct device *dev, struct device_attribute *att
 	eq_gains[3] = val;
 
 	// set new values
-	set_eq_gains(0);
+	set_eq_gains(!eq);
 
 	return count;
 }
@@ -905,16 +927,15 @@ static ssize_t eq_b5_gain_store(struct device *dev, struct device_attribute *att
 
 	if (val > EQ_GAIN_MAX)
 		val = EQ_GAIN_MAX;
-	
+
 	// store new value
 	eq_gains[4] = val;
 
 	// set new values
-	set_eq_gains(0);
+	set_eq_gains(!eq);
 
 	return count;
 }
-
 
 // Debug status
 
@@ -936,9 +957,13 @@ static ssize_t reset_store(struct device *dev, struct device_attribute *attr,
 	if (ret != 1)
 		return -EINVAL;
 
-	if (val == 1) {
-		reset_moro_sound();
-		update_audio_hub();
+	// store if valid data and check if there was a change
+	if (bool_check(val))
+	{
+		if (val) {
+			reset_moro_sound();
+			update_audio_hub();
+		}
 	}
 
 	return count;
@@ -1030,16 +1055,16 @@ static ssize_t version_show(struct device *dev, struct device_attribute *attr, c
 // define objects
 static DEVICE_ATTR(moro_sound, 0664, moro_sound_show, moro_sound_store);
 static DEVICE_ATTR(headphone_gain, 0664, headphone_gain_show, headphone_gain_store);
-static DEVICE_ATTR(headphone_limits, 0664, headphone_limits_show, NULL);
+static DEVICE_ATTR(headphone_limits, 0444, headphone_limits_show, NULL);
 static DEVICE_ATTR(headphone_mono, 0664, headphone_mono_show, headphone_mono_store);
 static DEVICE_ATTR(earpiece_gain, 0664, earpiece_gain_show, earpiece_gain_store);
-static DEVICE_ATTR(earpiece_limits, 0664, earpiece_limits_show, NULL);
+static DEVICE_ATTR(earpiece_limits, 0444, earpiece_limits_show, NULL);
 static DEVICE_ATTR(mic, 0664, mic_show, mic_store);
 static DEVICE_ATTR(mic_down_gain, 0664, mic_down_gain_show, mic_down_gain_store);
 static DEVICE_ATTR(mic_up_gain, 0664, mic_up_gain_show, mic_up_gain_store);
 static DEVICE_ATTR(mic_hp_gain, 0664, mic_hp_gain_show, mic_hp_gain_store);
 static DEVICE_ATTR(speaker_gain, 0664, speaker_gain_show, speaker_gain_store);
-static DEVICE_ATTR(speaker_limits, 0664, speaker_limits_show, NULL);
+static DEVICE_ATTR(speaker_limits, 0444, speaker_limits_show, NULL);
 static DEVICE_ATTR(eq, 0664, eq_show, eq_store);
 static DEVICE_ATTR(eq_gains, 0664, eq_gains_show, eq_gains_store);
 static DEVICE_ATTR(eq_b1_gain, 0664, eq_b1_gain_show, eq_b1_gain_store);
@@ -1048,8 +1073,8 @@ static DEVICE_ATTR(eq_b3_gain, 0664, eq_b3_gain_show, eq_b3_gain_store);
 static DEVICE_ATTR(eq_b4_gain, 0664, eq_b4_gain_show, eq_b4_gain_store);
 static DEVICE_ATTR(eq_b5_gain, 0664, eq_b5_gain_show, eq_b5_gain_store);
 static DEVICE_ATTR(reset, 0664, reset_show, reset_store);
-static DEVICE_ATTR(version, 0664, version_show, NULL);
-static DEVICE_ATTR(reg_dump, 0664, reg_dump_show, NULL);
+static DEVICE_ATTR(version, 0444, version_show, NULL);
+static DEVICE_ATTR(reg_dump, 0444, reg_dump_show, NULL);
 
 // define attributes
 static struct attribute *moro_sound_attributes[] = {
@@ -1067,12 +1092,12 @@ static struct attribute *moro_sound_attributes[] = {
 	&dev_attr_speaker_limits.attr,
 	&dev_attr_eq.attr,
 	&dev_attr_eq_gains.attr,
+	&dev_attr_reset.attr,
 	&dev_attr_eq_b1_gain.attr,
 	&dev_attr_eq_b2_gain.attr,
 	&dev_attr_eq_b3_gain.attr,
 	&dev_attr_eq_b4_gain.attr,
 	&dev_attr_eq_b5_gain.attr,
-	&dev_attr_reset.attr,
 	&dev_attr_version.attr,
 	&dev_attr_reg_dump.attr,
 	NULL
