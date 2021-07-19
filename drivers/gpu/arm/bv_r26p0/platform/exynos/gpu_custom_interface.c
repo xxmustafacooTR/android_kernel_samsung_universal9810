@@ -619,11 +619,6 @@ int gpu_custom_max_clock(int gpu_max_clock)
 		return 0;
 	}
 	
-	if ((gpu_max_clock < platform->gpu_min_clock_limit) || (gpu_max_clock > platform->gpu_max_clock_limit)) {
-		GPU_LOG(DVFS_WARNING, DUMMY, 0u, 0u, "%s: out of range (%d)\n", __func__, gpu_max_clock);
-		return 1;
-	}
-	
 	platform->gpu_max_clock = gpu_max_clock;
 	gpu_control_set_clock(pkbdev, gpu_max_clock);
 	platform->user_max_lock_input = gpu_max_clock;
@@ -631,6 +626,11 @@ int gpu_custom_max_clock(int gpu_max_clock)
 #ifdef CONFIG_MALI_DVFS
 	gpu_dvfs_clock_lock(GPU_DVFS_MAX_LOCK, PMQOS_LOCK, gpu_max_clock);
 #endif
+
+	if ((gpu_max_clock < platform->gpu_min_clock_limit) || (gpu_max_clock > platform->gpu_max_clock_limit)) {
+		GPU_LOG(DVFS_WARNING, DUMMY, 0u, 0u, "%s: out of range (%d)\n", __func__, gpu_max_clock);
+		return 1;
+	}
 	
 	return 0;
 }
@@ -694,17 +694,17 @@ int gpu_custom_min_clock(int gpu_min_clock)
 		return 0;
 	}
 	
-	if ((gpu_min_clock < platform->gpu_min_clock_limit) || (gpu_min_clock > platform->gpu_max_clock_limit)) {
-		GPU_LOG(DVFS_WARNING, DUMMY, 0u, 0u, "%s: out of range (%d)\n", __func__, gpu_min_clock);
-		return 1;
-	}
-	
 	platform->gpu_min_clock = gpu_min_clock;
 	platform->user_min_lock_input = gpu_min_clock;
 	gpu_dvfs_clock_lock(GPU_DVFS_MIN_LOCK, SYSFS_LOCK, gpu_min_clock);
 #ifdef CONFIG_MALI_DVFS
 	gpu_dvfs_clock_lock(GPU_DVFS_MIN_LOCK, PMQOS_LOCK, gpu_min_clock);
 #endif
+
+	if ((gpu_min_clock < platform->gpu_min_clock_limit) || (gpu_min_clock > platform->gpu_max_clock_limit)) {
+		GPU_LOG(DVFS_WARNING, DUMMY, 0u, 0u, "%s: out of range (%d)\n", __func__, gpu_min_clock);
+		return 1;
+	}
 	
 	return 0;
 }
