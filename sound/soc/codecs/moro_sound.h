@@ -22,10 +22,18 @@
 
 void moro_sound_hook_madera_pcm_probe(struct regmap *pmap);
 int _regmap_write_nohook(struct regmap *map, unsigned int reg, unsigned int val);
-int set_speaker_gain_value(int gain);
-int get_speaker_gain(void);
-int set_earpiece_gain_value(int gain);
-int get_earpiece_gain(void);
+int set_speaker_analog_gain_value(int gain);
+int set_speaker_digital_gain_value(int gain);
+int get_speaker_analog_gain(void);
+int get_speaker_digital_gain(void);
+int set_earpiece_analog_gain_value(int gain);
+int set_earpiece_digital_gain_value(int gain);
+int get_earpiece_analog_gain(void);
+int get_earpiece_digital_gain(void);
+int set_both_analog_gain_value(int gain);
+int set_both_digital_gain_value(int gain);
+int get_both_analog_gain(void);
+int get_both_digital_gain(void);
 
 
 /*****************************************/
@@ -48,10 +56,39 @@ int get_earpiece_gain(void);
 #define EARPIECE_MIN 			0
 #define EARPIECE_MAX 			18
 
+#define EARPIECE_ANALOG_DEFAULT			0
+#define EARPIECE_ANALOG_MIN 			0
+#define EARPIECE_ANALOG_MAX 			6
+
+#define EARPIECE_DIGITAL_DEFAULT		0
+#define EARPIECE_DIGITAL_MIN 			0
+#define EARPIECE_DIGITAL_MAX 			127
+
 /* Speaker levels */
 #define SPEAKER_DEFAULT			12
 #define SPEAKER_MIN 			0
 #define SPEAKER_MAX 			18
+
+#define SPEAKER_ANALOG_DEFAULT			0
+#define SPEAKER_ANALOG_MIN 				0
+#define SPEAKER_ANALOG_MAX 				6
+
+#define SPEAKER_DIGITAL_DEFAULT			0
+#define SPEAKER_DIGITAL_MIN 			0
+#define SPEAKER_DIGITAL_MAX 			127
+
+/* Both levels */
+#define BOTH_DEFAULT			12
+#define BOTH_MIN 				0
+#define BOTH_MAX 				18
+
+#define BOTH_ANALOG_DEFAULT				0
+#define BOTH_ANALOG_MIN 				0
+#define BOTH_ANALOG_MAX 				6
+
+#define BOTH_DIGITAL_DEFAULT			0
+#define BOTH_DIGITAL_MIN 				0
+#define BOTH_DIGITAL_MAX 				127
 
 // Mixers sources
 #define OUT2L_MIX_DEFAULT		32

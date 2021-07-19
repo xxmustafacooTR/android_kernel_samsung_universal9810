@@ -44,9 +44,7 @@
 
 #ifdef CONFIG_MORO_SOUND
 #include "moro_sound.h"
-/* This is default value but we will bypass this value */
-int moro_speaker_value = 12;
-int moro_earpiece_value = 12;
+int moro_speaker_gain_value, moro_speaker_digital_value, moro_earpiece_gain_value, moro_earpiece_digital_value, moro_both_gain_value, moro_both_digital_value;
 #endif
 
 struct max98512_priv *g_max98512;
@@ -440,22 +438,57 @@ int max98512_wrapper_update(struct max98512_priv *max98512,
 	int ret = -999;
 	int count = 0;
 	int reg_r = reg;
+#ifdef CONFIG_MORO_SOUND
+	int moro_mode = 0;
+#endif
 
 	reg = REMAP(reg, max98512->revID);
 	reg_r = REMAP(reg_r, max98512->revID_r);
 
+#ifdef CONFIG_MORO_SOUND
+	if (val) {
+		switch (mask) {
+			case MAX98512_AMP_VOL_MASK:
+				moro_mode = 2;
+				break;
+			case MAX98512_SPK_PCM_GAIN_MASK:
+				moro_mode = 1;
+				break;
+			default:
+		}
+	}
+#endif
+
 	while (count++ < MAX_TRY_COUNT && ret != 0) {
 		switch (speaker) {
 		case MAX98512L:
+#ifdef CONFIG_MORO_SOUND
+			if (moro_earpiece_digital_value && moro_mode == 2)
+				val = moro_earpiece_digital_value;
+			else if (moro_earpiece_gain_value && moro_mode == 1)
+				val = moro_earpiece_gain_value;
+#endif
 			ret = regmap_update_bits(max98512->regmap_l,
 						 reg, mask, val);
 			break;
 		case MAX98512R:
+#ifdef CONFIG_MORO_SOUND
+			if (moro_speaker_digital_value && moro_mode == 2)
+				val = moro_speaker_digital_value;
+			else if (moro_speaker_gain_value && moro_mode == 1)
+				val = moro_speaker_gain_value;
+#endif
 			if (max98512->pdata->sub_reg)
 				ret = regmap_update_bits(max98512->regmap_r,
 							 reg_r, mask, val);
 			break;
 		case MAX98512B:
+#ifdef CONFIG_MORO_SOUND
+			if (moro_both_digital_value && moro_mode == 2)
+				val = moro_both_digital_value;
+			else if (moro_both_gain_value && moro_mode == 1)
+				val = moro_both_gain_value;
+#endif
 			ret = regmap_update_bits(max98512->regmap_l,
 						 reg, mask, val);
 			if (max98512->pdata->sub_reg)
@@ -1241,104 +1274,152 @@ static int max98512_adc_config(struct max98512_priv *max98512)
 
 #ifdef CONFIG_MORO_SOUND
 
-int get_speaker_gain(void)
+int get_speaker_analog_gain(void)
 {
-	return moro_speaker_value; //used math for I cant set kernel app to 0-7 values (that is for 0-18)
+	return moro_speaker_gain_value;
 }
 
-int set_speaker_gain(struct max98512_priv *max98512)
+int get_speaker_digital_gain(void)
 {
-	unsigned int gain = 12;
+	return moro_speaker_digital_value;
+}
 
-	gain = moro_speaker_value;
-
-	if(12==gain)
-		return gain;
-
-	if(gain<16)
-		goto spkgain;
-
+void set_speaker_gain(struct max98512_priv *max98512)
+{
+	if (moro_speaker_digital_value) {
 // MAX98512_R0035_AMP_VOL_CTRL
-	max98512_wrapper_update(max98512, MAX98512R,
-					MAX98512_R0035_AMP_VOL_CTRL,
-					MAX98512_AMP_VOL_MASK,
-					(gain+2)*4);
+		max98512_wrapper_update(max98512, MAX98512R,
+						MAX98512_R0035_AMP_VOL_CTRL,
+						MAX98512_AMP_VOL_MASK,
+						moro_speaker_digital_value);
+	}
 
-	max98512->digital_gain = (gain+2)*4;
-
-spkgain:
+	if (moro_speaker_gain_value) {
 // MAX98512_R003A_SPK_GAIN
-	gain = (gain/3)+1;
+		max98512_wrapper_update(max98512, MAX98512R,
+						MAX98512_R003A_SPK_GAIN,
+						MAX98512_SPK_PCM_GAIN_MASK,
+						moro_speaker_gain_value);
 
-	max98512_wrapper_update(max98512, MAX98512R,
-					MAX98512_R003A_SPK_GAIN,
-					MAX98512_SPK_PCM_GAIN_MASK,
-					gain);
-
-	max98512->spk_gain_right = gain;
-
-	max98512->spk_gain = gain;
-
-	return max98512->spk_gain_right;
+		max98512->spk_gain_right = moro_speaker_gain_value;
+		max98512->spk_gain = moro_speaker_gain_value;
+	}
 }
 
-int set_speaker_gain_value(int gain)
+int set_speaker_analog_gain_value(int gain)
 {
-	moro_speaker_value = gain;
+	moro_speaker_gain_value = gain;
 
 	set_speaker_gain(g_max98512);
 
-	return moro_speaker_value; //used math for I cant set kernel app to 0-7 values (that is for 0-18)
+	return moro_speaker_gain_value;
 }
 
-int get_earpiece_gain(void)
+int set_speaker_digital_gain_value(int gain)
 {
-	return moro_earpiece_value; //used math for I cant set kernel app to 0-7 values (that is for 0-18)
+	moro_speaker_digital_value = gain;
+
+	set_speaker_gain(g_max98512);
+
+	return moro_speaker_digital_value;
 }
 
-int set_earpiece_gain(struct max98512_priv *max98512)
+int get_earpiece_analog_gain(void)
 {
-	unsigned int gain = 12;
+	return moro_earpiece_gain_value;
+}
 
-	gain = moro_earpiece_value;
+int get_earpiece_digital_gain(void)
+{
+	return moro_earpiece_digital_value;
+}
 
-	if(12==gain)
-		return gain;
-
-	if(gain<16)
-		goto eargain;
-
+void set_earpiece_gain(struct max98512_priv *max98512)
+{
+	if (moro_earpiece_digital_value) {
 // MAX98512_R0035_AMP_VOL_CTRL
-	max98512_wrapper_update(max98512, MAX98512L,
-					MAX98512_R0035_AMP_VOL_CTRL,
-					MAX98512_AMP_VOL_MASK,
-					(gain+2)*4);
+		max98512_wrapper_update(max98512, MAX98512L,
+						MAX98512_R0035_AMP_VOL_CTRL,
+						MAX98512_AMP_VOL_MASK,
+						moro_earpiece_digital_value);
+	}
 
-	max98512->digital_gain_rcv = (gain+2)*4;
-
-eargain:
+	if (moro_earpiece_gain_value) {
 // MAX98512_R003A_SPK_GAIN
-	gain = (gain/3)+1;
+		max98512_wrapper_update(max98512, MAX98512L,
+						MAX98512_R003A_SPK_GAIN,
+						MAX98512_SPK_PCM_GAIN_MASK,
+						moro_earpiece_gain_value);
 
-	max98512_wrapper_update(max98512, MAX98512L,
-					MAX98512_R003A_SPK_GAIN,
-					MAX98512_SPK_PCM_GAIN_MASK,
-					gain);
-
-	max98512->spk_gain_left = gain;
-
-	max98512->spk_gain = gain;
-
-	return max98512->spk_gain_left;
+		max98512->spk_gain_left = moro_earpiece_gain_value;
+	}
 }
 
-int set_earpiece_gain_value(int gain)
+int set_earpiece_analog_gain_value(int gain)
 {
-	moro_earpiece_value = gain;
+	moro_earpiece_gain_value = gain;
 
 	set_earpiece_gain(g_max98512);
 
-	return moro_speaker_value; //used math for I cant set kernel app to 0-7 values (that is for 0-18)
+	return moro_earpiece_gain_value;
+}
+
+int set_earpiece_digital_gain_value(int gain)
+{
+	moro_earpiece_digital_value = gain;
+
+	set_earpiece_gain(g_max98512);
+
+	return moro_earpiece_digital_value;
+}
+
+int get_both_analog_gain(void)
+{
+	return moro_both_gain_value;
+}
+
+int get_both_digital_gain(void)
+{
+	return moro_both_digital_value;
+}
+
+void set_both_gain(struct max98512_priv *max98512)
+{
+	if (moro_both_digital_value) {
+// MAX98512_R0035_AMP_VOL_CTRL
+		max98512_wrapper_update(max98512, MAX98512B,
+						MAX98512_R0035_AMP_VOL_CTRL,
+						MAX98512_AMP_VOL_MASK,
+						moro_both_digital_value);
+	}
+
+	if (moro_both_gain_value) {
+// MAX98512_R003A_SPK_GAIN
+		max98512_wrapper_update(max98512, MAX98512B,
+						MAX98512_R003A_SPK_GAIN,
+						MAX98512_SPK_PCM_GAIN_MASK,
+						moro_both_gain_value);
+
+		
+	}
+}
+
+int set_both_analog_gain_value(int gain)
+{
+	moro_both_gain_value = gain;
+
+	set_both_gain(g_max98512);
+
+	return moro_both_gain_value;
+}
+
+int set_both_digital_gain_value(int gain)
+{
+	moro_both_digital_value = gain;
+
+	set_both_gain(g_max98512);
+
+	return moro_both_digital_value;
 }
 #endif
 
@@ -1515,10 +1596,6 @@ static int __max98512_spk_enable(struct max98512_priv *max98512)
 					MAX98512_R0400_GLOBAL_SHDN,
 					MAX98512_GLOBAL_EN_MASK, enable_r);
 	}
-#ifdef CONFIG_MORO_SOUND
-		set_speaker_gain(max98512);
-		set_earpiece_gain(max98512);
-#endif
 
 	return 0;
 }
@@ -1562,9 +1639,6 @@ static void max98512_spk_enable_l(struct max98512_priv *max98512, int enable)
 					MAX98512_R003A_SPK_GAIN,
 					MAX98512_SPK_PCM_GAIN_MASK,
 					max98512->spk_gain_left);
-#ifdef CONFIG_MORO_SOUND
-		set_earpiece_gain(max98512);
-#endif
 	} else {
 		max98512_wrapper_update(max98512, MAX98512L,
 					MAX98512_R003A_SPK_GAIN,
@@ -2012,9 +2086,6 @@ static int max98512_analog_gain_l_put(struct snd_kcontrol *kcontrol,
 					sel);
 
 		max98512->spk_gain_left = sel;
-#ifdef CONFIG_MORO_SOUND
-		set_earpiece_gain(max98512);
-#endif
 	}
 
 	return 0;
@@ -2049,9 +2120,6 @@ static int max98512_analog_gain_r_put(struct snd_kcontrol *kcontrol,
 					sel);
 
 		max98512->spk_gain_right = sel;
-#ifdef CONFIG_MORO_SOUND
-		set_speaker_gain(max98512);
-#endif
 	}
 
 	return 0;
@@ -2347,10 +2415,6 @@ static int max98512_probe(struct snd_soc_codec *codec)
 	max98512_wrapper_write(max98512, MAX98512B,
 			       MAX98512_R003A_SPK_GAIN,
 			       0x05);
-#ifdef CONFIG_MORO_SOUND
-	set_speaker_gain(max98512);
-	set_earpiece_gain(max98512);
-#endif
 	/* Enable DC blocker */
 	max98512_wrapper_write(max98512, MAX98512B,
 			       MAX98512_R0036_AMP_DSP_CFG,
@@ -2836,10 +2900,6 @@ static int max98512_i2c_probe(struct i2c_client *i2c,
 		vstep->boost_step[MAX98512_VSTEP_15] = 0x10; /* 8.5V */
 		max98512->spk_gain = 0x05; /* +15db for PCM */
 		max98512->digital_gain = 0x40; /* 0db */
-#ifdef CONFIG_MORO_SOUND
-		set_speaker_gain(max98512);
-		set_earpiece_gain(max98512);
-#endif
 		max98512->mono_stereo = 0;
 		max98512->interleave_mode = 0;
 		vstep->adc_thres = MAX98512_VSTEP_8;

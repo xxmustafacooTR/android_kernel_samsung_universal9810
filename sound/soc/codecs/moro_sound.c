@@ -38,7 +38,7 @@ static int first = 1;
 static int moro_sound, eq, headphone_mono, mic, reset = 0;
 
 // Gains
-static int headphone_gain_l, headphone_gain_r, earpiece_gain, speaker_gain, eq_gains[5],
+static int headphone_gain_l, headphone_gain_r, earpiece_analog_gain, earpiece_digital_gain, speaker_analog_gain, speaker_digital_gain, both_analog_gain, both_digital_gain, eq_gains[5],
 	mic_down_gain, mic_up_gain, mic_hp_gain;
 
 // Mixers
@@ -275,8 +275,10 @@ static void reset_moro_sound(void)
 {
 	// set all moro sound config settings to defaults
 
-	earpiece_gain = EARPIECE_DEFAULT;
-	speaker_gain = SPEAKER_DEFAULT;
+	earpiece_analog_gain = EARPIECE_ANALOG_DEFAULT;
+	earpiece_digital_gain = EARPIECE_DIGITAL_DEFAULT;
+	speaker_analog_gain = SPEAKER_ANALOG_DEFAULT;
+	speaker_digital_gain = SPEAKER_DIGITAL_DEFAULT;
 
 	headphone_gain_l = HEADPHONE_DEFAULT;
 	headphone_gain_r = HEADPHONE_DEFAULT;
@@ -308,8 +310,10 @@ static void reset_audio_hub(void)
 	set_value(OUT2R_VOLUME, HEADPHONE_DEFAULT);
 	set_value(OUT2_MONO, HEADPHONE_MONO_DEFAULT);
 
-	set_earpiece_gain_value(EARPIECE_DEFAULT);
-	set_speaker_gain_value(SPEAKER_DEFAULT);
+	set_earpiece_analog_gain_value(EARPIECE_ANALOG_DEFAULT);
+	set_earpiece_digital_gain_value(EARPIECE_DIGITAL_DEFAULT);
+	set_speaker_analog_gain_value(SPEAKER_ANALOG_DEFAULT);
+	set_speaker_digital_gain_value(SPEAKER_DIGITAL_DEFAULT);
 
 	set_value(OUT2L_MIX, OUT2L_MIX_DEFAULT);
 	set_value(OUT2R_MIX, OUT2R_MIX_DEFAULT);
@@ -328,8 +332,10 @@ static void update_audio_hub(void)
 {
 	// reset all audio hub registers back to defaults
 
-	set_earpiece_gain_value(earpiece_gain);
-	set_speaker_gain_value(speaker_gain);
+	set_earpiece_analog_gain_value(earpiece_analog_gain);
+	set_earpiece_digital_gain_value(earpiece_digital_gain);
+	set_speaker_analog_gain_value(speaker_analog_gain);
+	set_speaker_digital_gain_value(speaker_digital_gain);
 
 	set_value(OUT2L_VOLUME, headphone_gain_l);
 	set_value(OUT2R_VOLUME, headphone_gain_r);
@@ -495,12 +501,12 @@ static ssize_t headphone_limits_show(struct device *dev, struct device_attribute
 	return sprintf(buf, "Min:%u Max:%u Def:%u\n", HEADPHONE_MIN, HEADPHONE_MAX, HEADPHONE_DEFAULT);
 }
 // Earpiece Volume
-static ssize_t earpiece_gain_show(struct device *dev, struct device_attribute *attr, char *buf)
+static ssize_t earpiece_analog_gain_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	// print current values
-	return sprintf(buf, "%d\n", earpiece_gain);
+	return sprintf(buf, "%d\n", earpiece_analog_gain);
 }
-static ssize_t earpiece_gain_store(struct device *dev, struct device_attribute *attr,
+static ssize_t earpiece_analog_gain_store(struct device *dev, struct device_attribute *attr,
 					const char *buf, size_t count)
 {
 	unsigned int ret = -EINVAL;
@@ -512,20 +518,47 @@ static ssize_t earpiece_gain_store(struct device *dev, struct device_attribute *
 	ret = sscanf(buf, "%d", &val);
 	if (ret != 1)
 		return -EINVAL;
-	if (val < EARPIECE_MIN)
-		val = EARPIECE_MIN;
-	if (val > EARPIECE_MAX)
-		val = EARPIECE_MAX;
+	if (val < EARPIECE_ANALOG_MIN)
+		val = EARPIECE_ANALOG_MIN;
+	if (val > EARPIECE_ANALOG_MAX)
+		val = EARPIECE_ANALOG_MAX;
 	// store new values
-	earpiece_gain = val;
+	earpiece_analog_gain = val;
 	// set new values
-	set_earpiece_gain_value(earpiece_gain);
+	set_earpiece_analog_gain_value(earpiece_analog_gain);
+	return count;
+}
+static ssize_t earpiece_digital_gain_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	// print current values
+	return sprintf(buf, "%d\n", earpiece_digital_gain);
+}
+static ssize_t earpiece_digital_gain_store(struct device *dev, struct device_attribute *attr,
+					const char *buf, size_t count)
+{
+	unsigned int ret = -EINVAL;
+	int val;
+	// Terminate if moro sound is not enabled
+	if (!moro_sound)
+		return count;
+	// read values from input buffer
+	ret = sscanf(buf, "%d", &val);
+	if (ret != 1)
+		return -EINVAL;
+	if (val < EARPIECE_DIGITAL_MIN)
+		val = EARPIECE_DIGITAL_MIN;
+	if (val > EARPIECE_DIGITAL_MAX)
+		val = EARPIECE_DIGITAL_MAX;
+	// store new values
+	earpiece_digital_gain = val;
+	// set new values
+	set_earpiece_digital_gain_value(earpiece_digital_gain);
 	return count;
 }
 static ssize_t earpiece_limits_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	// return version information
-	return sprintf(buf, "Min:%u Max:%u Def:%u\n", EARPIECE_MIN, EARPIECE_MAX, EARPIECE_DEFAULT);
+	return sprintf(buf, "ANALOG: Min:%u Max:%u Def:%u\nDIGITAL: Min:%u Max:%u Def:%u\n", EARPIECE_ANALOG_MIN, EARPIECE_ANALOG_MAX, EARPIECE_ANALOG_DEFAULT, EARPIECE_DIGITAL_MIN, EARPIECE_DIGITAL_MAX, EARPIECE_DIGITAL_DEFAULT);
 }
 // Mic Gain
 
@@ -657,36 +690,126 @@ static ssize_t mic_hp_gain_store(struct device *dev, struct device_attribute *at
 	return count;
 }
 // Speaker Volume
-static ssize_t speaker_gain_show(struct device *dev, struct device_attribute *attr, char *buf)
+static ssize_t speaker_analog_gain_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	// print current values
-	return sprintf(buf, "%d\n", speaker_gain);
+	return sprintf(buf, "%d\n", speaker_analog_gain);
 }
-static ssize_t speaker_gain_store(struct device *dev, struct device_attribute *attr,
+static ssize_t speaker_analog_gain_store(struct device *dev, struct device_attribute *attr,
 					const char *buf, size_t count)
 {
 	unsigned int ret = -EINVAL;
 	int val;
+	// Terminate if moro sound is not enabled
+	if (!moro_sound)
+		return count;
 	// read values from input buffer
 	ret = sscanf(buf, "%d", &val);
 	if (ret != 1)
 		return -EINVAL;
-	if (val < SPEAKER_MIN)
-		val = SPEAKER_MIN;
-	if (val > SPEAKER_MAX)
-		val = SPEAKER_MAX;
+	if (val < SPEAKER_ANALOG_MIN)
+		val = SPEAKER_ANALOG_MIN;
+	if (val > SPEAKER_ANALOG_MAX)
+		val = SPEAKER_ANALOG_MAX;
 	// store new values
-	speaker_gain = val;
+	speaker_analog_gain = val;
 	// set new values
-	set_speaker_gain_value(speaker_gain);
+	set_speaker_analog_gain_value(speaker_analog_gain);
+	return count;
+}
+static ssize_t speaker_digital_gain_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	// print current values
+	return sprintf(buf, "%d\n", speaker_digital_gain);
+}
+static ssize_t speaker_digital_gain_store(struct device *dev, struct device_attribute *attr,
+					const char *buf, size_t count)
+{
+	unsigned int ret = -EINVAL;
+	int val;
+	// Terminate if moro sound is not enabled
+	if (!moro_sound)
+		return count;
+	// read values from input buffer
+	ret = sscanf(buf, "%d", &val);
+	if (ret != 1)
+		return -EINVAL;
+	if (val < SPEAKER_DIGITAL_MIN)
+		val = SPEAKER_DIGITAL_MIN;
+	if (val > SPEAKER_DIGITAL_MAX)
+		val = SPEAKER_DIGITAL_MAX;
+	// store new values
+	speaker_digital_gain = val;
+	// set new values
+	set_speaker_digital_gain_value(speaker_digital_gain);
 	return count;
 }
 static ssize_t speaker_limits_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	// return version information
-	return sprintf(buf, "Min:%u Max:%u Def:%u\n", SPEAKER_MIN, SPEAKER_MAX, SPEAKER_DEFAULT);
+	return sprintf(buf, "ANALOG: Min:%u Max:%u Def:%u\nDIGITAL: Min:%u Max:%u Def:%u\n", SPEAKER_ANALOG_MIN, SPEAKER_ANALOG_MAX, SPEAKER_ANALOG_DEFAULT, SPEAKER_DIGITAL_MIN, SPEAKER_DIGITAL_MAX, SPEAKER_DIGITAL_DEFAULT);
 }
 
+// Both Volume
+static ssize_t both_analog_gain_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	// print current values
+	return sprintf(buf, "%d\n", both_analog_gain);
+}
+static ssize_t both_analog_gain_store(struct device *dev, struct device_attribute *attr,
+					const char *buf, size_t count)
+{
+	unsigned int ret = -EINVAL;
+	int val;
+	// Terminate if moro sound is not enabled
+	if (!moro_sound)
+		return count;
+	// read values from input buffer
+	ret = sscanf(buf, "%d", &val);
+	if (ret != 1)
+		return -EINVAL;
+	if (val < BOTH_ANALOG_MIN)
+		val = BOTH_ANALOG_MIN;
+	if (val > BOTH_ANALOG_MAX)
+		val = BOTH_ANALOG_MAX;
+	// store new values
+	both_analog_gain = val;
+	// set new values
+	set_both_analog_gain_value(both_analog_gain);
+	return count;
+}
+static ssize_t both_digital_gain_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	// print current values
+	return sprintf(buf, "%d\n", both_digital_gain);
+}
+static ssize_t both_digital_gain_store(struct device *dev, struct device_attribute *attr,
+					const char *buf, size_t count)
+{
+	unsigned int ret = -EINVAL;
+	int val;
+	// Terminate if moro sound is not enabled
+	if (!moro_sound)
+		return count;
+	// read values from input buffer
+	ret = sscanf(buf, "%d", &val);
+	if (ret != 1)
+		return -EINVAL;
+	if (val < BOTH_DIGITAL_MIN)
+		val = BOTH_DIGITAL_MIN;
+	if (val > BOTH_DIGITAL_MAX)
+		val = BOTH_DIGITAL_MAX;
+	// store new values
+	both_digital_gain = val;
+	// set new values
+	set_both_digital_gain_value(both_digital_gain);
+	return count;
+}
+static ssize_t both_limits_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	// return version information
+	return sprintf(buf, "ANALOG: Min:%u Max:%u Def:%u\nDIGITAL: Min:%u Max:%u Def:%u\n", BOTH_ANALOG_MIN, BOTH_ANALOG_MAX, BOTH_ANALOG_DEFAULT, BOTH_DIGITAL_MIN, BOTH_DIGITAL_MAX, BOTH_DIGITAL_DEFAULT);
+}
 
 // EQ
 
@@ -1002,8 +1125,9 @@ headphone_gain_l: reg: %d, variable: %d\n\
 headphone_gain_r: reg: %d, variable: %d\n\
 headphone mono: %d\n\
 first enable: %d\n\
-earpiece_gain: %d\n\
-speaker_gain: %d\n\
+earpiece_gain: analog: %d, digital: %d\n\
+speaker_gain: analog: %d, digital: %d\n\
+both_gain: analog: %d, digital: %d\n\
 OUT1 Source: L: %d R: %d\n\
 EQ Enabled: 1: %d 2: %d\n\
 EQMIX source: 1: %d 2: %d\n\
@@ -1020,8 +1144,9 @@ get_value(OUT2L_VOLUME), headphone_gain_l,
 get_value(OUT2R_VOLUME), headphone_gain_r,
 get_value(OUT2_MONO),
 first,
-get_earpiece_gain(),
-get_speaker_gain(),
+get_earpiece_analog_gain(), get_earpiece_digital_gain(),
+get_speaker_analog_gain(), get_speaker_digital_gain(),
+get_both_analog_gain(), get_both_digital_gain(),
 get_value(OUT2L_MIX), get_value(OUT2R_MIX),
 get_value(EQ1_ENA), get_value(EQ2_ENA),
 get_value(EQ1_MIX), get_value(EQ2_MIX),
@@ -1057,14 +1182,19 @@ static DEVICE_ATTR(moro_sound, 0664, moro_sound_show, moro_sound_store);
 static DEVICE_ATTR(headphone_gain, 0664, headphone_gain_show, headphone_gain_store);
 static DEVICE_ATTR(headphone_limits, 0444, headphone_limits_show, NULL);
 static DEVICE_ATTR(headphone_mono, 0664, headphone_mono_show, headphone_mono_store);
-static DEVICE_ATTR(earpiece_gain, 0664, earpiece_gain_show, earpiece_gain_store);
+static DEVICE_ATTR(earpiece_analog_gain, 0664, earpiece_analog_gain_show, earpiece_analog_gain_store);
+static DEVICE_ATTR(earpiece_digital_gain, 0664, earpiece_digital_gain_show, earpiece_digital_gain_store);
 static DEVICE_ATTR(earpiece_limits, 0444, earpiece_limits_show, NULL);
 static DEVICE_ATTR(mic, 0664, mic_show, mic_store);
 static DEVICE_ATTR(mic_down_gain, 0664, mic_down_gain_show, mic_down_gain_store);
 static DEVICE_ATTR(mic_up_gain, 0664, mic_up_gain_show, mic_up_gain_store);
 static DEVICE_ATTR(mic_hp_gain, 0664, mic_hp_gain_show, mic_hp_gain_store);
-static DEVICE_ATTR(speaker_gain, 0664, speaker_gain_show, speaker_gain_store);
+static DEVICE_ATTR(speaker_analog_gain, 0664, speaker_analog_gain_show, speaker_analog_gain_store);
+static DEVICE_ATTR(speaker_digital_gain, 0664, speaker_digital_gain_show, speaker_digital_gain_store);
 static DEVICE_ATTR(speaker_limits, 0444, speaker_limits_show, NULL);
+static DEVICE_ATTR(both_analog_gain, 0664, both_analog_gain_show, both_analog_gain_store);
+static DEVICE_ATTR(both_digital_gain, 0664, both_digital_gain_show, both_digital_gain_store);
+static DEVICE_ATTR(both_limits, 0444, both_limits_show, NULL);
 static DEVICE_ATTR(eq, 0664, eq_show, eq_store);
 static DEVICE_ATTR(eq_gains, 0664, eq_gains_show, eq_gains_store);
 static DEVICE_ATTR(eq_b1_gain, 0664, eq_b1_gain_show, eq_b1_gain_store);
@@ -1082,14 +1212,19 @@ static struct attribute *moro_sound_attributes[] = {
 	&dev_attr_headphone_gain.attr,
 	&dev_attr_headphone_mono.attr,
 	&dev_attr_headphone_limits.attr,
-	&dev_attr_earpiece_gain.attr,
+	&dev_attr_earpiece_analog_gain.attr,
+	&dev_attr_earpiece_digital_gain.attr,
 	&dev_attr_earpiece_limits.attr,
 	&dev_attr_mic.attr,
 	&dev_attr_mic_down_gain.attr,
 	&dev_attr_mic_up_gain.attr,
 	&dev_attr_mic_hp_gain.attr,
-	&dev_attr_speaker_gain.attr,
+	&dev_attr_speaker_analog_gain.attr,
+	&dev_attr_speaker_digital_gain.attr,
 	&dev_attr_speaker_limits.attr,
+	&dev_attr_both_analog_gain.attr,
+	&dev_attr_both_digital_gain.attr,
+	&dev_attr_both_limits.attr,
 	&dev_attr_eq.attr,
 	&dev_attr_eq_gains.attr,
 	&dev_attr_reset.attr,
