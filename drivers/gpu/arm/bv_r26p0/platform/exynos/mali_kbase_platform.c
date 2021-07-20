@@ -401,8 +401,10 @@ static int gpu_dvfs_update_asv_table(struct kbase_device *kbdev)
 			if (g3d_rate_volt[i].rate == dvfs_table[j].clock)
 				cal_vol = g3d_rate_volt[i].volt;
 		}
-		if (!cal_vol)
+		
+		if (!cal_vol || 0 > cal_vol)
 			cal_vol = platform->gpu_default_vol;
+
 		dvfs_table[j].voltage = cal_vol;
 		dvfs_table[j].min_threshold = of_data_int_array[table_idx+1];
 		dvfs_table[j].max_threshold = of_data_int_array[table_idx+2];
